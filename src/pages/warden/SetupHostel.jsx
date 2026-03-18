@@ -18,18 +18,49 @@ export default function SetupHostel() {
   const [hostelName, setHostelName] = useState('');
   const [collegeName] = useState('MITAOE');
 
-  // Step 2 & 3: Blocks and Buildings (with floors count)
+  // Setup Mode
+  const [setupMode, setSetupMode] = useState(''); // 'quick' | 'advanced' | ''
+
+  // Step 2 & 3: Hierarchy
   const [blocks, setBlocks] = useState([]);
 
-  // Temp form states
+  // Advanced Mode Form States
   const [newBlockName, setNewBlockName] = useState('');
   const [newBldName, setNewBldName] = useState('');
   const [newBldFloors, setNewBldFloors] = useState(1);
   const [activeBlockId, setActiveBlockId] = useState(null);
 
-  // Step 4: Rooms
-  // To manage rooms, we map over blocks -> buildings -> floors
-  // generate range string: '101-120'
+  // Quick Mode Form States
+  const [quickFloors, setQuickFloors] = useState(1);
+  const [quickRooms, setQuickRooms] = useState(''); // expects range or csv
+
+  const handleQuickSetupGenerate = () => {
+    if (quickFloors < 1 || !quickRooms.trim()) return;
+
+    // Auto-generate the deep hierarchy
+    const blockId = crypto.randomUUID();
+    const bldId = crypto.randomUUID();
+
+    const floors = Array.from({ length: quickFloors }, (_, i) => ({
+      id: crypto.randomUUID(),
+      floorNumber: i + 1,
+      roomRange: quickRooms,
+      rooms: []
+    }));
+
+    setBlocks([{
+      id: blockId,
+      name: 'Main Block',
+      buildings: [{
+        id: bldId,
+        name: 'Main Building',
+        totalFloors: quickFloors,
+        floors
+      }]
+    }]);
+
+    setStep(3); // Jump straight to finalize
+  };
 
   const handleCreateBlock = () => {
     if (!newBlockName.trim()) return;
@@ -83,7 +114,6 @@ export default function SetupHostel() {
     }));
   };
 
-  // Generate rooms array from range string (e.g., "101-105") or CSV ("101, 102, 103")
   const parseRoomRange = (rangeStr) => {
     if (!rangeStr.trim()) return [];
     if (rangeStr.includes('-')) {
@@ -100,14 +130,10 @@ export default function SetupHostel() {
       setLoading(true);
       setError('');
 
-      // Create Hostel Document
       const hostelRef = doc(collection(db, 'hostels'));
       const hostelId = hostelRef.id;
-
-      // Update Warden's user doc
       const userRef = doc(db, 'users', user.uid);
       
-      // Batch setup
       let batch = writeBatch(db);
       let operationCount = 0;
 
@@ -128,7 +154,6 @@ export default function SetupHostel() {
       batch.update(userRef, { hostelId });
       operationCount += 2;
 
-      // Traverse Tree and prepare writes
       for (const block of blocks) {
         const blockRef = doc(collection(db, 'hostels', hostelId, 'blocks'));
         batch.set(blockRef, { name: block.name });
@@ -151,7 +176,6 @@ export default function SetupHostel() {
             for (const roomNum of rooms) {
               const roomRef = doc(collection(db, 'hostels', hostelId, 'blocks', blockRef.id, 'buildings', bldRef.id, 'floors', floorRef.id, 'rooms'));
               
-              // Generate QR Code containing the room joining URL
               const joinUrl = `https://datathon-26.vercel.app/room/${hostelId}/${roomRef.id}`;
               const qrCodeUrl = await QRCode.toDataURL(joinUrl, { width: 400, margin: 2 });
 
@@ -168,10 +192,7 @@ export default function SetupHostel() {
         }
       }
 
-      // Final commit
-      if (operationCount > 0) {
-        await batch.commit();
-      }
+      if (operationCount > 0) await batch.commit();
 
       navigate('/warden/dashboard', { replace: true });
     } catch (err) {
@@ -182,7 +203,6 @@ export default function SetupHostel() {
   };
 
 
-  // Render tree view for live sidebar
   const renderTreeView = () => (
     <div className="card" style={{ height: 'fit-content' }}>
       <h3 className="font-bold mb-2">Live Hierarchy</h3>
@@ -232,7 +252,7 @@ export default function SetupHostel() {
             <div key={n} className={`step-item ${step > n ? 'done' : step === n ? 'active' : ''}`}>
               <div className="step-num">{step > n ? '✓' : n}</div>
               {n === 1 && 'Basic Info'}
-              {n === 2 && 'Blocks & Buildings'}
+              {n === 2 && 'Choose Mode'}
               {n === 3 && 'Rooms & Finalize'}
               {n < 3 && <span className="step-sep">⋯</span>}
             </div>
@@ -241,7 +261,6 @@ export default function SetupHostel() {
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '2rem', alignItems: 'start' }}>
           
-          {/* Main Wizard Area */}
           <div className="card">
             
             {/* STEP 1 */}
@@ -256,59 +275,110 @@ export default function SetupHostel() {
                   <label className="form-label">College</label>
                   <input className="form-input" value={collegeName} disabled />
                 </div>
-                <button className="btn btn-primary" disabled={!hostelName.trim()} onClick={() => setStep(2)}>Build Infrastructure →</button>
+                <button className="btn btn-primary" disabled={!hostelName.trim()} onClick={() => setStep(2)}>Next →</button>
               </div>
             )}
 
-            {/* STEP 2 */}
+            {/* STEP 2 - MODE SELECTION & SETUP */}
             {step === 2 && (
               <div className="animation-fade-in">
-                <h2 className="font-bold mb-1">Blocks & Buildings</h2>
-                <p className="text-muted text-sm mb-2">Create blocks (e.g. "North Block"), and add buildings inside them.</p>
-
-                <div className="add-row mb-3">
-                  <input className="form-input" value={newBlockName} onChange={e => setNewBlockName(e.target.value)} placeholder="New Block Name" onKeyDown={e => e.key === 'Enter' && handleCreateBlock()}/>
-                  <button className="btn btn-outline" onClick={handleCreateBlock}>Add Block</button>
+                <div className="flex gap-2 mb-3">
+                  <div 
+                    onClick={() => { setSetupMode('quick'); setBlocks([]); }}
+                    className={`card card-sm text-center flex-1 ${setupMode === 'quick' ? 'border-primary' : ''}`}
+                    style={{ cursor: 'pointer', border: setupMode === 'quick' ? '2px solid var(--primary)' : '1px solid var(--border)' }}
+                  >
+                    <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>⚡</div>
+                    <div className="font-bold">Quick Setup</div>
+                    <div className="text-muted text-sm mt-1">For simple hostels (1 single building). Auto-generates the structure.</div>
+                  </div>
+                  <div 
+                    onClick={() => { setSetupMode('advanced'); setBlocks([]); }}
+                    className={`card card-sm text-center flex-1 ${setupMode === 'advanced' ? 'border-primary' : ''}`}
+                    style={{ cursor: 'pointer', border: setupMode === 'advanced' ? '2px solid var(--border-hover)' : '1px solid var(--border)' }}
+                  >
+                    <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🏢</div>
+                    <div className="font-bold">Advanced Setup</div>
+                    <div className="text-muted text-sm mt-1">For complex campuses with multiple blocks, wings, and buildings.</div>
+                  </div>
                 </div>
 
-                <div className="blocks-list">
-                  {blocks.map(b => (
-                    <div key={b.id} className="block-item mb-2" style={{ background: 'var(--surface)' }}>
-                      <div className="block-header" style={{ cursor: 'default' }}>
-                        <span style={{ color: 'var(--primary)' }}>❖ {b.name}</span>
-                        <button className="btn btn-ghost btn-sm" onClick={() => setActiveBlockId(activeBlockId === b.id ? null : b.id)}>
-                          {activeBlockId === b.id ? 'Cancel' : '+ Add Building'}
-                        </button>
-                      </div>
-                      
-                      {activeBlockId === b.id && (
-                        <div className="block-body" style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderTop: 'none' }}>
-                          <div className="flex gap-1">
-                            <input className="form-input" placeholder="Building Name" value={newBldName} onChange={e => setNewBldName(e.target.value)} style={{ flex: 2 }} />
-                            <input type="number" min="1" className="form-input" placeholder="Floors" value={newBldFloors} onChange={e => setNewBldFloors(parseInt(e.target.value) || 1)} style={{ flex: 1 }} />
-                            <button className="btn btn-primary" onClick={() => handleCreateBuilding(b.id)}>Add</button>
+                {/* QUICK SETUP UI */}
+                {setupMode === 'quick' && (
+                  <div className="animation-fade-in" style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '8px' }}>
+                    <h3 className="font-bold mb-2 text-primary">⚡ Quick Flow</h3>
+                    <div className="form-group">
+                      <label className="form-label">Total Floors in Building</label>
+                      <input type="number" min="1" className="form-input" value={quickFloors} onChange={e => setQuickFloors(parseInt(e.target.value) || 1)} />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Room Numbers (Per Floor)</label>
+                      <input className="form-input" placeholder="e.g. 101-120 or 101, 102" value={quickRooms} onChange={e => setQuickRooms(e.target.value)} />
+                      <div className="text-muted text-sm mt-1">This will be applied identically to every floor.</div>
+                    </div>
+                    <div className="flex gap-1 mt-3">
+                      <button className="btn btn-ghost" onClick={() => setStep(1)}>← Back</button>
+                      <button className="btn btn-primary" onClick={handleQuickSetupGenerate} disabled={quickFloors < 1 || !quickRooms}>Auto-Generate →</button>
+                    </div>
+                  </div>
+                )}
+
+
+                {/* ADVANCED SETUP UI */}
+                {setupMode === 'advanced' && (
+                  <div className="animation-fade-in" style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '8px' }}>
+                    <h3 className="font-bold mb-1">Blocks & Buildings</h3>
+                    <p className="text-muted text-sm mb-2">Create blocks (e.g. "North Block"), and add buildings inside them.</p>
+
+                    <div className="add-row mb-3">
+                      <input className="form-input" value={newBlockName} onChange={e => setNewBlockName(e.target.value)} placeholder="New Block Name" onKeyDown={e => e.key === 'Enter' && handleCreateBlock()}/>
+                      <button className="btn btn-outline" onClick={handleCreateBlock}>Add Block</button>
+                    </div>
+
+                    <div className="blocks-list">
+                      {blocks.map(b => (
+                        <div key={b.id} className="block-item mb-2" style={{ background: 'var(--surface)' }}>
+                          <div className="block-header" style={{ cursor: 'default' }}>
+                            <span style={{ color: 'var(--primary)' }}>❖ {b.name}</span>
+                            <button className="btn btn-ghost btn-sm" onClick={() => setActiveBlockId(activeBlockId === b.id ? null : b.id)}>
+                              {activeBlockId === b.id ? 'Cancel' : '+ Add Building'}
+                            </button>
+                          </div>
+                          
+                          {activeBlockId === b.id && (
+                            <div className="block-body" style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderTop: 'none' }}>
+                              <div className="flex gap-1">
+                                <input className="form-input" placeholder="Building Name" value={newBldName} onChange={e => setNewBldName(e.target.value)} style={{ flex: 2 }} />
+                                <input type="number" min="1" className="form-input" placeholder="Floors" value={newBldFloors} onChange={e => setNewBldFloors(parseInt(e.target.value) || 1)} style={{ flex: 1 }} />
+                                <button className="btn btn-primary" onClick={() => handleCreateBuilding(b.id)}>Add</button>
+                              </div>
+                            </div>
+                          )}
+
+                          <div style={{ padding: '0 1rem 1rem' }}>
+                            {b.buildings.map(bld => (
+                              <div key={bld.id} className="info-row mt-1" style={{ padding: '0.5rem 1rem' }}>
+                                <div>
+                                  <div className="font-bold text-sm">⌂ {bld.name}</div>
+                                  <div className="text-muted text-sm">{bld.totalFloors} Floors</div>
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         </div>
-                      )}
-
-                      <div style={{ padding: '0 1rem 1rem' }}>
-                        {b.buildings.map(bld => (
-                          <div key={bld.id} className="info-row mt-1" style={{ padding: '0.5rem 1rem' }}>
-                            <div>
-                              <div className="font-bold text-sm">⌂ {bld.name}</div>
-                              <div className="text-muted text-sm">{bld.totalFloors} Floors</div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                    <div className="flex gap-1 mt-3">
+                      <button className="btn btn-ghost" onClick={() => setStep(1)}>← Back</button>
+                      <button className="btn btn-primary" disabled={blocks.length === 0 || blocks[0].buildings.length === 0} onClick={() => setStep(3)}>Configure Rooms →</button>
+                    </div>
+                  </div>
+                )}
 
-                <div className="flex gap-1 mt-3">
-                  <button className="btn btn-ghost" onClick={() => setStep(1)}>← Back</button>
-                  <button className="btn btn-primary" disabled={blocks.length === 0 || blocks[0].buildings.length === 0} onClick={() => setStep(3)}>Configure Rooms →</button>
-                </div>
+                {setupMode === '' && (
+                  <button className="btn btn-ghost mt-3" onClick={() => setStep(1)}>← Back</button>
+                )}
+
               </div>
             )}
 
@@ -346,7 +416,7 @@ export default function SetupHostel() {
                 <div className="divider">Ready to Generate Database & QR Codes</div>
                 
                 <div className="flex gap-1 mt-3">
-                  <button className="btn btn-ghost" onClick={() => setStep(2)}>← Back</button>
+                  <button className="btn btn-ghost" onClick={() => setStep(setupMode === 'quick' ? 2 : 2)}>← Back</button>
                   <button className="btn btn-primary flex-1" onClick={handleFinalSubmit} disabled={loading}>
                     {loading ? 'Generating... (This may take a minute)' : '✅ Finalize & Generate QR Codes'}
                   </button>
