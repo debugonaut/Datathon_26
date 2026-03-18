@@ -40,7 +40,7 @@ function RoomBox({ room, position }) {
 
       {/* HTML Tooltip overlay on hover */}
       {hovered && (
-        <Html position={[0, 1, 0]} center zIndexRange={[100, 0]}>
+        <Html position={[0, 1.5, 0]} center zIndexRange={[100, 0]} style={{ pointerEvents: 'none' }}>
           <div style={{
             background: 'var(--glass)',
             backdropFilter: 'blur(8px)',
@@ -94,18 +94,23 @@ export default function Warden3DView({ hostelId }) {
       bldGroups[r.buildingName][r.floorNumber].push(r);
     }
 
-    const sceneData = [];
+    const sceneData = { rooms: [], buildings: [] };
     let bldXOffset = 0;
 
     // Margin configurations
     const ROOM_SPACING_X = 2.2;
     const ROOM_SPACING_Z = 2.2;
-    const FLOOR_HEIGHT = 1.5;
+    const FLOOR_HEIGHT = 1.6;
     const BLD_SPACING = 5;
 
     Object.keys(bldGroups).forEach(bldName => {
       const floors = bldGroups[bldName];
       let maxRoomsPerRowInBld = 0;
+      let maxFloors = Object.keys(floors).length;
+
+      // Calculate Bounding areas for the building envelope
+      let bldMinX = Infinity, bldMaxX = -Infinity;
+      let bldMinZ = Infinity, bldMaxZ = -Infinity;
 
       Object.keys(floors).forEach(floorNumStr => {
         const floorNum = parseInt(floorNumStr, 10);
@@ -123,19 +128,43 @@ export default function Warden3DView({ hostelId }) {
           const y = (floorNum - 1) * FLOOR_HEIGHT;
           const z = (row * ROOM_SPACING_Z);
 
-          sceneData.push({ room: r, position: [x, y, z] });
+          sceneData.rooms.push({ room: r, position: [x, y, z] });
+
+          if (x < bldMinX) bldMinX = x;
+          if (x > bldMaxX) bldMaxX = x;
+          if (z < bldMinZ) bldMinZ = z;
+          if (z > bldMaxZ) bldMaxZ = z;
         });
       });
+
+      // Generate Building Foundation / Walls Structure
+      if (bldMinX !== Infinity) {
+        // Expand the bounds slightly to envelop the rooms inside a shell
+        const pad = 1.4;
+        const width = (bldMaxX - bldMinX) + (pad * 2);
+        const depth = (bldMaxZ - bldMinZ) + (pad * 2);
+        const height = (maxFloors * FLOOR_HEIGHT) + 0.5;
+
+        const centerX = (bldMinX + bldMaxX) / 2;
+        const centerZ = (bldMinZ + bldMaxZ) / 2;
+        
+        // Push the building structural envelope
+        sceneData.buildings.push({
+          position: [centerX, height / 2 - 0.5, centerZ], // Offset y to start from ground
+          args: [width, height, depth],
+          name: bldName
+        });
+      }
 
       // Shift next building to the right by the width of this building + gap
       bldXOffset += (maxRoomsPerRowInBld * ROOM_SPACING_X) + BLD_SPACING;
     });
 
     // Center the entire cluster around 0,0,0
-    if (sceneData.length > 0) {
+    if (sceneData.rooms.length > 0) {
       let minX = Infinity, maxX = -Infinity;
       let minZ = Infinity, maxZ = -Infinity;
-      sceneData.forEach(d => {
+      sceneData.rooms.forEach(d => {
         if (d.position[0] < minX) minX = d.position[0];
         if (d.position[0] > maxX) maxX = d.position[0];
         if (d.position[2] < minZ) minZ = d.position[2];
@@ -144,9 +173,13 @@ export default function Warden3DView({ hostelId }) {
       const centerX = (minX + maxX) / 2;
       const centerZ = (minZ + maxZ) / 2;
       
-      sceneData.forEach(d => {
+      sceneData.rooms.forEach(d => {
         d.position[0] -= centerX;
         d.position[2] -= centerZ;
+      });
+      sceneData.buildings.forEach(b => {
+        b.position[0] -= centerX;
+        b.position[2] -= centerZ;
       });
     }
 
@@ -168,9 +201,30 @@ export default function Warden3DView({ hostelId }) {
         <directionalLight position={[10, 20, 5]} intensity={1} castShadow />
         <pointLight position={[-10, -10, -10]} intensity={0.5} />
 
+        {/* Render Structural Buildings */}
+        <group position={[0, 0.5, 0]}>
+          {modeledRooms.buildings.map((b, i) => (
+            <mesh key={`bld-${i}`} position={b.position}>
+              <boxGeometry args={b.args} />
+              <meshStandardMaterial color="#1e293b" transparent opacity={0.3} roughness={0.8} />
+              <lineSegments>
+                <edgesGeometry args={[new THREE.BoxGeometry(...b.args)]} />
+                <lineBasicMaterial color="#334155" />
+              </lineSegments>
+              
+              {/* Building Name Tag */}
+              <Html position={[0, b.args[1]/2 + 0.5, 0]} center style={{ pointerEvents: 'none' }}>
+                <div style={{ color: 'var(--text-muted)', fontWeight: 'bold', fontSize: '0.8rem', whiteSpace: 'nowrap', textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>
+                  {b.name}
+                </div>
+              </Html>
+            </mesh>
+          ))}
+        </group>
+
         {/* Render Rooms */}
         <group position={[0, 0.5, 0]}>
-          {modeledRooms.map((data, idx) => (
+          {modeledRooms.rooms.map((data, idx) => (
             <RoomBox key={`${data.room.id}-${idx}`} room={data.room} position={data.position} />
           ))}
         </group>
