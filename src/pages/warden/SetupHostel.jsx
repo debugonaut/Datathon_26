@@ -62,15 +62,20 @@ export default function SetupHostel() {
     setStep(3); // Jump straight to finalize
   };
 
-  const handleCreateBlock = () => {
+  const handleCreateBlock = (e) => {
+    if (e) e.preventDefault();
     if (!newBlockName.trim()) return;
-    setBlocks([...blocks, { id: crypto.randomUUID(), name: newBlockName, buildings: [] }]);
+    const newBlock = { id: crypto.randomUUID(), name: newBlockName, buildings: [] };
+    setBlocks(prev => [...prev, newBlock]);
     setNewBlockName('');
+    setActiveBlockId(newBlock.id); // Auto-open the newly created block for building addition
   };
 
-  const handleCreateBuilding = (blockId) => {
+  const handleCreateBuilding = (e, blockId) => {
+    if (e) e.preventDefault();
     if (!newBldName.trim() || newBldFloors < 1) return;
-    setBlocks(blocks.map(b => {
+    
+    setBlocks(prev => prev.map(b => {
       if (b.id !== blockId) return b;
       
       const floors = Array.from({ length: newBldFloors }, (_, i) => ({
@@ -90,9 +95,10 @@ export default function SetupHostel() {
         }]
       };
     }));
+    
     setNewBldName('');
     setNewBldFloors(1);
-    setActiveBlockId(null);
+    // Do NOT close activeBlockId here, so they can add multiple buildings quickly
   };
 
   const updateFloorRoomRange = (blockId, bldId, floorId, rangeStr) => {
@@ -331,31 +337,32 @@ export default function SetupHostel() {
                     <p className="text-muted text-sm mb-2">Create blocks (e.g. "North Block"), and add buildings inside them.</p>
 
                     <div className="add-row mb-3">
-                      <input className="form-input" value={newBlockName} onChange={e => setNewBlockName(e.target.value)} placeholder="New Block Name" onKeyDown={e => e.key === 'Enter' && handleCreateBlock()}/>
+                      <input className="form-input" value={newBlockName} onChange={e => setNewBlockName(e.target.value)} placeholder="New Block Name (e.g. North Wing)" onKeyDown={e => e.key === 'Enter' && handleCreateBlock(e)}/>
                       <button className="btn btn-outline" onClick={handleCreateBlock}>Add Block</button>
                     </div>
 
                     <div className="blocks-list">
                       {blocks.map(b => (
                         <div key={b.id} className="block-item mb-2" style={{ background: 'var(--surface)' }}>
-                          <div className="block-header" style={{ cursor: 'default' }}>
+                          <div className="block-header" style={{ cursor: 'pointer' }} onClick={() => setActiveBlockId(activeBlockId === b.id ? null : b.id)}>
                             <span style={{ color: 'var(--primary)' }}>❖ {b.name}</span>
-                            <button className="btn btn-ghost btn-sm" onClick={() => setActiveBlockId(activeBlockId === b.id ? null : b.id)}>
-                              {activeBlockId === b.id ? 'Cancel' : '+ Add Building'}
+                            <button className="btn btn-ghost btn-sm" onClick={(e) => { e.stopPropagation(); setActiveBlockId(activeBlockId === b.id ? null : b.id); }}>
+                              {activeBlockId === b.id ? 'Close' : '+ Add Building'}
                             </button>
                           </div>
                           
                           {activeBlockId === b.id && (
                             <div className="block-body" style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderTop: 'none' }}>
                               <div className="flex gap-1">
-                                <input className="form-input" placeholder="Building Name" value={newBldName} onChange={e => setNewBldName(e.target.value)} style={{ flex: 2 }} />
-                                <input type="number" min="1" className="form-input" placeholder="Floors" value={newBldFloors} onChange={e => setNewBldFloors(parseInt(e.target.value) || 1)} style={{ flex: 1 }} />
-                                <button className="btn btn-primary" onClick={() => handleCreateBuilding(b.id)}>Add</button>
+                                <input className="form-input" placeholder="Building Name" value={newBldName} onChange={e => setNewBldName(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleCreateBuilding(e, b.id)} style={{ flex: 2 }} />
+                                <input type="number" min="1" className="form-input" placeholder="Floors" value={newBldFloors} onChange={e => setNewBldFloors(parseInt(e.target.value) || 1)} onKeyDown={e => e.key === 'Enter' && handleCreateBuilding(e, b.id)} style={{ flex: 1 }} />
+                                <button className="btn btn-primary" onClick={(e) => handleCreateBuilding(e, b.id)}>Add</button>
                               </div>
                             </div>
                           )}
 
                           <div style={{ padding: '0 1rem 1rem' }}>
+                            {b.buildings.length === 0 && activeBlockId !== b.id && <div className="text-muted text-sm mt-1" style={{ padding: '0 1rem' }}>No buildings added yet.</div>}
                             {b.buildings.map(bld => (
                               <div key={bld.id} className="info-row mt-1" style={{ padding: '0.5rem 1rem' }}>
                                 <div>
