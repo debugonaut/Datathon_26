@@ -1,210 +1,173 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 import { useAuth } from '../../context/AuthContext';
-import { searchHostels, getFloors, getBlocks, getRooms, joinHostel } from '../../firebase/firestore';
+import { getBlocks, getBuildings, getFloors, getRooms, joinHostel } from '../../firebase/firestore';
+import { db } from '../../firebase/config';
+import { doc, getDoc } from 'firebase/firestore';
 
 export default function JoinHostel() {
-  const { user, userDoc, setUserDoc } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  const selectedHostelId = params.get('hostelId');
 
-  const [query, setQuery] = useState('');
-  const [hostels, setHostels] = useState([]);
-  const [searched, setSearched] = useState(false);
-  const [loadingSearch, setLoadingSearch] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-  const [selectedHostel, setSelectedHostel] = useState(null);
-  const [floors, setFloors] = useState([]);
+  // Hierarchy Data
   const [blocks, setBlocks] = useState([]);
+  const [buildings, setBuildings] = useState([]);
+  const [floors, setFloors] = useState([]);
   const [rooms, setRooms] = useState([]);
 
-  const [selectedFloor, setSelectedFloor] = useState('');
-  const [selectedBlock, setSelectedBlock] = useState('');
-  const [selectedRoom, setSelectedRoom] = useState('');
+  // Selections
+  const [blockId, setBlockId] = useState('');
+  const [buildingId, setBuildingId] = useState('');
+  const [floorId, setFloorId] = useState('');
+  const [roomId, setRoomId] = useState('');
 
-  const [joining, setJoining] = useState(false);
-  const [error, setError] = useState('');
-
-  // Check if hostel was pre-selected from landing page
+  // Initial Load
   useEffect(() => {
-    const preselected = sessionStorage.getItem('selectedHostelId');
-    if (preselected) {
-      // Load hostel name for display
-      searchHostels('').then((all) => {
-        const found = all.find((h) => h.id === preselected);
-        if (found) {
-          pickHostel(found);
-          sessionStorage.removeItem('selectedHostelId');
-        }
-      });
-    }
-  }, []); // eslint-disable-line
-
-  const handleSearch = async (e) => {
-    e.preventDefault();
-    setLoadingSearch(true);
-    setSearched(false);
-    setSelectedHostel(null);
-    const res = await searchHostels(query.trim());
-    setHostels(res);
-    setSearched(true);
-    setLoadingSearch(false);
-  };
-
-  const pickHostel = async (hostel) => {
-    setSelectedHostel(hostel);
-    setSelectedFloor(''); setSelectedBlock(''); setSelectedRoom('');
-    const fl = await getFloors(hostel.id);
-    setFloors(fl); setBlocks([]); setRooms([]);
-  };
-
-  const handleFloorChange = async (floorId) => {
-    setSelectedFloor(floorId);
-    setSelectedBlock(''); setSelectedRoom('');
-    if (!floorId) { setBlocks([]); setRooms([]); return; }
-    const bl = await getBlocks(selectedHostel.id, floorId);
-    setBlocks(bl); setRooms([]);
-  };
-
-  const handleBlockChange = async (blockId) => {
-    setSelectedBlock(blockId);
-    setSelectedRoom('');
-    if (!blockId) { setRooms([]); return; }
-    const rm = await getRooms(selectedHostel.id, selectedFloor, blockId);
-    setRooms(rm);
-  };
-
-  const handleJoin = async () => {
-    if (!selectedHostel || !selectedFloor || !selectedBlock || !selectedRoom) {
-      setError('Please select a hostel, floor, block, and room.');
+    if (!selectedHostelId) {
+      navigate('/');
       return;
     }
-    setJoining(true);
+    const loadBlocks = async () => {
+      try {
+        const b = await getBlocks(selectedHostelId);
+        setBlocks(b);
+      } catch (e) {
+        setError('Failed to load hostel blocks.');
+      }
+      setLoading(false);
+    };
+    loadBlocks();
+  }, [selectedHostelId, navigate]);
+
+  // Load Buildings when Block changes
+  useEffect(() => {
+    setBuildingId(''); setFloorId(''); setRoomId('');
+    setBuildings([]); setFloors([]); setRooms([]);
+    if (!blockId) return;
+
+    getBuildings(selectedHostelId, blockId).then(setBuildings).catch(console.error);
+  }, [blockId, selectedHostelId]);
+
+  // Load Floors when Building changes
+  useEffect(() => {
+    setFloorId(''); setRoomId('');
+    setFloors([]); setRooms([]);
+    if (!buildingId) return;
+
+    getFloors(selectedHostelId, blockId, buildingId).then(setFloors).catch(console.error);
+  }, [buildingId, blockId, selectedHostelId]);
+
+  // Load Rooms when Floor changes
+  useEffect(() => {
+    setRoomId('');
+    setRooms([]);
+    if (!floorId) return;
+
+    getRooms(selectedHostelId, blockId, buildingId, floorId).then(setRooms).catch(console.error);
+  }, [floorId, buildingId, blockId, selectedHostelId]);
+
+  const handleJoin = async (e) => {
+    e.preventDefault();
+    setError('');
+    setSubmitting(true);
+
     try {
-      const roomObj = rooms.find((r) => r.id === selectedRoom);
-      await joinHostel(user.uid, selectedHostel.id, selectedFloor, selectedBlock, roomObj?.roomNumber || selectedRoom);
-      setUserDoc({ ...userDoc, hostelId: selectedHostel.id, floorId: selectedFloor, blockId: selectedBlock, roomNumber: roomObj?.roomNumber });
+      // 1. Double-assignment prevention check (Read latest from server)
+      const roomRef = doc(db, 'hostels', selectedHostelId, 'blocks', blockId, 'buildings', buildingId, 'floors', floorId, 'rooms', roomId);
+      const roomSnap = await getDoc(roomRef);
+      
+      if (!roomSnap.exists()) throw new Error("Room does not exist.");
+      if (roomSnap.data().studentUid) throw new Error("This room is already taken by another student.");
+
+      const selectedRoom = rooms.find(r => r.id === roomId);
+
+      // 2. Commit transaction via firestore helper
+      await joinHostel(
+        user.uid,
+        selectedHostelId,
+        blockId,
+        buildingId,
+        floorId,
+        roomId,
+        selectedRoom.roomNumber
+      );
+
+      // Redirect to dashboard
       navigate('/student/dashboard', { replace: true });
-    } catch {
-      setError('Failed to join hostel. Please try again.');
+    } catch (err) {
+      console.error(err);
+      setError(err.message);
     } finally {
-      setJoining(false);
+      setSubmitting(false);
     }
   };
 
-  const step = selectedHostel ? (selectedFloor ? (selectedBlock ? (selectedRoom ? 4 : 3) : 2) : 1) : 0;
+  if (loading) return (
+    <div className="page">
+      <Navbar />
+      <div className="loading-screen"><div className="spinner" /></div>
+    </div>
+  );
 
   return (
     <div className="page">
       <Navbar />
       <div className="join-page">
-        <div className="card join-card">
-          <h2>🏠 Find & Join Your Hostel</h2>
-          <p className="subtitle">Select your hostel, floor, block, and room number.</p>
-
-          {/* Step indicator */}
-          <div className="steps">
-            {['Find Hostel', 'Select Floor', 'Select Block', 'Select Room'].map((s, i) => (
-              <div key={s} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                {i > 0 && <span className="step-sep">›</span>}
-                <span className={`step-item ${step === i ? 'active' : step > i ? 'done' : ''}`}>
-                  <span className="step-num">{step > i ? '✓' : i + 1}</span>
-                  {s}
-                </span>
-              </div>
-            ))}
-          </div>
-
+        <div className="join-card card animation-fade-in">
+          <h2>Select Your Room</h2>
+          <p className="subtitle">Let's map your profile to your exact room.</p>
+          
           {error && <div className="form-error">{error}</div>}
 
-          {/* Step 0: Search hostel */}
-          <form onSubmit={handleSearch} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
-            <input
-              className="form-input"
-              type="text"
-              placeholder="Search hostel name…"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              style={{ margin: 0 }}
-            />
-            <button className="btn btn-primary" type="submit" disabled={loadingSearch}>
-              {loadingSearch ? '…' : 'Search'}
+          <form onSubmit={handleJoin}>
+            <div className="form-group">
+              <label className="form-label">Block / Wing</label>
+              <select className="form-input form-select" value={blockId} onChange={e => setBlockId(e.target.value)} required>
+                <option value="" disabled>Select a block</option>
+                {blocks.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Building</label>
+              <select className="form-input form-select" value={buildingId} onChange={e => setBuildingId(e.target.value)} required disabled={!blockId || buildings.length === 0}>
+                <option value="" disabled>Select a building</option>
+                {buildings.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Floor</label>
+              <select className="form-input form-select" value={floorId} onChange={e => setFloorId(e.target.value)} required disabled={!buildingId || floors.length === 0}>
+                <option value="" disabled>Select a floor</option>
+                {floors.map(f => <option key={f.id} value={f.id}>Floor {f.floorNumber}</option>)}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Room</label>
+              <select className="form-input form-select" value={roomId} onChange={e => setRoomId(e.target.value)} required disabled={!floorId || rooms.length === 0}>
+                <option value="" disabled>Select a room</option>
+                {rooms.map(r => (
+                  <option key={r.id} value={r.id} disabled={!!r.studentUid}>
+                    Room {r.roomNumber} {r.studentUid ? '(Occupied)' : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <button type="submit" className="btn btn-primary btn-full mt-2" disabled={!roomId || submitting}>
+              {submitting ? 'Confirming...' : 'Confirm & Join Room'}
             </button>
           </form>
-
-          {searched && hostels.length === 0 && (
-            <p className="text-muted text-sm mb-2">No hostels found.</p>
-          )}
-          {hostels.map((h) => (
-            <div
-              key={h.id}
-              className={`hostel-result-card mb-1 ${selectedHostel?.id === h.id ? 'card-hover' : ''}`}
-              style={{ border: selectedHostel?.id === h.id ? '2px solid var(--primary)' : '' }}
-              onClick={() => pickHostel(h)}
-            >
-              <h3>🏠 {h.name}</h3>
-              <p>{h.collegeName}</p>
-            </div>
-          ))}
-
-          {/* Step 1–3 dropdowns */}
-          {selectedHostel && (
-            <>
-              <div className="form-group mt-2">
-                <label className="form-label">Floor</label>
-                <select
-                  className="form-input form-select"
-                  value={selectedFloor}
-                  onChange={(e) => handleFloorChange(e.target.value)}
-                >
-                  <option value="">— Select a floor —</option>
-                  {floors.map((f) => (
-                    <option key={f.id} value={f.id}>{f.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              {selectedFloor && (
-                <div className="form-group">
-                  <label className="form-label">Block</label>
-                  <select
-                    className="form-input form-select"
-                    value={selectedBlock}
-                    onChange={(e) => handleBlockChange(e.target.value)}
-                  >
-                    <option value="">— Select a block —</option>
-                    {blocks.map((b) => (
-                      <option key={b.id} value={b.id}>{b.name}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {selectedBlock && (
-                <div className="form-group">
-                  <label className="form-label">Room Number</label>
-                  <select
-                    className="form-input form-select"
-                    value={selectedRoom}
-                    onChange={(e) => setSelectedRoom(e.target.value)}
-                  >
-                    <option value="">— Select your room —</option>
-                    {rooms.map((r) => (
-                      <option key={r.id} value={r.id}>Room {r.roomNumber}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              <button
-                className="btn btn-primary btn-full mt-3"
-                onClick={handleJoin}
-                disabled={joining || !selectedRoom}
-              >
-                {joining ? 'Joining…' : '✅ Confirm & Join Hostel →'}
-              </button>
-            </>
-          )}
         </div>
       </div>
     </div>
