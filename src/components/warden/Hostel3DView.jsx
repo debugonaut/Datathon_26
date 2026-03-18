@@ -8,55 +8,75 @@ import { getAllRooms } from '../../firebase/firestore';
 function RoomBox({ room, position }) {
   const [hovered, setHovered] = useState(false);
   
-  // Determine color based on score
-  let color = '#94a3b8'; // score 0 or undefined -> empty/gray
+  // Determine window color based on score
+  let windowColor = '#1e3a8a'; // Unmapped -> Dark Blue
   if (room.score > 0) {
-    if (room.score <= 40) color = '#ef4444'; // Red
-    else if (room.score <= 70) color = '#f59e0b'; // Yellow/Orange
-    else color = '#10b981'; // Green
+    if (room.score <= 40) windowColor = '#ef4444'; // Red
+    else if (room.score <= 70) windowColor = '#f59e0b'; // Yellow
+    else windowColor = '#10b981'; // Green
   }
+
+  const wallColor = '#f5cbba'; 
+  const corniceColor = '#e3b5a4';
+  const balconyColor = '#82e0aa';
 
   return (
     <group position={position}>
+      {/* Main Room Cube */}
       <mesh
         onPointerOver={(e) => { e.stopPropagation(); setHovered(true); }}
         onPointerOut={(e) => { e.stopPropagation(); setHovered(false); }}
       >
-        <boxGeometry args={[1.8, 1, 1.8]} />
-        <meshStandardMaterial 
-          color={color} 
-          roughness={0.2} 
-          metalness={0.1}
-          emissive={hovered ? color : '#000000'}
-          emissiveIntensity={hovered ? 0.4 : 0}
-        />
-        
-        {/* Outline for better visibility */}
-        <lineSegments>
-          <edgesGeometry args={[new THREE.BoxGeometry(1.8, 1, 1.8)]} />
-          <lineBasicMaterial color="#ffffff" transparent opacity={0.15} />
-        </lineSegments>
+        <boxGeometry args={[2, 1.6, 2]} />
+        <meshStandardMaterial color={wallColor} roughness={0.9} />
       </mesh>
+
+      {/* Top Cornice */}
+      <mesh position={[0, 0.8, 0]}>
+        <boxGeometry args={[2.1, 0.1, 2.1]} />
+        <meshStandardMaterial color={corniceColor} roughness={0.9} />
+      </mesh>
+      
+      {/* Front Window (+Z) */}
+      <mesh position={[0, 0.1, 1.01]}>
+        <boxGeometry args={[0.8, 0.9, 0.1]} />
+        <meshStandardMaterial color={windowColor} emissive={windowColor} emissiveIntensity={hovered ? 0.8 : 0.3} />
+      </mesh>
+
+      {/* Side Window (+X) */}
+      <mesh position={[1.01, 0.1, 0]}>
+        <boxGeometry args={[0.1, 0.9, 0.8]} />
+        <meshStandardMaterial color={windowColor} emissive={windowColor} emissiveIntensity={hovered ? 0.8 : 0.3} />
+      </mesh>
+
+      {/* Front Balcony (+Z) */}
+      <group position={[0, -0.4, 1.3]}>
+        <mesh position={[0, 0, 0]}><boxGeometry args={[1.2, 0.1, 0.6]} /><meshStandardMaterial color={balconyColor} /></mesh>
+        <mesh position={[0, 0.3, 0.25]}><boxGeometry args={[1.2, 0.6, 0.1]} /><meshStandardMaterial color={balconyColor} transparent opacity={0.9} /></mesh>
+        <mesh position={[-0.55, 0.3, 0]}><boxGeometry args={[0.1, 0.6, 0.4]} /><meshStandardMaterial color={balconyColor} transparent opacity={0.9} /></mesh>
+        <mesh position={[0.55, 0.3, 0]}><boxGeometry args={[0.1, 0.6, 0.4]} /><meshStandardMaterial color={balconyColor} transparent opacity={0.9} /></mesh>
+      </group>
+
+      {/* Side Balcony (+X) */}
+      <group position={[1.3, -0.4, 0]} rotation={[0, Math.PI / 2, 0]}>
+        <mesh position={[0, 0, 0]}><boxGeometry args={[1.2, 0.1, 0.6]} /><meshStandardMaterial color={balconyColor} /></mesh>
+        <mesh position={[0, 0.3, 0.25]}><boxGeometry args={[1.2, 0.6, 0.1]} /><meshStandardMaterial color={balconyColor} transparent opacity={0.9} /></mesh>
+        <mesh position={[-0.55, 0.3, 0]}><boxGeometry args={[0.1, 0.6, 0.4]} /><meshStandardMaterial color={balconyColor} transparent opacity={0.9} /></mesh>
+        <mesh position={[0.55, 0.3, 0]}><boxGeometry args={[0.1, 0.6, 0.4]} /><meshStandardMaterial color={balconyColor} transparent opacity={0.9} /></mesh>
+      </group>
 
       {/* HTML Tooltip overlay on hover */}
       {hovered && (
         <Html position={[0, 1.5, 0]} center zIndexRange={[100, 0]} style={{ pointerEvents: 'none' }}>
           <div style={{
-            background: 'var(--glass)',
-            backdropFilter: 'blur(8px)',
-            border: '1px solid var(--border)',
-            padding: '8px 12px',
-            borderRadius: '8px',
-            color: 'white',
-            whiteSpace: 'nowrap',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
-            fontSize: '0.8rem',
-            pointerEvents: 'none'
+            background: 'var(--glass)', backdropFilter: 'blur(8px)', border: '1px solid var(--border)',
+            padding: '8px 12px', borderRadius: '8px', color: 'white', whiteSpace: 'nowrap',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.5)', fontSize: '0.8rem', pointerEvents: 'none'
           }}>
             <div style={{ fontWeight: 'bold', marginBottom: '4px', borderBottom: '1px solid var(--border)', paddingBottom: '2px' }}>
               Room {room.roomNumber}
             </div>
-            <div>Score: <strong style={{ color }}>{room.score}</strong></div>
+            <div>Score: <strong style={{ color: windowColor }}>{room.score}</strong></div>
             <div style={{ color: 'var(--text-muted)' }}>Status: {room.studentUid ? 'Occupied' : 'Vacant'}</div>
             <div style={{ color: 'var(--text-muted)', fontSize: '0.7rem', marginTop: '4px' }}>
               {room.blockName} • {room.buildingName} • Fl {room.floorNumber}
@@ -98,8 +118,7 @@ export default function Warden3DView({ hostelId }) {
     let bldXOffset = 0;
 
     // Margin configurations
-    const ROOM_SPACING_X = 2.2;
-    const ROOM_SPACING_Z = 2.2;
+    const ROOM_SIZE = 2;
     const FLOOR_HEIGHT = 1.6;
     const BLD_SPACING = 5;
 
@@ -124,9 +143,9 @@ export default function Warden3DView({ hostelId }) {
           const row = Math.floor(idx / roomsPerRow);
           const col = idx % roomsPerRow;
           
-          const x = bldXOffset + (col * ROOM_SPACING_X);
+          const x = bldXOffset + (col * ROOM_SIZE);
           const y = (floorNum - 1) * FLOOR_HEIGHT;
-          const z = (row * ROOM_SPACING_Z);
+          const z = (row * ROOM_SIZE);
 
           sceneData.rooms.push({ room: r, position: [x, y, z] });
 
@@ -137,27 +156,36 @@ export default function Warden3DView({ hostelId }) {
         });
       });
 
-      // Generate Building Foundation / Walls Structure
+      // Generate Building Foundation / Roof Structure
       if (bldMinX !== Infinity) {
-        // Expand the bounds slightly to envelop the rooms inside a shell
-        const pad = 1.4;
-        const width = (bldMaxX - bldMinX) + (pad * 2);
-        const depth = (bldMaxZ - bldMinZ) + (pad * 2);
-        const height = (maxFloors * FLOOR_HEIGHT) + 0.5;
+        const pad = 1.2;
+        const width = (bldMaxX - bldMinX) + ROOM_SIZE + (pad * 2);
+        const depth = (bldMaxZ - bldMinZ) + ROOM_SIZE + (pad * 2);
 
         const centerX = (bldMinX + bldMaxX) / 2;
         const centerZ = (bldMinZ + bldMaxZ) / 2;
         
-        // Push the building structural envelope
+        // Base Foundation
         sceneData.buildings.push({
-          position: [centerX, height / 2 - 0.5, centerZ], // Offset y to start from ground
-          args: [width, height, depth],
-          name: bldName
+          position: [centerX, -0.9, centerZ], // Under the first floor
+          args: [width, 0.4, depth],
+          name: bldName,
+          type: 'base',
+          color: '#f8c8b4'
+        });
+
+        // Roof
+        const roofY = (maxFloors - 1) * FLOOR_HEIGHT + 0.85;
+        sceneData.buildings.push({
+          position: [centerX, roofY, centerZ],
+          args: [(bldMaxX - bldMinX) + ROOM_SIZE, 0.1, (bldMaxZ - bldMinZ) + ROOM_SIZE],
+          type: 'roof',
+          color: '#e3b5a4'
         });
       }
 
       // Shift next building to the right by the width of this building + gap
-      bldXOffset += (maxRoomsPerRowInBld * ROOM_SPACING_X) + BLD_SPACING;
+      bldXOffset += (maxRoomsPerRowInBld * ROOM_SIZE) + BLD_SPACING;
     });
 
     // Center the entire cluster around 0,0,0
@@ -206,18 +234,19 @@ export default function Warden3DView({ hostelId }) {
           {modeledRooms.buildings.map((b, i) => (
             <mesh key={`bld-${i}`} position={b.position}>
               <boxGeometry args={b.args} />
-              <meshStandardMaterial color="#1e293b" transparent opacity={0.3} roughness={0.8} />
-              <lineSegments>
-                <edgesGeometry args={[new THREE.BoxGeometry(...b.args)]} />
-                <lineBasicMaterial color="#334155" />
-              </lineSegments>
+              <meshStandardMaterial color={b.color} roughness={0.9} />
               
-              {/* Building Name Tag */}
-              <Html position={[0, b.args[1]/2 + 0.5, 0]} center style={{ pointerEvents: 'none' }}>
-                <div style={{ color: 'var(--text-muted)', fontWeight: 'bold', fontSize: '0.8rem', whiteSpace: 'nowrap', textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>
-                  {b.name}
-                </div>
-              </Html>
+              {/* Building Name Tag on the Base */}
+              {b.type === 'base' && (
+                <Html position={[0, -0.2, (b.args[2]/2) + 0.5]} center style={{ pointerEvents: 'none' }}>
+                  <div style={{ 
+                    color: 'white', background: 'rgba(0,0,0,0.6)', padding: '4px 12px', borderRadius: '4px',
+                    fontWeight: 'bold', fontSize: '0.8rem', whiteSpace: 'nowrap'
+                  }}>
+                    {b.name}
+                  </div>
+                </Html>
+              )}
             </mesh>
           ))}
         </group>
@@ -245,7 +274,7 @@ export default function Warden3DView({ hostelId }) {
         boxShadow: '0 8px 32px rgba(0,0,0,0.5)'
       }}>
         <div className="flex align-items-center gap-1">
-          <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#94a3b8' }}></div>
+          <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#1e3a8a' }}></div>
           <span className="text-sm font-bold">Unmapped (0)</span>
         </div>
         <div className="flex align-items-center gap-1">
