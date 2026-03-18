@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 import { useAuth } from '../../context/AuthContext';
 import { getWardenHostel, getBlocks, getBuildings, getFloors, getRooms } from '../../firebase/firestore';
-import WardenQRCodes from '../../components/warden/WardenQRCodes';
 import WardenAnnouncements from '../../components/warden/WardenAnnouncements';
 import Hostel3DView from '../../components/warden/Hostel3DView';
 
@@ -59,7 +58,6 @@ export default function WardenDashboard() {
 
   const TABS = [
     { id: 'overview', label: '🏠 Overview' },
-    { id: 'qrcodes', label: '🔲 QR Codes' },
     { id: 'announcements', label: '📢 Announcements' },
     { id: '3dview', label: '🏢 3D Visualizer' },
   ];
@@ -139,8 +137,6 @@ export default function WardenDashboard() {
             </div>
           </div>
         )}
-
-        {activeTab === 'qrcodes' && <WardenQRCodes hostelId={hostel.id} />}
         
       {activeTab === 'announcements' && <WardenAnnouncements hostelId={hostel.id} />}
 

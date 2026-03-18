@@ -190,12 +190,19 @@ export default function StudentDashboard() {
 
             {/* QR Code */}
             {roomData?.qrCodeUrl && (
-              <div className="card text-center">
+              <div className="card text-center flex flex-column align-items-center">
                 <h4 className="font-bold mb-2">My QR Room Key</h4>
                 <div style={{ background: '#fff', padding: '0.5rem', borderRadius: '8px', display: 'inline-block' }}>
                   <img src={roomData.qrCodeUrl} alt="Room QR Code" style={{ width: '160px', height: '160px', display: 'block' }} />
                 </div>
-                <p className="text-muted text-sm mt-2">Your room's digital identifier.</p>
+                <p className="text-muted text-sm mt-2 mb-3">Please download and stick this QR to your room door so complaints can be logged.</p>
+                <a 
+                  href={roomData.qrCodeUrl} 
+                  download={`Room_${userDoc.roomNumber}_QR.png`} 
+                  className="btn btn-primary w-full"
+                >
+                  📥 Download & Print QR
+                </a>
               </div>
             )}
 
