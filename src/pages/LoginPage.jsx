@@ -140,7 +140,13 @@ function redirectByRole(doc, navigate) {
   if (doc?.role === 'warden') {
     navigate(doc.hostelId ? '/warden/dashboard' : '/warden/setup', { replace: true });
   } else {
-    navigate(doc?.hostelId ? '/student/dashboard' : '/student/join', { replace: true });
+    if (doc?.hostelId) {
+      navigate('/student/dashboard', { replace: true });
+    } else {
+      const savedId = sessionStorage.getItem('selectedHostelId');
+      if (savedId) navigate(`/student/join?hostelId=${savedId}`, { replace: true });
+      else navigate('/', { replace: true });
+    }
   }
 }
 

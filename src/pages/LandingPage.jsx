@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { searchHostels } from '../firebase/firestore';
+import { useAuth } from '../context/AuthContext';
 
 export default function LandingPage() {
+  const { user } = useAuth();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [searched, setSearched] = useState(false);
@@ -24,7 +26,11 @@ export default function LandingPage() {
   const handleJoin = (hostelId) => {
     // Store selection in sessionStorage so JoinHostel can pre-select it
     sessionStorage.setItem('selectedHostelId', hostelId);
-    navigate('/register?role=student');
+    if (user) {
+      navigate(`/student/join?hostelId=${hostelId}`);
+    } else {
+      navigate('/register?role=student');
+    }
   };
 
   return (

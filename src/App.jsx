@@ -26,7 +26,7 @@ const RoleRedirect = () => {
   if (userDoc.role === 'warden') {
     return <Navigate to={userDoc.hostelId ? '/warden/dashboard' : '/warden/setup'} replace />;
   }
-  return <Navigate to={userDoc.hostelId ? '/student/dashboard' : '/student/join'} replace />;
+  return userDoc.hostelId ? <Navigate to="/student/dashboard" replace /> : <LandingPage />;
 };
 
 const AppRoutes = () => (

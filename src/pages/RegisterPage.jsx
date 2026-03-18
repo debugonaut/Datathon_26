@@ -31,8 +31,16 @@ export default function RegisterPage() {
         navigate('/setup-role', { replace: true });
       } else {
         setUserDoc(doc);
-        if (doc.role === 'warden') navigate(doc.hostelId ? '/warden/dashboard' : '/warden/setup', { replace: true });
-        else navigate(doc.hostelId ? '/student/dashboard' : '/student/join', { replace: true });
+        if (doc.role === 'warden') {
+          navigate(doc.hostelId ? '/warden/dashboard' : '/warden/setup', { replace: true });
+        } else {
+          if (doc.hostelId) navigate('/student/dashboard', { replace: true });
+          else {
+            const savedId = sessionStorage.getItem('selectedHostelId');
+            if (savedId) navigate(`/student/join?hostelId=${savedId}`, { replace: true });
+            else navigate('/', { replace: true });
+          }
+        }
       }
     } catch (err) {
       setError(err.message || 'Google sign-in failed.');
@@ -59,8 +67,13 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       await registerUser(email, password, name, role);
-      if (role === 'warden') navigate('/warden/setup', { replace: true });
-      else navigate('/student/join', { replace: true });
+      if (role === 'warden') {
+        navigate('/warden/setup', { replace: true });
+      } else {
+        const savedId = sessionStorage.getItem('selectedHostelId');
+        if (savedId) navigate(`/student/join?hostelId=${savedId}`, { replace: true });
+        else navigate('/', { replace: true });
+      }
     } catch (err2) {
       setError(getFirebaseError(err2.code));
     } finally {
