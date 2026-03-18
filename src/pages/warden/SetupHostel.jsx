@@ -14,9 +14,9 @@ export default function SetupHostel() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Step 1: Basic
-  const [hostelName, setHostelName] = useState('');
-  const [collegeName] = useState('MITAOE');
+  // Step 1: Basic Info
+  const [hostelName, setHostelName] = useState('Boys Hostel A');
+  const [collegeName, setCollegeName] = useState('MIT Academy of Engineering (MITAOE)');
 
   // Setup Mode
   const [setupMode, setSetupMode] = useState(''); // 'quick' | 'advanced' | ''
@@ -31,22 +31,35 @@ export default function SetupHostel() {
   const [activeBlockId, setActiveBlockId] = useState(null);
 
   // Quick Mode Form States
-  const [quickFloors, setQuickFloors] = useState(1);
-  const [quickRooms, setQuickRooms] = useState(''); // expects range or csv
+  const [qsFloors, setQsFloors] = useState(5);
+  const [qsRoomsPerFloor, setQsRoomsPerFloor] = useState(4);
+  const [qsStartingRoom, setQsStartingRoom] = useState(101);
 
   const handleQuickSetupGenerate = () => {
-    if (quickFloors < 1 || !quickRooms.trim()) return;
+    if (qsFloors < 1 || !qsRoomsPerFloor || !qsStartingRoom) return;
 
-    // Auto-generate the deep hierarchy
     const blockId = crypto.randomUUID();
     const bldId = crypto.randomUUID();
 
-    const floors = Array.from({ length: quickFloors }, (_, i) => ({
-      id: crypto.randomUUID(),
-      floorNumber: i + 1,
-      roomRange: quickRooms,
-      rooms: []
-    }));
+    const floors = Array.from({ length: qsFloors }, (_, i) => {
+      const floorNum = i + 1;
+      // E.g. startingRoom = 101. For floor 1 -> start = 101. For floor 2 -> start = 201.
+      // This logic assumes the starting room implies a 100-based numbering per floor if it ends in 01
+      // e.g. 101, 201, 301, etc.
+      const baseRoomStart = Math.floor(qsStartingRoom / 100) * 100 + qsStartingRoom % 100;
+      const floorMultiplier = Math.floor(qsStartingRoom / 100) > 0 ? floorNum * 100 : floorNum * 100; // Force 100 series per floor
+      
+      const startRoom = floorNum * 100 + (qsStartingRoom % 100 || 1);
+      const endRoom = startRoom + qsRoomsPerFloor - 1;
+      const rangeStr = `${startRoom}-${endRoom}`;
+
+      return {
+        id: crypto.randomUUID(),
+        floorNumber: floorNum,
+        roomRange: rangeStr,
+        rooms: []
+      };
+    });
 
     setBlocks([{
       id: blockId,
@@ -54,7 +67,7 @@ export default function SetupHostel() {
       buildings: [{
         id: bldId,
         name: 'Main Building',
-        totalFloors: quickFloors,
+        totalFloors: qsFloors,
         floors
       }]
     }]);
@@ -315,16 +328,23 @@ export default function SetupHostel() {
                     <h3 className="font-bold mb-2 text-primary">⚡ Quick Flow</h3>
                     <div className="form-group">
                       <label className="form-label">Total Floors in Building</label>
-                      <input type="number" min="1" className="form-input" value={quickFloors} onChange={e => setQuickFloors(parseInt(e.target.value) || 1)} />
+                      <input type="number" min="1" className="form-input" value={qsFloors} onChange={e => setQsFloors(parseInt(e.target.value) || 1)} />
                     </div>
-                    <div className="form-group">
-                      <label className="form-label">Room Numbers (Per Floor)</label>
-                      <input className="form-input" placeholder="e.g. 101-120 or 101, 102" value={quickRooms} onChange={e => setQuickRooms(e.target.value)} />
-                      <div className="text-muted text-sm mt-1">This will be applied identically to every floor.</div>
+                    <div className="flex gap-2 mb-3">
+                      <div className="form-group flex-1">
+                        <label className="form-label">Rooms Per Floor</label>
+                        <input type="number" min="1" className="form-input" value={qsRoomsPerFloor} onChange={e => setQsRoomsPerFloor(parseInt(e.target.value) || 1)} />
+                      </div>
+                      <div className="form-group flex-1">
+                        <label className="form-label">Starting Room #</label>
+                        <input type="number" min="1" className="form-input" value={qsStartingRoom} onChange={e => setQsStartingRoom(parseInt(e.target.value) || 101)} />
+                      </div>
                     </div>
+                    <div className="text-muted text-sm mb-3">Example: 5 floors, 4 rooms per floor starting at 101 will generate 101-104 on Floor 1, 201-204 on Floor 2, etc.</div>
+                    
                     <div className="flex gap-1 mt-3">
                       <button className="btn btn-ghost" onClick={() => setStep(1)}>← Back</button>
-                      <button className="btn btn-primary" onClick={handleQuickSetupGenerate} disabled={quickFloors < 1 || !quickRooms}>Auto-Generate →</button>
+                      <button className="btn btn-primary" onClick={handleQuickSetupGenerate} disabled={qsFloors < 1 || !qsRoomsPerFloor}>Auto-Generate →</button>
                     </div>
                   </div>
                 )}
