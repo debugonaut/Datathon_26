@@ -1,17 +1,11 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
-  AreaChart, Area, FunnelChart, Funnel, LabelList,
+  AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer
 } from 'recharts';
-import { fetchAllComplaints, getVolumeByDay, getCategoryBreakdown,
-  getStatusBreakdown, getAvgResolutionTime, getResolutionByCategory,
-  getFloorHeatmap, getPeakHours, getPriorityBreakdown,
-  getRecurringIssues, getEngagementRate, getFunnelData
-} from '../../firebase/analytics';
-import { countAllRooms } from '../../firebase/firestore';
 
 const CARD = {
   background: 'var(--surface)',
@@ -46,76 +40,173 @@ const TOOLTIP_STYLE = {
   fontSize: '0.8rem'
 };
 
+// ── Generate static dummy data ──────────────────────────────────────────────
+function generateDummyComplaints() {
+  const categories = ['Electrical', 'Plumbing', 'Cleaning', 'Carpentry', 'Internet', 'Other'];
+  const priorities = ['low', 'medium', 'high'];
+  const statuses = ['todo', 'in_progress', 'resolved'];
+  const dummies = [];
+  const now = Date.now();
+  for (let i = 0; i < 45; i++) {
+    const daysAgo = Math.floor((i * 29) / 44); // deterministic spread
+    const createdTime = new Date(now - daysAgo * 86400000 - (i * 3600000) % 86400000);
+    const status = statuses[i % 3];
+    const resolvedTime = status === 'resolved'
+      ? new Date(createdTime.getTime() + ((i % 5) + 2) * 3600000)
+      : null;
+    dummies.push({
+      id: `dummy_${i}`,
+      category: categories[i % categories.length],
+      priority: priorities[i % priorities.length],
+      status,
+      floorNumber: String((i % 4) + 1),
+      roomId: `room_${i % 20}`,
+      createdAt: { toDate: () => createdTime },
+      resolvedAt: resolvedTime ? { toDate: () => resolvedTime } : null,
+    });
+  }
+  return dummies.sort((a, b) => a.createdAt.toDate() - b.createdAt.toDate());
+}
+
+// ── Analytics helper functions (inline, no Firestore) ───────────────────────
+function getVolumeByDay(complaints) {
+  const map = {};
+  const now = Date.now();
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(now - i * 86400000);
+    const key = d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+    map[key] = 0;
+  }
+  complaints.forEach(c => {
+    const d = c.createdAt?.toDate?.();
+    if (!d) return;
+    const key = d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+    if (key in map) map[key]++;
+  });
+  return Object.entries(map).map(([date, count]) => ({ date, count }));
+}
+
+function getCategoryBreakdown(complaints) {
+  const map = {};
+  complaints.forEach(c => { map[c.category] = (map[c.category] || 0) + 1; });
+  return Object.entries(map).map(([name, value]) => ({ name, value }));
+}
+
+function getStatusBreakdown(complaints) {
+  const map = { todo: 0, in_progress: 0, resolved: 0 };
+  complaints.forEach(c => { map[c.status] = (map[c.status] || 0) + 1; });
+  return [
+    { name: 'To Do', value: map.todo, fill: '#ef4444' },
+    { name: 'In Progress', value: map.in_progress, fill: '#f59e0b' },
+    { name: 'Resolved', value: map.resolved, fill: '#10b981' },
+  ];
+}
+
+function getAvgResolutionTime(complaints) {
+  const resolved = complaints.filter(c => c.resolvedAt && c.createdAt);
+  if (!resolved.length) return null;
+  const totalHours = resolved.reduce((sum, c) => {
+    return sum + (c.resolvedAt.toDate() - c.createdAt.toDate()) / 3600000;
+  }, 0);
+  return Math.round(totalHours / resolved.length);
+}
+
+function getResolutionByCategory(complaints) {
+  const map = {};
+  complaints.filter(c => c.resolvedAt && c.createdAt).forEach(c => {
+    const hrs = (c.resolvedAt.toDate() - c.createdAt.toDate()) / 3600000;
+    if (!map[c.category]) map[c.category] = { total: 0, count: 0 };
+    map[c.category].total += hrs;
+    map[c.category].count++;
+  });
+  return Object.entries(map).map(([category, d]) => ({
+    category, avgHours: Math.round(d.total / d.count)
+  }));
+}
+
+function getFloorHeatmap(complaints) {
+  const weeks = [];
+  const now = Date.now();
+  for (let i = 5; i >= 0; i--) {
+    const start = new Date(now - (i + 1) * 7 * 86400000);
+    const end = new Date(now - i * 7 * 86400000);
+    weeks.push({ label: `W-${i === 0 ? 'now' : i}`, start, end });
+  }
+  const floorSet = new Set(complaints.map(c => `Floor ${c.floorNumber}`));
+  const floors = [...floorSet].sort();
+  return floors.map(floor => {
+    const row = { floor };
+    weeks.forEach(w => {
+      row[w.label] = complaints.filter(c => {
+        const d = c.createdAt?.toDate?.();
+        return d && `Floor ${c.floorNumber}` === floor && d >= w.start && d < w.end;
+      }).length;
+    });
+    return row;
+  });
+}
+
+function getPeakHours(complaints) {
+  const hours = Array.from({ length: 24 }, (_, h) => ({ hour: `${h}:00`, count: 0 }));
+  complaints.forEach(c => {
+    const d = c.createdAt?.toDate?.();
+    if (d) hours[d.getHours()].count++;
+  });
+  return hours;
+}
+
+function getPriorityBreakdown(complaints) {
+  const map = { low: 0, medium: 0, high: 0 };
+  complaints.forEach(c => { map[c.priority] = (map[c.priority] || 0) + 1; });
+  return [
+    { name: 'Low', value: map.low, fill: '#10b981' },
+    { name: 'Medium', value: map.medium, fill: '#f59e0b' },
+    { name: 'High', value: map.high, fill: '#ef4444' },
+  ];
+}
+
+function getRecurringIssues(complaints) {
+  const now = Date.now();
+  const recent = complaints.filter(c => {
+    const d = c.createdAt?.toDate?.();
+    return d && now - d.getTime() < 7 * 86400000;
+  });
+  const map = {};
+  recent.forEach(c => {
+    const key = `${c.floorNumber}-${c.category}`;
+    map[key] = (map[key] || []);
+    map[key].push(c);
+  });
+  return Object.entries(map)
+    .filter(([, arr]) => arr.length >= 3)
+    .map(([, arr]) => ({
+      floor: `Floor ${arr[0].floorNumber}`,
+      category: arr[0].category,
+      count: arr.length
+    }));
+}
+
+function getEngagementRate(complaints, totalRooms) {
+  if (!totalRooms) return 0;
+  const activeRooms = new Set(complaints.map(c => c.roomId)).size;
+  return Math.round((activeRooms / totalRooms) * 100);
+}
+
+function getFunnelData(complaints) {
+  const total = complaints.length;
+  const inProgress = complaints.filter(c => c.status === 'in_progress' || c.status === 'resolved').length;
+  const resolved = complaints.filter(c => c.status === 'resolved').length;
+  return [
+    { stage: 'Filed', count: total, fill: '#378ADD' },
+    { stage: 'In Progress', count: inProgress, fill: '#f59e0b' },
+    { stage: 'Resolved', count: resolved, fill: '#10b981' },
+  ];
+}
+
+// ── Component ───────────────────────────────────────────────────────────────
 export default function WardenAnalytics({ hostelId }) {
-  const [complaints, setComplaints] = useState([]);
-  const [totalRooms, setTotalRooms] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-  const [timeRange, setTimeRange] = useState('30d');
-
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const [c, roomCount] = await Promise.all([
-          fetchAllComplaints(hostelId),
-          countAllRooms(hostelId)
-        ]);
-        setComplaints(c);
-        setTotalRooms(roomCount);
-      } catch (err) {
-        console.error('WardenAnalytics load error:', err);
-        setError(true);
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, [hostelId]);
-
-  if (loading) return (
-    <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
-      Loading analytics...
-    </div>
-  );
-
-  if (error) return (
-    <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
-      <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>⚠️</div>
-      <p>Could not load analytics. Please refresh and try again.</p>
-    </div>
-  );
-
-  const isPlaceholder = complaints.length === 0;
-
-  const displayComplaints = useMemo(() => {
-    if (!isPlaceholder) return complaints;
-    const categories = ['electrical', 'plumbing', 'cleaning', 'carpentary', 'internet', 'other'];
-    const priorities = ['low', 'medium', 'high'];
-    const statuses = ['todo', 'in_progress', 'resolved'];
-    const dummies = [];
-    const now = Date.now();
-    for (let i = 0; i < 45; i++) {
-      const daysAgo = Math.floor(Math.random() * 30);
-      const createdTime = new Date(now - daysAgo * 86400000 - Math.random() * 86400000);
-      const status = statuses[Math.floor(Math.random() * statuses.length)];
-      const resolvedTime = status === 'resolved' 
-        ? new Date(createdTime.getTime() + (Math.random() * 48 + 2) * 3600000) 
-        : null;
-      dummies.push({
-        id: `dummy_${i}`,
-        category: categories[Math.floor(Math.random() * categories.length)],
-        priority: priorities[Math.floor(Math.random() * priorities.length)],
-        status: status,
-        floorNumber: String(Math.floor(Math.random() * 4) + 1),
-        roomId: `room_${Math.floor(Math.random() * 20)}`,
-        createdAt: { toDate: () => createdTime },
-        resolvedAt: resolvedTime ? { toDate: () => resolvedTime } : null,
-      });
-    }
-    return dummies.sort((a,b) => a.createdAt.toDate() - b.createdAt.toDate());
-  }, [isPlaceholder, complaints]);
-
-  const activeTotalRooms = totalRooms || 20; // fallback for sample data mode
+  const displayComplaints = useMemo(() => generateDummyComplaints(), []);
+  const activeTotalRooms = 20;
 
   const volumeData = useMemo(() => getVolumeByDay(displayComplaints), [displayComplaints]);
   const categoryData = useMemo(() => getCategoryBreakdown(displayComplaints), [displayComplaints]);
@@ -126,7 +217,7 @@ export default function WardenAnalytics({ hostelId }) {
   const peakHours = useMemo(() => getPeakHours(displayComplaints), [displayComplaints]);
   const priorityData = useMemo(() => getPriorityBreakdown(displayComplaints), [displayComplaints]);
   const recurringIssues = useMemo(() => getRecurringIssues(displayComplaints), [displayComplaints]);
-  const engagementRate = useMemo(() => getEngagementRate(displayComplaints, activeTotalRooms), [displayComplaints, activeTotalRooms]);
+  const engagementRate = useMemo(() => getEngagementRate(displayComplaints, activeTotalRooms), [displayComplaints]);
   const funnelData = useMemo(() => getFunnelData(displayComplaints), [displayComplaints]);
   const openComplaints = displayComplaints.filter(c => c.status !== 'resolved').length;
   const resolvedComplaints = displayComplaints.filter(c => c.status === 'resolved').length;
@@ -146,16 +237,14 @@ export default function WardenAnalytics({ hostelId }) {
   return (
     <div style={{ padding: '0.5rem 0' }}>
 
-      {isPlaceholder && (
-        <div style={{
-          background: 'rgba(55, 138, 221, 0.1)', border: '1px solid rgba(55, 138, 221, 0.3)',
-          borderRadius: '10px', padding: '12px 16px', marginBottom: '16px',
-          display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.9rem', color: 'var(--text-primary)'
-        }}>
-          <span>ℹ️</span>
-          <span><strong>Sample Data:</strong> No real complaints have been filed yet. Here is how your analytics will look.</span>
-        </div>
-      )}
+      <div style={{
+        background: 'rgba(55, 138, 221, 0.1)', border: '1px solid rgba(55, 138, 221, 0.3)',
+        borderRadius: '10px', padding: '12px 16px', marginBottom: '16px',
+        display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.9rem', color: 'var(--text-primary)'
+      }}>
+        <span>ℹ️</span>
+        <span><strong>Sample Data:</strong> No real complaints have been filed yet. Here is how your analytics will look.</span>
+      </div>
 
       {/* ── Recurring Issue Banners ── */}
       {recurringIssues.map((issue, i) => (
@@ -178,7 +267,7 @@ export default function WardenAnalytics({ hostelId }) {
         gap: '12px', marginBottom: '16px'
       }}>
         {[
-          { label: 'Total Complaints', value: complaints.length, color: '#378ADD' },
+          { label: 'Total Complaints', value: displayComplaints.length, color: '#378ADD' },
           { label: 'Open', value: openComplaints, color: '#ef4444' },
           { label: 'Resolved', value: resolvedComplaints, color: '#10b981' },
           { label: 'Resolution Rate', value: `${resolutionRate}%`, color: '#10b981' },

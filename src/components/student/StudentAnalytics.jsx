@@ -1,17 +1,11 @@
-import React, { useState, useEffect, useMemo, Fragment } from 'react';
+import { useState, useMemo, Fragment } from 'react';
 import {
-  LineChart, Line, AreaChart, Area,
+  AreaChart, Area,
   PieChart, Pie, Cell,
   RadialBarChart, RadialBar,
   XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
-import {
-  fetchMyComplaints, fetchHostelAvgResolution,
-  getRoomScoreHistory, getMyAvgResolution,
-  getMyCategoryBreakdown, timeAgo, isOverdue
-} from '../../firebase/studentAnalytics';
-import { useAuth } from '../../context/AuthContext';
 
 const CARD = {
   background: 'var(--surface)',
@@ -36,24 +30,9 @@ const TOOLTIP_STYLE = {
   fontSize: '0.8rem'
 };
 
-const PRIORITY_COLORS = {
-  high: '#ef4444',
-  medium: '#f59e0b',
-  low: '#10b981'
-};
-
-const STATUS_COLORS = {
-  todo: '#ef4444',
-  in_progress: '#f59e0b',
-  resolved: '#10b981'
-};
-
-const STATUS_LABELS = {
-  todo: 'To Do',
-  in_progress: 'In Progress',
-  resolved: 'Resolved'
-};
-
+const PRIORITY_COLORS = { high: '#ef4444', medium: '#f59e0b', low: '#10b981' };
+const STATUS_COLORS = { todo: '#ef4444', in_progress: '#f59e0b', resolved: '#10b981' };
+const STATUS_LABELS = { todo: 'To Do', in_progress: 'In Progress', resolved: 'Resolved' };
 const CHART_COLORS = ['#378ADD', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
 // Custom radial gauge label
@@ -71,76 +50,94 @@ const GaugeLabel = ({ cx, cy, score }) => (
   </>
 );
 
+// ── Inline analytics helpers ────────────────────────────────────────────────
+function getMyAvgResolution(complaints) {
+  const resolved = complaints.filter(c => c.resolvedAt && c.createdAt);
+  if (!resolved.length) return null;
+  const total = resolved.reduce((sum, c) => {
+    return sum + (c.resolvedAt.toDate() - c.createdAt.toDate());
+  }, 0);
+  return Math.round(total / resolved.length / 3600000);
+}
+
+function getMyCategoryBreakdown(complaints) {
+  const map = {};
+  complaints.forEach(c => { map[c.category] = (map[c.category] || 0) + 1; });
+  return Object.entries(map).map(([name, value]) => ({ name, value }));
+}
+
+function getRoomScoreHistory(complaints, currentScore) {
+  const now = Date.now();
+  const days = [];
+  for (let i = 29; i >= 0; i--) {
+    const dayEnd = new Date(now - i * 86400000);
+    const dayLabel = dayEnd.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+    const pointsLostAfter = complaints
+      .filter(c => {
+        const created = c.createdAt?.toDate?.();
+        return created && created > dayEnd && c.status !== 'resolved';
+      })
+      .reduce((sum, c) => {
+        const pts = c.priority === 'high' ? 30 : c.priority === 'medium' ? 15 : 5;
+        return sum + pts;
+      }, 0);
+    days.push({ date: dayLabel, score: Math.min(100, Math.max(0, currentScore + pointsLostAfter)) });
+  }
+  return days;
+}
+
+function timeAgo(timestamp) {
+  if (!timestamp || typeof timestamp.toDate !== 'function') return 'Unknown';
+  const diff = Date.now() - timestamp.toDate().getTime();
+  const mins = Math.floor(diff / 60000);
+  const hrs = Math.floor(diff / 3600000);
+  const days = Math.floor(diff / 86400000);
+  if (mins < 60) return `${mins}m ago`;
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${days}d ago`;
+}
+
+function isOverdue(complaint) {
+  if (complaint.status === 'resolved') return false;
+  const dateObj = complaint.createdAt?.toDate?.();
+  if (!dateObj) return false;
+  const hrs = (Date.now() - dateObj.getTime()) / 3600000;
+  if (complaint.priority === 'high' && hrs > 48) return true;
+  if (complaint.priority === 'medium' && hrs > 96) return true;
+  if (complaint.priority === 'low' && hrs > 168) return true;
+  return false;
+}
+
+// ── Dummy data generator ────────────────────────────────────────────────────
+function generateDummyComplaints() {
+  const categories = ['Electrical', 'Plumbing', 'Cleaning', 'Internet'];
+  const priorities = ['low', 'medium', 'high'];
+  const statuses = ['todo', 'in_progress', 'resolved'];
+  const dummies = [];
+  const now = Date.now();
+  for (let i = 0; i < 8; i++) {
+    const daysAgo = Math.floor((i * 29) / 7);
+    const createdTime = new Date(now - daysAgo * 86400000 - (i * 7200000));
+    const status = statuses[i % 3];
+    const resolvedTime = status === 'resolved'
+      ? new Date(createdTime.getTime() + ((i % 5) + 2) * 3600000)
+      : null;
+    dummies.push({
+      id: `dummy_${i}`,
+      title: `Sample Issue ${i + 1}`,
+      category: categories[i % categories.length],
+      priority: priorities[i % priorities.length],
+      status,
+      createdAt: { toDate: () => createdTime },
+      resolvedAt: resolvedTime ? { toDate: () => resolvedTime } : null,
+    });
+  }
+  return dummies.sort((a, b) => b.createdAt.toDate() - a.createdAt.toDate());
+}
+
 export default function StudentAnalytics({ roomScore }) {
-  const { user, userDoc } = useAuth();
-  const [complaints, setComplaints] = useState([]);
-  const [hostelAvg, setHostelAvg] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-
-  useEffect(() => {
-    if (!user?.uid || !userDoc?.hostelId) return;
-    const load = async () => {
-      try {
-        const [c, avg] = await Promise.all([
-          fetchMyComplaints(user.uid),
-          fetchHostelAvgResolution(userDoc.hostelId)
-        ]);
-        setComplaints(c);
-        setHostelAvg(avg);
-      } catch (err) {
-        console.error('StudentAnalytics load error:', err);
-        setError(true);
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, [user?.uid, userDoc?.hostelId]);
-
-  if (loading) return (
-    <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
-      Loading your stats...
-    </div>
-  );
-
-  if (error) return (
-    <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
-      <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>⚠️</div>
-      <p>Could not load analytics. Please refresh and try again.</p>
-    </div>
-  );
-
-  const isPlaceholder = complaints.length === 0;
-
-  const displayComplaints = useMemo(() => {
-    if (!isPlaceholder) return complaints;
-    const categories = ['electrical', 'plumbing', 'cleaning', 'internet'];
-    const priorities = ['low', 'medium', 'high'];
-    const statuses = ['todo', 'in_progress', 'resolved'];
-    const dummies = [];
-    const now = Date.now();
-    for (let i = 0; i < 8; i++) {
-      const daysAgo = Math.floor(Math.random() * 30);
-      const createdTime = new Date(now - daysAgo * 86400000 - Math.random() * 86400000);
-      const status = statuses[Math.floor(Math.random() * statuses.length)];
-      const resolvedTime = status === 'resolved' 
-        ? new Date(createdTime.getTime() + (Math.random() * 48 + 2) * 3600000) 
-        : null;
-      dummies.push({
-        id: `dummy_${i}`,
-        title: `Sample Issue ${i + 1}`,
-        category: categories[Math.floor(Math.random() * categories.length)],
-        priority: priorities[Math.floor(Math.random() * priorities.length)],
-        status: status,
-        createdAt: { toDate: () => createdTime },
-        resolvedAt: resolvedTime ? { toDate: () => resolvedTime } : null,
-      });
-    }
-    return dummies.sort((a,b) => b.createdAt.toDate() - a.createdAt.toDate()); // Descending timeline
-  }, [isPlaceholder, complaints]);
-
-  const displayHostelAvg = isPlaceholder ? (hostelAvg || 24) : hostelAvg;
+  const displayComplaints = useMemo(() => generateDummyComplaints(), []);
+  const displayHostelAvg = 24;
 
   const myAvgResolution = useMemo(() => getMyAvgResolution(displayComplaints), [displayComplaints]);
   const categoryData = useMemo(() => getMyCategoryBreakdown(displayComplaints), [displayComplaints]);
@@ -166,16 +163,14 @@ export default function StudentAnalytics({ roomScore }) {
   return (
     <div style={{ padding: '0.5rem 0' }}>
 
-      {isPlaceholder && (
-        <div style={{
-          background: 'rgba(55, 138, 221, 0.1)', border: '1px solid rgba(55, 138, 221, 0.3)',
-          borderRadius: '10px', padding: '12px 16px', marginBottom: '16px',
-          display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.9rem', color: 'var(--text-primary)'
-        }}>
-          <span>ℹ️</span>
-          <span><strong>Sample Data:</strong> You haven't filed any complaints yet. Here is how your stats will look.</span>
-        </div>
-      )}
+      <div style={{
+        background: 'rgba(55, 138, 221, 0.1)', border: '1px solid rgba(55, 138, 221, 0.3)',
+        borderRadius: '10px', padding: '12px 16px', marginBottom: '16px',
+        display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.9rem', color: 'var(--text-primary)'
+      }}>
+        <span>ℹ️</span>
+        <span><strong>Sample Data:</strong> You haven't filed any complaints yet. Here is how your stats will look.</span>
+      </div>
 
       {/* ── Overdue Alerts ── */}
       {overdueComplaints.map(c => (
@@ -218,10 +213,7 @@ export default function StudentAnalytics({ roomScore }) {
                   <Cell key={i} fill={entry.fill} />
                 ))}
               </RadialBar>
-              <GaugeLabel
-                cx="50%" cy="55%"
-                score={score}
-              />
+              <GaugeLabel cx="50%" cy="55%" score={score} />
             </RadialBarChart>
           </ResponsiveContainer>
           <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)',
@@ -266,7 +258,7 @@ export default function StudentAnalytics({ roomScore }) {
         gap: '12px', marginBottom: '16px'
       }}>
         {[
-          { label: 'Total Filed', value: complaints.length, color: '#378ADD' },
+          { label: 'Total Filed', value: displayComplaints.length, color: '#378ADD' },
           { label: 'Open', value: openComplaints.length, color: '#ef4444' },
           { label: 'Resolved', value: resolvedComplaints.length, color: '#10b981' },
           { label: 'Overdue', value: overdueComplaints.length,
@@ -338,16 +330,6 @@ export default function StudentAnalytics({ roomScore }) {
                     formatter={(v) => [`${v}h`, 'Avg Resolution']} />
                 </RadialBarChart>
               </ResponsiveContainer>
-              {myAvgResolution && hostelAvg && (
-                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)',
-                  textAlign: 'center', marginTop: '4px' }}>
-                  {myAvgResolution < hostelAvg
-                    ? `Your complaints resolve ${Math.round(((hostelAvg - myAvgResolution) / hostelAvg) * 100)}% faster than average`
-                    : myAvgResolution === hostelAvg
-                    ? 'Your resolution time matches the hostel average'
-                    : `Your complaints take ${Math.round(((myAvgResolution - hostelAvg) / hostelAvg) * 100)}% longer than average`}
-                </div>
-              )}
             </>
           ) : (
             <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem',
@@ -375,7 +357,7 @@ export default function StudentAnalytics({ roomScore }) {
                 position: 'relative'
               }}>
                 {/* Timeline line */}
-                {i < complaints.length - 1 && (
+                {i < displayComplaints.length - 1 && (
                   <div style={{
                     position: 'absolute', left: '9px', top: '22px',
                     width: '2px', bottom: 0,
@@ -413,8 +395,8 @@ export default function StudentAnalytics({ roomScore }) {
                   <div style={{ display: 'flex', alignItems: 'center',
                     gap: '6px', margin: '6px 0', fontSize: '0.78rem' }}>
                     {['todo', 'in_progress', 'resolved'].map((s, si) => {
-                      const statuses = ['todo', 'in_progress', 'resolved'];
-                      const currentIdx = statuses.indexOf(c.status);
+                      const statusList = ['todo', 'in_progress', 'resolved'];
+                      const currentIdx = statusList.indexOf(c.status);
                       const isPast = si <= currentIdx;
                       return (
                         <Fragment key={s}>
@@ -432,8 +414,7 @@ export default function StudentAnalytics({ roomScore }) {
                             {STATUS_LABELS[s]}
                           </span>
                           {si < 2 && (
-                            <span
-                              style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>
+                            <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>
                               →
                             </span>
                           )}
