@@ -11,6 +11,7 @@ import ComplaintsKanban from '../../components/warden/ComplaintsKanban';
 import ComplaintsList from '../../components/warden/ComplaintsList';
 import WardenQRDirectory from '../../components/warden/WardenQRDirectory';
 import OverviewOccupancy from '../../components/warden/OverviewOccupancy';
+import WardenAnalytics from '../../components/warden/WardenAnalytics';
 
 export default function WardenDashboard() {
   const { user, userDoc } = useAuth();
@@ -88,6 +89,7 @@ export default function WardenDashboard() {
 
   const TABS = [
     { id: 'overview', label: '🏠 Overview' },
+    { id: 'analytics', label: '📊 Analytics' },
     { id: 'complaints', label: '🛠️ Complaints' },
     { id: 'qrcodes', label: '🖨️ Print QRs' },
     { id: 'announcements', label: '📢 Announcements' },
@@ -176,6 +178,7 @@ export default function WardenDashboard() {
         )}
         
       {activeTab === 'announcements' && <WardenAnnouncements hostelId={hostel.id} />}
+      {activeTab === 'analytics' && <WardenAnalytics hostelId={hostel.id} />}
       {activeTab === '3dview' && <Hostel3DView hostelId={hostel.id} />}
       {activeTab === 'qrcodes' && <WardenQRDirectory hostelId={hostel.id} />}
 
