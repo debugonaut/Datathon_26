@@ -65,33 +65,59 @@ export default function WardenAnalytics({ hostelId }) {
     load();
   }, [hostelId]);
 
-  const volumeData = useMemo(() => getVolumeByDay(complaints), [complaints]);
-  const categoryData = useMemo(() => getCategoryBreakdown(complaints), [complaints]);
-  const statusData = useMemo(() => getStatusBreakdown(complaints), [complaints]);
-  const avgResolution = useMemo(() => getAvgResolutionTime(complaints), [complaints]);
-  const resolutionByCategory = useMemo(() => getResolutionByCategory(complaints), [complaints]);
-  const floorHeatmap = useMemo(() => getFloorHeatmap(complaints), [complaints]);
-  const peakHours = useMemo(() => getPeakHours(complaints), [complaints]);
-  const priorityData = useMemo(() => getPriorityBreakdown(complaints), [complaints]);
-  const recurringIssues = useMemo(() => getRecurringIssues(complaints), [complaints]);
-  const engagementRate = useMemo(() => getEngagementRate(complaints, totalRooms), [complaints, totalRooms]);
-  const funnelData = useMemo(() => getFunnelData(complaints), [complaints]);
-  const openComplaints = complaints.filter(c => c.status !== 'resolved').length;
-  const resolvedComplaints = complaints.filter(c => c.status === 'resolved').length;
-  const resolutionRate = complaints.length
-    ? Math.round((resolvedComplaints / complaints.length) * 100) : 0;
-
   if (loading) return (
     <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
       Loading analytics...
     </div>
   );
 
-  if (!complaints.length) return (
-    <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
-      No complaint data yet. Analytics will appear once students start filing complaints.
-    </div>
-  );
+  const isPlaceholder = complaints.length === 0;
+
+  const displayComplaints = useMemo(() => {
+    if (!isPlaceholder) return complaints;
+    const categories = ['electrical', 'plumbing', 'cleaning', 'carpentary', 'internet', 'other'];
+    const priorities = ['low', 'medium', 'high'];
+    const statuses = ['todo', 'in_progress', 'resolved'];
+    const dummies = [];
+    const now = Date.now();
+    for (let i = 0; i < 45; i++) {
+      const daysAgo = Math.floor(Math.random() * 30);
+      const createdTime = new Date(now - daysAgo * 86400000 - Math.random() * 86400000);
+      const status = statuses[Math.floor(Math.random() * statuses.length)];
+      const resolvedTime = status === 'resolved' 
+        ? new Date(createdTime.getTime() + (Math.random() * 48 + 2) * 3600000) 
+        : null;
+      dummies.push({
+        id: `dummy_${i}`,
+        category: categories[Math.floor(Math.random() * categories.length)],
+        priority: priorities[Math.floor(Math.random() * priorities.length)],
+        status: status,
+        floorNumber: String(Math.floor(Math.random() * 4) + 1),
+        roomId: `room_${Math.floor(Math.random() * 20)}`,
+        createdAt: { toDate: () => createdTime },
+        resolvedAt: resolvedTime ? { toDate: () => resolvedTime } : null,
+      });
+    }
+    return dummies.sort((a,b) => a.createdAt.toDate() - b.createdAt.toDate());
+  }, [isPlaceholder, complaints]);
+
+  const activeTotalRooms = totalRooms || 20;
+
+  const volumeData = useMemo(() => getVolumeByDay(displayComplaints), [displayComplaints]);
+  const categoryData = useMemo(() => getCategoryBreakdown(displayComplaints), [displayComplaints]);
+  const statusData = useMemo(() => getStatusBreakdown(displayComplaints), [displayComplaints]);
+  const avgResolution = useMemo(() => getAvgResolutionTime(displayComplaints), [displayComplaints]);
+  const resolutionByCategory = useMemo(() => getResolutionByCategory(displayComplaints), [displayComplaints]);
+  const floorHeatmap = useMemo(() => getFloorHeatmap(displayComplaints), [displayComplaints]);
+  const peakHours = useMemo(() => getPeakHours(displayComplaints), [displayComplaints]);
+  const priorityData = useMemo(() => getPriorityBreakdown(displayComplaints), [displayComplaints]);
+  const recurringIssues = useMemo(() => getRecurringIssues(displayComplaints), [displayComplaints]);
+  const engagementRate = useMemo(() => getEngagementRate(displayComplaints, activeTotalRooms), [displayComplaints, activeTotalRooms]);
+  const funnelData = useMemo(() => getFunnelData(displayComplaints), [displayComplaints]);
+  const openComplaints = displayComplaints.filter(c => c.status !== 'resolved').length;
+  const resolvedComplaints = displayComplaints.filter(c => c.status === 'resolved').length;
+  const resolutionRate = displayComplaints.length
+    ? Math.round((resolvedComplaints / displayComplaints.length) * 100) : 0;
 
   const weekKeys = floorHeatmap.length > 0
     ? Object.keys(floorHeatmap[0]).filter(k => k !== 'floor') : [];
@@ -105,6 +131,17 @@ export default function WardenAnalytics({ hostelId }) {
 
   return (
     <div style={{ padding: '0.5rem 0' }}>
+
+      {isPlaceholder && (
+        <div style={{
+          background: 'rgba(55, 138, 221, 0.1)', border: '1px solid rgba(55, 138, 221, 0.3)',
+          borderRadius: '10px', padding: '12px 16px', marginBottom: '16px',
+          display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.9rem', color: 'var(--text-primary)'
+        }}>
+          <span>ℹ️</span>
+          <span><strong>Sample Data:</strong> No real complaints have been filed yet. Here is how your analytics will look.</span>
+        </div>
+      )}
 
       {/* ── Recurring Issue Banners ── */}
       {recurringIssues.map((issue, i) => (
@@ -235,12 +272,12 @@ export default function WardenAnalytics({ hostelId }) {
           <div style={{ ...LABEL, marginBottom: '16px' }}>Status Overview (Radar)</div>
           <ResponsiveContainer width="100%" height={220}>
             <RadarChart data={(() => {
-              const categories = [...new Set(complaints.map(c => c.category))];
+              const categories = [...new Set(displayComplaints.map(c => c.category))];
               return categories.map(cat => ({
                 category: cat,
-                open: complaints.filter(c => c.category === cat && c.status === 'todo').length,
-                inProgress: complaints.filter(c => c.category === cat && c.status === 'in_progress').length,
-                resolved: complaints.filter(c => c.category === cat && c.status === 'resolved').length,
+                open: displayComplaints.filter(c => c.category === cat && c.status === 'todo').length,
+                inProgress: displayComplaints.filter(c => c.category === cat && c.status === 'in_progress').length,
+                resolved: displayComplaints.filter(c => c.category === cat && c.status === 'resolved').length,
               }));
             })()}>
               <PolarGrid stroke="var(--border)" />
@@ -360,9 +397,9 @@ export default function WardenAnalytics({ hostelId }) {
         <ResponsiveContainer width="100%" height={200}>
           <LineChart data={(() => {
             let filed = 0, resolved = 0;
-            return getVolumeByDay(complaints).map(day => {
+            return getVolumeByDay(displayComplaints).map(day => {
               filed += day.count;
-              resolved += complaints.filter(c => {
+              resolved += displayComplaints.filter(c => {
                 const d = c.resolvedAt?.toDate?.();
                 return d && d.toLocaleDateString('en-IN', {
                   day: '2-digit', month: 'short'

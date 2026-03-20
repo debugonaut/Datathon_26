@@ -90,14 +90,51 @@ export default function StudentAnalytics({ roomScore }) {
     load();
   }, [user.uid, userProfile.hostelId]);
 
-  const myAvgResolution = useMemo(() => getMyAvgResolution(complaints), [complaints]);
-  const categoryData = useMemo(() => getMyCategoryBreakdown(complaints), [complaints]);
-  const scoreHistory = useMemo(() =>
-    getRoomScoreHistory(complaints, roomScore ?? 100), [complaints, roomScore]);
+  if (loading) return (
+    <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
+      Loading your stats...
+    </div>
+  );
 
-  const openComplaints = complaints.filter(c => c.status !== 'resolved');
-  const resolvedComplaints = complaints.filter(c => c.status === 'resolved');
-  const overdueComplaints = complaints.filter(isOverdue);
+  const isPlaceholder = complaints.length === 0;
+
+  const displayComplaints = useMemo(() => {
+    if (!isPlaceholder) return complaints;
+    const categories = ['electrical', 'plumbing', 'cleaning', 'internet'];
+    const priorities = ['low', 'medium', 'high'];
+    const statuses = ['todo', 'in_progress', 'resolved'];
+    const dummies = [];
+    const now = Date.now();
+    for (let i = 0; i < 8; i++) {
+      const daysAgo = Math.floor(Math.random() * 30);
+      const createdTime = new Date(now - daysAgo * 86400000 - Math.random() * 86400000);
+      const status = statuses[Math.floor(Math.random() * statuses.length)];
+      const resolvedTime = status === 'resolved' 
+        ? new Date(createdTime.getTime() + (Math.random() * 48 + 2) * 3600000) 
+        : null;
+      dummies.push({
+        id: `dummy_${i}`,
+        title: `Sample Issue ${i + 1}`,
+        category: categories[Math.floor(Math.random() * categories.length)],
+        priority: priorities[Math.floor(Math.random() * priorities.length)],
+        status: status,
+        createdAt: { toDate: () => createdTime },
+        resolvedAt: resolvedTime ? { toDate: () => resolvedTime } : null,
+      });
+    }
+    return dummies.sort((a,b) => b.createdAt.toDate() - a.createdAt.toDate()); // Descending timeline
+  }, [isPlaceholder, complaints]);
+
+  const displayHostelAvg = isPlaceholder ? (hostelAvg || 24) : hostelAvg;
+
+  const myAvgResolution = useMemo(() => getMyAvgResolution(displayComplaints), [displayComplaints]);
+  const categoryData = useMemo(() => getMyCategoryBreakdown(displayComplaints), [displayComplaints]);
+  const scoreHistory = useMemo(() =>
+    getRoomScoreHistory(displayComplaints, roomScore ?? 100), [displayComplaints, roomScore]);
+
+  const openComplaints = displayComplaints.filter(c => c.status !== 'resolved');
+  const resolvedComplaints = displayComplaints.filter(c => c.status === 'resolved');
+  const overdueComplaints = displayComplaints.filter(isOverdue);
 
   const score = roomScore ?? 100;
   const gaugeData = [
@@ -106,19 +143,24 @@ export default function StudentAnalytics({ roomScore }) {
     { name: 'remaining', value: 100 - score, fill: 'rgba(255,255,255,0.06)' }
   ];
 
-  const resolutionComparison = myAvgResolution && hostelAvg ? [
+  const resolutionComparison = myAvgResolution && displayHostelAvg ? [
     { name: 'My Avg', hours: myAvgResolution, fill: '#378ADD' },
-    { name: 'Hostel Avg', hours: hostelAvg, fill: '#8b5cf6' },
+    { name: 'Hostel Avg', hours: displayHostelAvg, fill: '#8b5cf6' },
   ] : [];
-
-  if (loading) return (
-    <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
-      Loading your stats...
-    </div>
-  );
 
   return (
     <div style={{ padding: '0.5rem 0' }}>
+
+      {isPlaceholder && (
+        <div style={{
+          background: 'rgba(55, 138, 221, 0.1)', border: '1px solid rgba(55, 138, 221, 0.3)',
+          borderRadius: '10px', padding: '12px 16px', marginBottom: '16px',
+          display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.9rem', color: 'var(--text-primary)'
+        }}>
+          <span>ℹ️</span>
+          <span><strong>Sample Data:</strong> You haven't filed any complaints yet. Here is how your stats will look.</span>
+        </div>
+      )}
 
       {/* ── Overdue Alerts ── */}
       {overdueComplaints.map(c => (
@@ -304,17 +346,17 @@ export default function StudentAnalytics({ roomScore }) {
       {/* ── Section 3: Complaint Status Timeline ── */}
       <div style={{ marginBottom: '8px', ...LABEL }}>My Complaint Timeline</div>
       <div style={{ ...CARD, marginBottom: '16px' }}>
-        {complaints.length === 0 ? (
+        {displayComplaints.length === 0 ? (
           <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem',
             textAlign: 'center', padding: '2rem 0' }}>
             You haven't filed any complaints yet.
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
-            {complaints.map((c, i) => (
+            {displayComplaints.map((c, i) => (
               <div key={c.id} style={{
                 display: 'flex', gap: '16px', alignItems: 'flex-start',
-                paddingBottom: i < complaints.length - 1 ? '20px' : '0',
+                paddingBottom: i < displayComplaints.length - 1 ? '20px' : '0',
                 position: 'relative'
               }}>
                 {/* Timeline line */}
