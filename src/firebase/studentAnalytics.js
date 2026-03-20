@@ -1,15 +1,16 @@
-import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from './config';
 
-// Fetch all complaints filed by this student
+// Fetch all complaints filed by this student (sort client-side to avoid composite index)
 export const fetchMyComplaints = async (studentUid) => {
   const q = query(
     collection(db, 'complaints'),
-    where('studentUid', '==', studentUid),
-    orderBy('createdAt', 'desc')
+    where('studentUid', '==', studentUid)
   );
   const snap = await getDocs(q);
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  return snap.docs
+    .map(d => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
 };
 
 // Fetch anonymized hostel-wide avg resolution time for comparison
