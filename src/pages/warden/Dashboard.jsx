@@ -10,6 +10,7 @@ import Hostel3DView from '../../components/warden/Hostel3DView';
 import ComplaintsKanban from '../../components/warden/ComplaintsKanban';
 import ComplaintsList from '../../components/warden/ComplaintsList';
 import WardenQRDirectory from '../../components/warden/WardenQRDirectory';
+import OverviewOccupancy from '../../components/warden/OverviewOccupancy';
 
 export default function WardenDashboard() {
   const { user, userDoc } = useAuth();
@@ -165,6 +166,11 @@ export default function WardenDashboard() {
                   </div>
                 </div>
               </div>
+            </div>
+
+            <div className="mt-3">
+              <h3 style={{ marginBottom: '1rem', fontWeight: 700 }}>🛏️ Room Occupancy</h3>
+              <OverviewOccupancy hostelId={hostel.id} />
             </div>
           </div>
         )}

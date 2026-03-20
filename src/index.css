@@ -429,6 +429,7 @@ a:hover { text-decoration: underline; }
 .mb-1 { margin-bottom: 0.5rem; }
 .mb-2 { margin-bottom: 1rem; }
 .flex { display: flex; }
+.flex-column { flex-direction: column; }
 .flex-center { display: flex; align-items: center; justify-content: center; }
 .gap-1 { gap: 0.5rem; }
 .gap-2 { gap: 1rem; }

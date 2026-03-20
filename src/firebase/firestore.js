@@ -5,12 +5,16 @@ import {
   doc,
   updateDoc,
   setDoc,
+  getDoc,
   query,
   where,
   serverTimestamp,
   writeBatch,
   collectionGroup,
   increment,
+  runTransaction,
+  arrayUnion,
+  arrayRemove,
 } from 'firebase/firestore';
 import { db } from './config';
 
@@ -279,4 +283,105 @@ export const updateComplaintStatus = async (complaint, newStatus) => {
   }
 
   await batch.commit();
+};
+
+// ─── Phase 6: Profile & Occupancy ─────────────────────────────────────────────
+
+export const checkPRNExists = async (prn) => {
+  const q = query(collection(db, 'users'), where('PRN', '==', prn));
+  const snap = await getDocs(q);
+  return !snap.empty;
+};
+
+export const joinRoomTransaction = async (uid, roomData, studentData) => {
+  const roomRef = doc(
+    db, 'hostels', roomData.hostelId,
+    'blocks', roomData.blockId,
+    'buildings', roomData.buildingId,
+    'floors', roomData.floorId,
+    'rooms', roomData.roomId
+  );
+  const userRef = doc(db, 'users', uid);
+
+  await runTransaction(db, async (transaction) => {
+    const roomSnap = await transaction.get(roomRef);
+    if (!roomSnap.exists()) throw new Error('Room not found.');
+
+    const room = roomSnap.data();
+    const maxOcc = room.maxOccupants || 2;
+    const currentOcc = room.currentOccupants || 0;
+
+    if (currentOcc >= maxOcc) {
+      throw new Error('This room is full. Please contact your warden.');
+    }
+
+    // Check PRN hash uniqueness in this room
+    const occupants = room.occupants || [];
+    if (occupants.some(o => o.PRN_hash === studentData.PRN_hash)) {
+      throw new Error('Your PRN is already registered to this room.');
+    }
+
+    transaction.update(roomRef, {
+      currentOccupants: increment(1),
+      occupants: arrayUnion({
+        uid,
+        name: studentData.name,
+        PRN_hash: studentData.PRN_hash
+      })
+    });
+
+    transaction.update(userRef, {
+      roomId: roomData.roomId,
+      hostelId: roomData.hostelId,
+      blockId: roomData.blockId,
+      buildingId: roomData.buildingId,
+      floorId: roomData.floorId,
+      roomNumber: roomData.roomNumber,
+      buildingName: roomData.buildingName || '',
+      floorNumber: roomData.floorNumber || '',
+      isRegistered: true,
+      registeredAt: serverTimestamp()
+    });
+  });
+};
+
+export const ejectStudentTransaction = async (occupantEntry, roomPath) => {
+  // roomPath = { hostelId, blockId, buildingId, floorId, roomId }
+  const roomRef = doc(
+    db, 'hostels', roomPath.hostelId,
+    'blocks', roomPath.blockId,
+    'buildings', roomPath.buildingId,
+    'floors', roomPath.floorId,
+    'rooms', roomPath.roomId
+  );
+  const userRef = doc(db, 'users', occupantEntry.uid);
+
+  await runTransaction(db, async (transaction) => {
+    const roomSnap = await transaction.get(roomRef);
+    if (!roomSnap.exists()) throw new Error('Room not found.');
+
+    transaction.update(roomRef, {
+      currentOccupants: increment(-1),
+      occupants: arrayRemove(occupantEntry)
+    });
+
+    transaction.update(userRef, {
+      roomId: null,
+      hostelId: null,
+      blockId: null,
+      buildingId: null,
+      floorId: null,
+      roomNumber: null,
+      buildingName: null,
+      floorNumber: null,
+      isRegistered: false
+    });
+  });
+};
+
+export const getRoomByPath = async (hostelId, blockId, buildingId, floorId, roomId) => {
+  const roomRef = doc(db, 'hostels', hostelId, 'blocks', blockId, 'buildings', buildingId, 'floors', floorId, 'rooms', roomId);
+  const snap = await getDoc(roomRef);
+  if (!snap.exists()) return null;
+  return { id: snap.id, ...snap.data() };
 };

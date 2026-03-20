@@ -34,6 +34,7 @@ export default function SetupHostel() {
   const [qsFloors, setQsFloors] = useState(5);
   const [qsRoomsPerFloor, setQsRoomsPerFloor] = useState(4);
   const [qsStartingRoom, setQsStartingRoom] = useState(101);
+  const [maxOccupants, setMaxOccupants] = useState(2);
 
   const handleQuickSetupGenerate = () => {
     if (qsFloors < 1 || !qsRoomsPerFloor || !qsStartingRoom) return;
@@ -202,7 +203,10 @@ export default function SetupHostel() {
                 roomNumber: roomNum,
                 score: 0,
                 studentUid: null,
-                qrCodeUrl
+                qrCodeUrl,
+                maxOccupants: maxOccupants,
+                currentOccupants: 0,
+                occupants: []
               });
               operationCount++;
               await commitBatchIfNeeded();
@@ -338,6 +342,13 @@ export default function SetupHostel() {
                       <div className="form-group flex-1">
                         <label className="form-label">Starting Room #</label>
                         <input type="number" min="1" className="form-input" value={qsStartingRoom} onChange={e => setQsStartingRoom(parseInt(e.target.value) || 101)} />
+                      </div>
+                    </div>
+                    <div className="flex gap-2 mb-3">
+                      <div className="form-group flex-1">
+                        <label className="form-label">Max Occupants Per Room</label>
+                        <input type="number" min="1" max="6" className="form-input" value={maxOccupants} onChange={e => setMaxOccupants(Math.max(1, Math.min(6, parseInt(e.target.value) || 2)))} />
+                        <p className="text-sm text-muted mt-1">Beds per room (1–6). Default is 2.</p>
                       </div>
                     </div>
                     <div className="text-muted text-sm mb-3">Example: 5 floors, 4 rooms per floor starting at 101 will generate 101-104 on Floor 1, 201-204 on Floor 2, etc.</div>

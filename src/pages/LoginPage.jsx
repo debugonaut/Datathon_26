@@ -137,9 +137,9 @@ export default function LoginPage() {
 }
 
 function redirectByRole(doc, navigate) {
-  const pending = sessionStorage.getItem('pendingRoomId');
+  const pending = localStorage.getItem('pendingRoomId');
   if (pending) {
-    sessionStorage.removeItem('pendingRoomId');
+    localStorage.removeItem('pendingRoomId');
     navigate(`/room/${pending}`, { replace: true });
     return;
   }
