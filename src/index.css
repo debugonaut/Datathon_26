@@ -444,3 +444,9 @@ a:hover { text-decoration: underline; }
   .auth-card { padding: 1.75rem; }
   .hero { padding: 2rem 1rem; }
 }
+
+/* ─── Animations ────────────────────────────────────────────── */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}

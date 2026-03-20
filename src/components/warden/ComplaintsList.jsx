@@ -19,6 +19,11 @@ function timeAgo(date) {
 
 export default function ComplaintsList({ complaints }) {
   const [selected, setSelected] = useState(null);
+  const [showingOriginal, setShowingOriginal] = useState({});
+
+  const toggleOriginal = (id) => {
+    setShowingOriginal(prev => ({ ...prev, [id]: !prev[id] }));
+  };
 
   // Default Sort by newest
   const sorted = [...complaints].sort((a,b) => b.createdAt - a.createdAt);
@@ -130,8 +135,23 @@ export default function ComplaintsList({ complaints }) {
           <div className="mb-3">
             <div className="text-xs text-muted mb-1">Description</div>
             <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '8px', fontSize: '0.95rem', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
-              {selected.description || <span className="text-muted">No description provided.</span>}
+              {showingOriginal[selected.id]
+                ? (selected.descriptionOriginal || selected.description || <span className="text-muted">No description provided.</span>)
+                : (selected.descriptionTranslated || selected.description || <span className="text-muted">No description provided.</span>)
+              }
             </div>
+            {selected.descriptionOriginal && selected.descriptionTranslated && selected.descriptionOriginal !== selected.descriptionTranslated && (
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '6px' }}>
+                <span
+                  style={{ cursor: 'pointer', textDecoration: 'underline' }}
+                  onClick={() => toggleOriginal(selected.id)}
+                >
+                  {showingOriginal[selected.id]
+                    ? 'Show English'
+                    : `Originally in ${selected.detectedLanguage || 'other language'}`}
+                </span>
+              </div>
+            )}
           </div>
 
           {selected.mediaUrls?.length > 0 && (
