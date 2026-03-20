@@ -1,4 +1,4 @@
-import { useState, useMemo, Fragment } from 'react';
+import { useMemo, Fragment } from 'react';
 import {
   AreaChart, Area,
   PieChart, Pie, Cell,
@@ -7,435 +7,222 @@ import {
   Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 
-const CARD = {
-  background: 'var(--surface)',
-  border: '1px solid var(--border)',
-  borderRadius: '12px',
-  padding: '1.25rem',
-};
-
-const LABEL = {
-  fontSize: '0.78rem',
-  color: 'var(--text-muted)',
-  marginBottom: '4px',
-  textTransform: 'uppercase',
-  letterSpacing: '0.05em'
-};
-
-const TOOLTIP_STYLE = {
-  background: 'var(--surface)',
-  border: '1px solid var(--border)',
-  borderRadius: '8px',
-  color: 'var(--text-primary)',
-  fontSize: '0.8rem'
-};
-
-const PRIORITY_COLORS = { high: '#ef4444', medium: '#f59e0b', low: '#10b981' };
-const STATUS_COLORS = { todo: '#ef4444', in_progress: '#f59e0b', resolved: '#10b981' };
-const STATUS_LABELS = { todo: 'To Do', in_progress: 'In Progress', resolved: 'Resolved' };
+const TT = { background: '#1a1f2e', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', color: '#e2e8f0', fontSize: '0.75rem' };
 const CHART_COLORS = ['#378ADD', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+const PRI_C = { high: '#ef4444', medium: '#f59e0b', low: '#10b981' };
+const ST_C = { todo: '#ef4444', in_progress: '#f59e0b', resolved: '#10b981' };
+const ST_L = { todo: 'To Do', in_progress: 'In Progress', resolved: 'Resolved' };
 
-// Custom radial gauge label
-const GaugeLabel = ({ cx, cy, score }) => (
-  <>
-    <text x={cx} y={cy - 8} textAnchor="middle"
-      style={{ fontSize: '2rem', fontWeight: 700,
-        fill: score >= 71 ? '#10b981' : score >= 41 ? '#f59e0b' : '#ef4444' }}>
-      {score}
-    </text>
-    <text x={cx} y={cy + 16} textAnchor="middle"
-      style={{ fontSize: '0.75rem', fill: 'var(--text-muted)' }}>
-      Room Score
-    </text>
-  </>
-);
-
-// ── Inline analytics helpers ────────────────────────────────────────────────
-function getMyAvgResolution(complaints) {
-  const resolved = complaints.filter(c => c.resolvedAt && c.createdAt);
-  if (!resolved.length) return null;
-  const total = resolved.reduce((sum, c) => {
-    return sum + (c.resolvedAt.toDate() - c.createdAt.toDate());
-  }, 0);
-  return Math.round(total / resolved.length / 3600000);
+function timeAgo(ts) {
+  if (!ts || typeof ts.toDate !== 'function') return '?';
+  const d = Date.now() - ts.toDate().getTime(), m = Math.floor(d/60000), h = Math.floor(d/3600000), dy = Math.floor(d/86400000);
+  return m < 60 ? `${m}m` : h < 24 ? `${h}h` : `${dy}d`;
+}
+function isOverdue(c) {
+  if (c.status === 'resolved') return false;
+  const d = c.createdAt?.toDate?.(); if (!d) return false;
+  const h = (Date.now() - d.getTime()) / 3600000;
+  return (c.priority === 'high' && h > 48) || (c.priority === 'medium' && h > 96) || (c.priority === 'low' && h > 168);
 }
 
-function getMyCategoryBreakdown(complaints) {
-  const map = {};
-  complaints.forEach(c => { map[c.category] = (map[c.category] || 0) + 1; });
-  return Object.entries(map).map(([name, value]) => ({ name, value }));
-}
-
-function getRoomScoreHistory(complaints, currentScore) {
-  const now = Date.now();
-  const days = [];
-  for (let i = 29; i >= 0; i--) {
-    const dayEnd = new Date(now - i * 86400000);
-    const dayLabel = dayEnd.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
-    const pointsLostAfter = complaints
-      .filter(c => {
-        const created = c.createdAt?.toDate?.();
-        return created && created > dayEnd && c.status !== 'resolved';
-      })
-      .reduce((sum, c) => {
-        const pts = c.priority === 'high' ? 30 : c.priority === 'medium' ? 15 : 5;
-        return sum + pts;
-      }, 0);
-    days.push({ date: dayLabel, score: Math.min(100, Math.max(0, currentScore + pointsLostAfter)) });
-  }
-  return days;
-}
-
-function timeAgo(timestamp) {
-  if (!timestamp || typeof timestamp.toDate !== 'function') return 'Unknown';
-  const diff = Date.now() - timestamp.toDate().getTime();
-  const mins = Math.floor(diff / 60000);
-  const hrs = Math.floor(diff / 3600000);
-  const days = Math.floor(diff / 86400000);
-  if (mins < 60) return `${mins}m ago`;
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${days}d ago`;
-}
-
-function isOverdue(complaint) {
-  if (complaint.status === 'resolved') return false;
-  const dateObj = complaint.createdAt?.toDate?.();
-  if (!dateObj) return false;
-  const hrs = (Date.now() - dateObj.getTime()) / 3600000;
-  if (complaint.priority === 'high' && hrs > 48) return true;
-  if (complaint.priority === 'medium' && hrs > 96) return true;
-  if (complaint.priority === 'low' && hrs > 168) return true;
-  return false;
-}
-
-// ── Dummy data generator ────────────────────────────────────────────────────
-function generateDummyComplaints() {
-  const categories = ['Electrical', 'Plumbing', 'Cleaning', 'Internet'];
-  const priorities = ['low', 'medium', 'high'];
-  const statuses = ['todo', 'in_progress', 'resolved'];
-  const dummies = [];
-  const now = Date.now();
+function genDummy() {
+  const cats = ['Electrical', 'Plumbing', 'Cleaning', 'Internet'];
+  const pris = ['low', 'medium', 'high'], sts = ['todo', 'in_progress', 'resolved'];
+  const d = [], now = Date.now();
   for (let i = 0; i < 8; i++) {
-    const daysAgo = Math.floor((i * 29) / 7);
-    const createdTime = new Date(now - daysAgo * 86400000 - (i * 7200000));
-    const status = statuses[i % 3];
-    const resolvedTime = status === 'resolved'
-      ? new Date(createdTime.getTime() + ((i % 5) + 2) * 3600000)
-      : null;
-    dummies.push({
-      id: `dummy_${i}`,
-      title: `Sample Issue ${i + 1}`,
-      category: categories[i % categories.length],
-      priority: priorities[i % priorities.length],
-      status,
-      createdAt: { toDate: () => createdTime },
-      resolvedAt: resolvedTime ? { toDate: () => resolvedTime } : null,
-    });
+    const ct = new Date(now - Math.floor((i*29)/7) * 86400000 - i*7200000);
+    const st = sts[i%3], rt = st === 'resolved' ? new Date(ct.getTime()+((i%5)+2)*3600000) : null;
+    d.push({ id: `d${i}`, title: `Sample Issue ${i+1}`, category: cats[i%4], priority: pris[i%3], status: st,
+      createdAt: { toDate: () => ct }, resolvedAt: rt ? { toDate: () => rt } : null });
   }
-  return dummies.sort((a, b) => b.createdAt.toDate() - a.createdAt.toDate());
+  return d.sort((a, b) => b.createdAt.toDate() - a.createdAt.toDate());
+}
+
+function myAvg(c) { const r = c.filter(x => x.resolvedAt && x.createdAt); if (!r.length) return null; return Math.round(r.reduce((s, x) => s + (x.resolvedAt.toDate()-x.createdAt.toDate()), 0)/r.length/3600000); }
+function catBreak(c) { const m = {}; c.forEach(x => m[x.category]=(m[x.category]||0)+1); return Object.entries(m).map(([n,v])=>({name:n,value:v})); }
+function scoreHist(c, cs) {
+  const now = Date.now(), d = [];
+  for (let i = 29; i >= 0; i--) {
+    const de = new Date(now - i*86400000);
+    const pl = c.filter(x => { const cr = x.createdAt?.toDate?.(); return cr && cr > de && x.status !== 'resolved'; })
+      .reduce((s,x) => s + (x.priority==='high'?30:x.priority==='medium'?15:5), 0);
+    d.push({ date: de.toLocaleDateString('en-IN',{day:'2-digit',month:'short'}), score: Math.min(100,Math.max(0,cs+pl)) });
+  }
+  return d;
 }
 
 export default function StudentAnalytics({ roomScore }) {
-  const displayComplaints = useMemo(() => generateDummyComplaints(), []);
-  const displayHostelAvg = 24;
-
-  const myAvgResolution = useMemo(() => getMyAvgResolution(displayComplaints), [displayComplaints]);
-  const categoryData = useMemo(() => getMyCategoryBreakdown(displayComplaints), [displayComplaints]);
-  const scoreHistory = useMemo(() =>
-    getRoomScoreHistory(displayComplaints, roomScore ?? 100), [displayComplaints, roomScore]);
-
-  const openComplaints = displayComplaints.filter(c => c.status !== 'resolved');
-  const resolvedComplaints = displayComplaints.filter(c => c.status === 'resolved');
-  const overdueComplaints = displayComplaints.filter(isOverdue);
-
+  const data = useMemo(() => genDummy(), []);
   const score = roomScore ?? 100;
-  const gaugeData = [
-    { name: 'score', value: score,
-      fill: score >= 71 ? '#10b981' : score >= 41 ? '#f59e0b' : '#ef4444' },
-    { name: 'remaining', value: 100 - score, fill: 'rgba(255,255,255,0.06)' }
-  ];
+  const avg = useMemo(() => myAvg(data), [data]);
+  const cats = useMemo(() => catBreak(data), [data]);
+  const hist = useMemo(() => scoreHist(data, score), [data, score]);
+  const open = data.filter(c => c.status !== 'resolved');
+  const resolved = data.filter(c => c.status === 'resolved');
+  const overdue = data.filter(isOverdue);
+  const hostelAvg = 24;
 
-  const resolutionComparison = myAvgResolution && displayHostelAvg ? [
-    { name: 'My Avg', hours: myAvgResolution, fill: '#378ADD' },
-    { name: 'Hostel Avg', hours: displayHostelAvg, fill: '#8b5cf6' },
-  ] : [];
+  const sc = score >= 71 ? '#10b981' : score >= 41 ? '#f59e0b' : '#ef4444';
+  const gaugeData = [{ name: 's', value: score, fill: sc }, { name: 'r', value: 100-score, fill: 'rgba(255,255,255,0.06)' }];
+  const resComp = avg && hostelAvg ? [{ name: 'Mine', hours: avg, fill: '#378ADD' }, { name: 'Hostel', hours: hostelAvg, fill: '#8b5cf6' }] : [];
+
+  const card = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '10px', padding: '0.75rem' };
+  const label = { fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '2px' };
 
   return (
-    <div style={{ padding: '0.5rem 0' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '0.25rem 0' }}>
 
-      <div style={{
-        background: 'rgba(55, 138, 221, 0.1)', border: '1px solid rgba(55, 138, 221, 0.3)',
-        borderRadius: '10px', padding: '12px 16px', marginBottom: '16px',
-        display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.9rem', color: 'var(--text-primary)'
-      }}>
+      {/* Banner */}
+      <div style={{ background: 'rgba(55,138,221,0.08)', border: '1px solid rgba(55,138,221,0.25)', borderRadius: '8px', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', color: 'var(--text-primary)' }}>
         <span>ℹ️</span>
-        <span><strong>Sample Data:</strong> You haven't filed any complaints yet. Here is how your stats will look.</span>
+        <span><strong>Sample Data</strong> — your stats will populate with real complaints.</span>
       </div>
 
-      {/* ── Overdue Alerts ── */}
-      {overdueComplaints.map(c => (
-        <div key={c.id} style={{
-          background: 'rgba(239,68,68,0.1)',
-          border: '1px solid rgba(239,68,68,0.3)',
-          borderRadius: '10px', padding: '10px 16px',
-          marginBottom: '10px', fontSize: '0.85rem',
-          display: 'flex', alignItems: 'center', gap: '10px'
-        }}>
-          <span>⚠️</span>
-          <span style={{ color: '#ef4444', fontWeight: 600 }}>Overdue:</span>
-          <span style={{ color: 'var(--text-primary)' }}>
-            "{c.title}" has been {STATUS_LABELS[c.status]} for too long.
-            Filed {timeAgo(c.createdAt)}.
-          </span>
-        </div>
-      ))}
-
-      {/* ── Section 1: Room Health ── */}
-      <div style={{ marginBottom: '8px', ...LABEL }}>My Room Health</div>
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr 2fr',
-        gap: '12px', marginBottom: '16px'
-      }}>
-
-        {/* Radial gauge */}
-        <div style={{ ...CARD, display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center' }}>
-          <ResponsiveContainer width="100%" height={180}>
-            <RadialBarChart
-              cx="50%" cy="55%"
-              innerRadius="65%" outerRadius="90%"
-              startAngle={180} endAngle={0}
-              data={gaugeData}
-            >
-              <RadialBar dataKey="value" cornerRadius={6} background={false}>
-                {gaugeData.map((entry, i) => (
-                  <Cell key={i} fill={entry.fill} />
-                ))}
-              </RadialBar>
-              <GaugeLabel cx="50%" cy="55%" score={score} />
-            </RadialBarChart>
-          </ResponsiveContainer>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)',
-            textAlign: 'center', marginTop: '-8px' }}>
-            {score >= 71 ? 'Your room is in good shape'
-              : score >= 41 ? 'Some issues need attention'
-              : 'Critical issues need urgent fixing'}
-          </div>
-        </div>
-
-        {/* Score trend area chart */}
-        <div style={CARD}>
-          <div style={LABEL}>Room Score — Last 30 Days</div>
-          <ResponsiveContainer width="100%" height={160}>
-            <AreaChart data={scoreHistory}>
-              <defs>
-                <linearGradient id="scoreGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-              <XAxis dataKey="date"
-                tick={{ fontSize: 9, fill: 'var(--text-muted)' }} interval={6} />
-              <YAxis domain={[0, 100]}
-                tick={{ fontSize: 10, fill: 'var(--text-muted)' }} />
-              <Tooltip contentStyle={TOOLTIP_STYLE} />
-              <Area type="monotone" dataKey="score" stroke="#10b981"
-                fill="url(#scoreGrad)" strokeWidth={2} name="Score" />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* ── Section 2: My Complaint Stats ── */}
-      <div style={{ marginBottom: '8px', ...LABEL }}>My Complaints</div>
-
-      {/* KPI row */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
-        gap: '12px', marginBottom: '16px'
-      }}>
+      {/* Row 1: KPI cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
         {[
-          { label: 'Total Filed', value: displayComplaints.length, color: '#378ADD' },
-          { label: 'Open', value: openComplaints.length, color: '#ef4444' },
-          { label: 'Resolved', value: resolvedComplaints.length, color: '#10b981' },
-          { label: 'Overdue', value: overdueComplaints.length,
-            color: overdueComplaints.length > 0 ? '#ef4444' : '#10b981' },
-          { label: 'Avg Resolution',
-            value: myAvgResolution ? `${myAvgResolution}h` : 'N/A',
-            color: '#f59e0b' },
-        ].map(({ label, value, color }) => (
-          <div key={label} style={CARD}>
-            <div style={LABEL}>{label}</div>
-            <div style={{ fontSize: '1.8rem', fontWeight: 700,
-              color, lineHeight: 1.1 }}>{value}</div>
+          { l: 'Total Filed', v: data.length, c: '#378ADD' },
+          { l: 'Open', v: open.length, c: '#ef4444' },
+          { l: 'Resolved', v: resolved.length, c: '#10b981' },
+          { l: 'Overdue', v: overdue.length, c: overdue.length > 0 ? '#ef4444' : '#10b981' },
+          { l: 'Avg Res.', v: avg ? `${avg}h` : '—', c: '#f59e0b' },
+        ].map(k => (
+          <div key={k.l} style={card}>
+            <div style={label}>{k.l}</div>
+            <div style={{ fontSize: '1.4rem', fontWeight: 700, color: k.c, lineHeight: 1.1 }}>{k.v}</div>
           </div>
         ))}
       </div>
 
-      {/* Category breakdown + Resolution comparison */}
-      <div style={{
-        display: 'grid', gridTemplateColumns: '1fr 1fr',
-        gap: '12px', marginBottom: '16px'
-      }}>
+      {/* Row 2: 3-column dashboard */}
+      <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr 1fr', gap: '8px', minHeight: 0 }}>
 
-        {/* Donut — my complaints by category */}
-        <div style={CARD}>
-          <div style={LABEL}>My Complaints by Category</div>
-          {categoryData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={200}>
+        {/* Left: Room score gauge */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ ...card, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={label}>Room Score</div>
+            <div style={{
+              width: '100px', height: '100px', margin: '0.5rem auto',
+              borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: `conic-gradient(${sc} ${score}%, rgba(255,255,255,0.05) ${score}%)`,
+              position: 'relative'
+            }}>
+              <div style={{
+                position: 'absolute', inset: '7px', background: 'var(--surface)', borderRadius: '50%',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column'
+              }}>
+                <span style={{ fontSize: '1.5rem', fontWeight: 800, color: sc }}>{score}</span>
+                <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>/ 100</span>
+              </div>
+            </div>
+            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textAlign: 'center' }}>
+              {score >= 71 ? 'Good shape' : score >= 41 ? 'Needs attention' : 'Critical'}
+            </div>
+          </div>
+
+          {/* Category donut */}
+          <div style={card}>
+            <div style={label}>By Category</div>
+            <ResponsiveContainer width="100%" height={140}>
               <PieChart>
-                <Pie data={categoryData} cx="50%" cy="50%"
-                  innerRadius={50} outerRadius={80}
-                  paddingAngle={3} dataKey="value">
-                  {categoryData.map((_, i) => (
-                     <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                  ))}
+                <Pie data={cats} cx="50%" cy="50%" innerRadius={30} outerRadius={50} paddingAngle={2} dataKey="value">
+                  {cats.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
                 </Pie>
-                <Tooltip contentStyle={TOOLTIP_STYLE} />
-                <Legend iconType="circle" iconSize={8}
-                  wrapperStyle={{ fontSize: '0.72rem' }} />
+                <Tooltip contentStyle={TT} />
+                <Legend iconType="circle" iconSize={6} wrapperStyle={{ fontSize: '0.6rem' }} />
               </PieChart>
             </ResponsiveContainer>
-          ) : (
-            <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem',
-              padding: '2rem 0', textAlign: 'center' }}>
-              No complaints filed yet
-            </div>
-          )}
-        </div>
+          </div>
 
-        {/* Bar — my avg vs hostel avg resolution time */}
-        <div style={CARD}>
-          <div style={LABEL}>My Resolution Time vs Hostel Average</div>
-          {resolutionComparison.length > 0 ? (
-            <>
-              <ResponsiveContainer width="100%" height={160}>
-                <RadialBarChart
-                  cx="50%" cy="50%"
-                  innerRadius="20%" outerRadius="90%"
-                  data={resolutionComparison}
-                  startAngle={90} endAngle={-270}
-                >
-                  <RadialBar dataKey="hours" cornerRadius={6} label={false}>
-                    {resolutionComparison.map((entry, i) => (
-                      <Cell key={i} fill={entry.fill} />
-                    ))}
-                  </RadialBar>
-                  <Legend iconType="circle" iconSize={8}
-                    wrapperStyle={{ fontSize: '0.72rem' }} />
-                  <Tooltip contentStyle={TOOLTIP_STYLE}
-                    formatter={(v) => [`${v}h`, 'Avg Resolution']} />
+          {/* Resolution comparison */}
+          {resComp.length > 0 && (
+            <div style={card}>
+              <div style={label}>My vs Hostel Avg</div>
+              <ResponsiveContainer width="100%" height={100}>
+                <RadialBarChart cx="50%" cy="50%" innerRadius="20%" outerRadius="90%" data={resComp} startAngle={90} endAngle={-270}>
+                  <RadialBar dataKey="hours" cornerRadius={4}>{resComp.map((e, i) => <Cell key={i} fill={e.fill} />)}</RadialBar>
+                  <Legend iconType="circle" iconSize={6} wrapperStyle={{ fontSize: '0.6rem' }} />
+                  <Tooltip contentStyle={TT} formatter={v => [`${v}h`, 'Avg']} />
                 </RadialBarChart>
               </ResponsiveContainer>
-            </>
-          ) : (
-            <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem',
-              padding: '2rem 0', textAlign: 'center' }}>
-              No resolved complaints yet
             </div>
           )}
         </div>
-      </div>
 
-      {/* ── Section 3: Complaint Status Timeline ── */}
-      <div style={{ marginBottom: '8px', ...LABEL }}>My Complaint Timeline</div>
-      <div style={{ ...CARD, marginBottom: '16px' }}>
-        {displayComplaints.length === 0 ? (
-          <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem',
-            textAlign: 'center', padding: '2rem 0' }}>
-            You haven't filed any complaints yet.
+        {/* Center: Score trend chart */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={card}>
+            <div style={label}>Room Score — 30 Days</div>
+            <ResponsiveContainer width="100%" height={160}>
+              <AreaChart data={hist}>
+                <defs>
+                  <linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                <XAxis dataKey="date" tick={{ fontSize: 8, fill: 'var(--text-muted)' }} interval={6} />
+                <YAxis domain={[0, 100]} tick={{ fontSize: 9, fill: 'var(--text-muted)' }} width={20} />
+                <Tooltip contentStyle={TT} />
+                <Area type="monotone" dataKey="score" stroke="#10b981" fill="url(#sg)" strokeWidth={2} />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
-            {displayComplaints.map((c, i) => (
-              <div key={c.id} style={{
-                display: 'flex', gap: '16px', alignItems: 'flex-start',
-                paddingBottom: i < displayComplaints.length - 1 ? '20px' : '0',
-                position: 'relative'
-              }}>
-                {/* Timeline line */}
-                {i < displayComplaints.length - 1 && (
-                  <div style={{
-                    position: 'absolute', left: '9px', top: '22px',
-                    width: '2px', bottom: 0,
-                    background: 'var(--border)'
-                  }} />
-                )}
-                {/* Status dot */}
-                <div style={{
-                  width: '20px', height: '20px', borderRadius: '50%', flexShrink: 0,
-                  marginTop: '2px',
-                  background: STATUS_COLORS[c.status],
-                  boxShadow: `0 0 8px ${STATUS_COLORS[c.status]}66`
-                }} />
-                {/* Content */}
+
+          {/* Overdue alerts */}
+          {overdue.length > 0 && (
+            <div style={{ ...card, background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)' }}>
+              <div style={label}>⚠️ Overdue Complaints</div>
+              {overdue.slice(0, 3).map(c => (
+                <div key={c.id} style={{ fontSize: '0.75rem', color: 'var(--text-primary)', padding: '4px 0', borderBottom: '1px solid var(--border)' }}>
+                  <strong style={{ color: '#ef4444' }}>{c.title}</strong> — {c.category} · {timeAgo(c.createdAt)} ago
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Right: Complaint Timeline */}
+        <div style={{ ...card, overflowY: 'auto', maxHeight: '450px' }}>
+          <div style={label}>Complaint Timeline</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0', marginTop: '6px' }}>
+            {data.map((c, i) => (
+              <div key={c.id} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', paddingBottom: i < data.length - 1 ? '12px' : '0', position: 'relative' }}>
+                {i < data.length - 1 && <div style={{ position: 'absolute', left: '6px', top: '16px', width: '2px', bottom: 0, background: 'var(--border)' }} />}
+                <div style={{ width: '14px', height: '14px', borderRadius: '50%', flexShrink: 0, marginTop: '2px', background: ST_C[c.status], boxShadow: `0 0 6px ${ST_C[c.status]}66` }} />
                 <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center',
-                    gap: '8px', flexWrap: 'wrap' }}>
-                    <span style={{ fontWeight: 600, fontSize: '0.9rem',
-                      color: 'var(--text-primary)' }}>{c.title}</span>
-                    {/* Priority badge */}
-                    <span style={{
-                      fontSize: '0.7rem', padding: '2px 8px', borderRadius: '10px',
-                      background: `${PRIORITY_COLORS[c.priority]}22`,
-                      color: PRIORITY_COLORS[c.priority], fontWeight: 600
-                    }}>{c.priority}</span>
-                    {/* Overdue badge */}
-                    {isOverdue(c) && (
-                      <span style={{
-                        fontSize: '0.7rem', padding: '2px 8px', borderRadius: '10px',
-                        background: 'rgba(239,68,68,0.15)', color: '#ef4444', fontWeight: 600
-                      }}>OVERDUE</span>
-                    )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                    <span style={{ fontWeight: 600, fontSize: '0.78rem', color: 'var(--text-primary)' }}>{c.title}</span>
+                    <span style={{ fontSize: '0.6rem', padding: '1px 6px', borderRadius: '8px', background: `${PRI_C[c.priority]}22`, color: PRI_C[c.priority], fontWeight: 600 }}>{c.priority}</span>
+                    {isOverdue(c) && <span style={{ fontSize: '0.6rem', padding: '1px 6px', borderRadius: '8px', background: 'rgba(239,68,68,0.15)', color: '#ef4444', fontWeight: 600 }}>OVERDUE</span>}
                   </div>
-                  {/* Status pipeline */}
-                  <div style={{ display: 'flex', alignItems: 'center',
-                    gap: '6px', margin: '6px 0', fontSize: '0.78rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', margin: '3px 0', fontSize: '0.65rem' }}>
                     {['todo', 'in_progress', 'resolved'].map((s, si) => {
-                      const statusList = ['todo', 'in_progress', 'resolved'];
-                      const currentIdx = statusList.indexOf(c.status);
-                      const isPast = si <= currentIdx;
+                      const ci = ['todo', 'in_progress', 'resolved'].indexOf(c.status);
+                      const past = si <= ci;
                       return (
                         <Fragment key={s}>
-                          <span style={{
-                            padding: '2px 10px', borderRadius: '10px',
-                            fontSize: '0.72rem',
-                            background: isPast
-                              ? `${STATUS_COLORS[s]}22` : 'rgba(255,255,255,0.04)',
-                            color: isPast
-                              ? STATUS_COLORS[s] : 'var(--text-muted)',
-                            fontWeight: isPast ? 600 : 400,
-                            border: c.status === s
-                              ? `1px solid ${STATUS_COLORS[s]}` : '1px solid transparent'
-                          }}>
-                            {STATUS_LABELS[s]}
-                          </span>
-                          {si < 2 && (
-                            <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>
-                              →
-                            </span>
-                          )}
+                          <span style={{ padding: '1px 6px', borderRadius: '8px', fontSize: '0.6rem',
+                            background: past ? `${ST_C[s]}22` : 'rgba(255,255,255,0.04)',
+                            color: past ? ST_C[s] : 'var(--text-muted)', fontWeight: past ? 600 : 400,
+                            border: c.status === s ? `1px solid ${ST_C[s]}` : '1px solid transparent' }}>{ST_L[s]}</span>
+                          {si < 2 && <span style={{ color: 'var(--text-muted)', fontSize: '0.55rem' }}>→</span>}
                         </Fragment>
                       );
                     })}
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                    {c.category} • Filed {timeAgo(c.createdAt)}
-                    {c.status === 'resolved' && c.resolvedAt &&
-                      ` • Resolved in ${Math.round(
-                        (c.resolvedAt.toDate() - c.createdAt.toDate()) / 3600000
-                      )}h`}
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+                    {c.category} · {timeAgo(c.createdAt)} ago
+                    {c.status === 'resolved' && c.resolvedAt && ` · ${Math.round((c.resolvedAt.toDate()-c.createdAt.toDate())/3600000)}h`}
                   </div>
                 </div>
               </div>
             ))}
           </div>
-        )}
-      </div>
+        </div>
 
+      </div>
     </div>
   );
 }
