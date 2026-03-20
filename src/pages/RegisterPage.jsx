@@ -77,16 +77,18 @@ export default function RegisterPage() {
       }
 
       await registerUser(email, password, name, role);
+
+      const pending = sessionStorage.getItem('pendingRoomId');
+      if (pending) {
+        sessionStorage.removeItem('pendingRoomId');
+        navigate(`/room/${pending}`, { replace: true });
+        return;
+      }
+
       if (role === 'warden') {
         navigate('/warden/setup', { replace: true });
       } else {
-        const qrCode = sessionStorage.getItem('qrRedirect');
-        if (qrCode) {
-          sessionStorage.removeItem('qrRedirect');
-          navigate(`/student/join?code=${qrCode}`, { replace: true });
-        } else {
-          navigate('/student/join', { replace: true });
-        }
+        navigate('/student/join', { replace: true });
       }
     } catch (err2) {
       setError(getFirebaseError(err2.code));

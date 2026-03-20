@@ -137,27 +137,17 @@ export default function LoginPage() {
 }
 
 function redirectByRole(doc, navigate) {
+  const pending = sessionStorage.getItem('pendingRoomId');
+  if (pending) {
+    sessionStorage.removeItem('pendingRoomId');
+    navigate(`/room/${pending}`, { replace: true });
+    return;
+  }
+
   if (doc?.role === 'warden') {
     navigate(doc.hostelId ? '/warden/dashboard' : '/warden/setup', { replace: true });
   } else {
-    if (doc?.roomId) {
-      // If student has a room, check if they scanned a code to complain
-      const qrCode = sessionStorage.getItem('qrRedirect');
-      if (qrCode) {
-        sessionStorage.removeItem('qrRedirect');
-        navigate(`/complaint/new?code=${qrCode}`, { replace: true });
-      } else {
-        navigate('/student/dashboard', { replace: true });
-      }
-    } else {
-      const qrCode = sessionStorage.getItem('qrRedirect');
-      if (qrCode) {
-        sessionStorage.removeItem('qrRedirect');
-        navigate(`/student/join?code=${qrCode}`, { replace: true });
-      } else {
-        navigate('/student/join', { replace: true });
-      }
-    }
+    navigate(doc?.roomId ? '/student/dashboard' : '/student/join', { replace: true });
   }
 }
 
