@@ -135,6 +135,23 @@ export const getAllRooms = async (hostelId) => {
   });
 };
 
+// Lightweight room counter for analytics (no complaint queries)
+export const countAllRooms = async (hostelId) => {
+  let count = 0;
+  const blocks = await getBlocks(hostelId);
+  for (const b of blocks) {
+    const buildings = await getBuildings(hostelId, b.id);
+    for (const bld of buildings) {
+      const floors = await getFloors(hostelId, b.id, bld.id);
+      for (const fl of floors) {
+        const r = await getRooms(hostelId, b.id, bld.id, fl.id);
+        count += r.length;
+      }
+    }
+  }
+  return count;
+};
+
 // ─── Student join ────────────────────────────────────────────────────────────
 export const resolveRoomByCode = async (code) => {
   if (!code || code.length < 6) return null;

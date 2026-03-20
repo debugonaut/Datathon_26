@@ -11,7 +11,7 @@ import { fetchAllComplaints, getVolumeByDay, getCategoryBreakdown,
   getFloorHeatmap, getPeakHours, getPriorityBreakdown,
   getRecurringIssues, getEngagementRate, getFunnelData
 } from '../../firebase/analytics';
-import { getAllRooms } from '../../firebase/firestore';
+import { countAllRooms } from '../../firebase/firestore';
 
 const CARD = {
   background: 'var(--surface)',
@@ -50,17 +50,24 @@ export default function WardenAnalytics({ hostelId }) {
   const [complaints, setComplaints] = useState([]);
   const [totalRooms, setTotalRooms] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [timeRange, setTimeRange] = useState('30d');
 
   useEffect(() => {
     const load = async () => {
-      const [c, rooms] = await Promise.all([
-        fetchAllComplaints(hostelId),
-        getAllRooms(hostelId)
-      ]);
-      setComplaints(c);
-      setTotalRooms(rooms.length);
-      setLoading(false);
+      try {
+        const [c, roomCount] = await Promise.all([
+          fetchAllComplaints(hostelId),
+          countAllRooms(hostelId)
+        ]);
+        setComplaints(c);
+        setTotalRooms(roomCount);
+      } catch (err) {
+        console.error('WardenAnalytics load error:', err);
+        setError(true);
+      } finally {
+        setLoading(false);
+      }
     };
     load();
   }, [hostelId]);
@@ -68,6 +75,13 @@ export default function WardenAnalytics({ hostelId }) {
   if (loading) return (
     <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
       Loading analytics...
+    </div>
+  );
+
+  if (error) return (
+    <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
+      <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>⚠️</div>
+      <p>Could not load analytics. Please refresh and try again.</p>
     </div>
   );
 
@@ -101,7 +115,7 @@ export default function WardenAnalytics({ hostelId }) {
     return dummies.sort((a,b) => a.createdAt.toDate() - b.createdAt.toDate());
   }, [isPlaceholder, complaints]);
 
-  const activeTotalRooms = totalRooms || 20;
+  const activeTotalRooms = totalRooms || 20; // fallback for sample data mode
 
   const volumeData = useMemo(() => getVolumeByDay(displayComplaints), [displayComplaints]);
   const categoryData = useMemo(() => getCategoryBreakdown(displayComplaints), [displayComplaints]);

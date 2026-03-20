@@ -72,27 +72,42 @@ const GaugeLabel = ({ cx, cy, score }) => (
 );
 
 export default function StudentAnalytics({ roomScore }) {
-  const { user, userProfile } = useAuth();
+  const { user, userDoc } = useAuth();
   const [complaints, setComplaints] = useState([]);
   const [hostelAvg, setHostelAvg] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
+    if (!user?.uid || !userDoc?.hostelId) return;
     const load = async () => {
-      const [c, avg] = await Promise.all([
-        fetchMyComplaints(user.uid),
-        fetchHostelAvgResolution(userProfile.hostelId)
-      ]);
-      setComplaints(c);
-      setHostelAvg(avg);
-      setLoading(false);
+      try {
+        const [c, avg] = await Promise.all([
+          fetchMyComplaints(user.uid),
+          fetchHostelAvgResolution(userDoc.hostelId)
+        ]);
+        setComplaints(c);
+        setHostelAvg(avg);
+      } catch (err) {
+        console.error('StudentAnalytics load error:', err);
+        setError(true);
+      } finally {
+        setLoading(false);
+      }
     };
     load();
-  }, [user.uid, userProfile.hostelId]);
+  }, [user?.uid, userDoc?.hostelId]);
 
   if (loading) return (
     <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
       Loading your stats...
+    </div>
+  );
+
+  if (error) return (
+    <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
+      <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>⚠️</div>
+      <p>Could not load analytics. Please refresh and try again.</p>
     </div>
   );
 
