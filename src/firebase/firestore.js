@@ -9,6 +9,7 @@ import {
   where,
   serverTimestamp,
   writeBatch,
+  collectionGroup,
 } from 'firebase/firestore';
 import { db } from './config';
 
@@ -97,27 +98,56 @@ export const getAllRooms = async (hostelId) => {
 };
 
 // ─── Student join ────────────────────────────────────────────────────────────
-export const joinHostel = async (uid, hostelId, blockId, buildingId, floorId, roomId, roomNumber) => {
-  const batch = writeBatch(db);
+export const resolveRoomByCode = async (code) => {
+  if (!code || code.length < 6) return null;
+  const q = query(collectionGroup(db, 'rooms'));
+  const snap = await getDocs(q);
+  const targetIdSuffix = code.toLowerCase();
+  
+  const roomDoc = snap.docs.find(d => d.id.toLowerCase().endsWith(targetIdSuffix));
+  if (!roomDoc) return null;
 
-  // Update User
+  const path = roomDoc.ref.path; // hostels/HID/blocks/BID/buildings/BLDID/floors/FID/rooms/RID
+  const segments = path.split('/');
+  return {
+    hostelId: segments[1],
+    blockId: segments[3],
+    buildingId: segments[5],
+    floorId: segments[7],
+    roomId: segments[9],
+    roomNumber: roomDoc.data().roomNumber,
+    data: roomDoc.data()
+  };
+};
+
+export const getRoomOccupancyCount = async (roomId) => {
+  const q = query(collection(db, 'users'), where('roomId', '==', roomId));
+  const snap = await getDocs(q);
+  return snap.size;
+};
+
+export const joinRoomWithCodeData = async (uid, roomData) => {
+  const max = roomData.data.maxOccupants || 2;
+  const current = await getRoomOccupancyCount(roomData.roomId);
+  
+  if (current >= max) {
+    throw new Error("This room is already full. Contact your warden.");
+  }
+
+  const batch = writeBatch(db);
   const userRef = doc(db, 'users', uid);
   batch.update(userRef, {
-    hostelId,
-    blockId,
-    buildingId,
-    floorId,
-    roomId,
-    roomNumber,
+    hostelId: roomData.hostelId,
+    blockId: roomData.blockId,
+    buildingId: roomData.buildingId,
+    floorId: roomData.floorId,
+    roomId: roomData.roomId,
+    roomNumber: roomData.roomNumber,
   });
 
-  // Assign user to Room
-  const roomRef = doc(
-    db, 'hostels', hostelId, 'blocks', blockId, 'buildings', buildingId, 'floors', floorId, 'rooms', roomId
-  );
-  // Important: In phase 2, we update studentUid. Prevents double-assignment if checked!
+  const roomRef = doc(db, 'hostels', roomData.hostelId, 'blocks', roomData.blockId, 'buildings', roomData.buildingId, 'floors', roomData.floorId, 'rooms', roomData.roomId);
   batch.update(roomRef, { studentUid: uid });
-
+  
   await batch.commit();
 };
 

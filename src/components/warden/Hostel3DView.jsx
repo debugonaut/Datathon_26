@@ -27,43 +27,29 @@ function RoomBox({ room, position }) {
         onPointerOver={(e) => { e.stopPropagation(); setHovered(true); }}
         onPointerOut={(e) => { e.stopPropagation(); setHovered(false); }}
       >
-        <boxGeometry args={[2, 1.6, 2]} />
+        <boxGeometry args={[1.92, 1.55, 1.92]} />
         <meshStandardMaterial color={wallColor} roughness={0.9} />
       </mesh>
 
       {/* Top Cornice */}
       <mesh position={[0, 0.8, 0]}>
-        <boxGeometry args={[2.1, 0.1, 2.1]} />
+        <boxGeometry args={[2.0, 0.1, 2.0]} />
         <meshStandardMaterial color={corniceColor} roughness={0.9} />
       </mesh>
       
       {/* Front Window (+Z) */}
-      <mesh position={[0, 0.1, 1.01]}>
+      <mesh position={[0, 0.1, 0.97]}>
         <boxGeometry args={[0.8, 0.9, 0.1]} />
-        <meshStandardMaterial color={windowColor} emissive={windowColor} emissiveIntensity={hovered ? 0.8 : 0.3} />
+        <meshStandardMaterial color={windowColor} emissive={windowColor} emissiveIntensity={hovered ? 1.2 : 0.6} />
       </mesh>
 
       {/* Side Window (+X) */}
-      <mesh position={[1.01, 0.1, 0]}>
+      <mesh position={[0.97, 0.1, 0]}>
         <boxGeometry args={[0.1, 0.9, 0.8]} />
-        <meshStandardMaterial color={windowColor} emissive={windowColor} emissiveIntensity={hovered ? 0.8 : 0.3} />
+        <meshStandardMaterial color={windowColor} emissive={windowColor} emissiveIntensity={hovered ? 1.2 : 0.6} />
       </mesh>
 
-      {/* Front Balcony (+Z) */}
-      <group position={[0, -0.4, 1.3]}>
-        <mesh position={[0, 0, 0]}><boxGeometry args={[1.2, 0.1, 0.6]} /><meshStandardMaterial color={balconyColor} /></mesh>
-        <mesh position={[0, 0.3, 0.25]}><boxGeometry args={[1.2, 0.6, 0.1]} /><meshStandardMaterial color={balconyColor} transparent opacity={0.9} /></mesh>
-        <mesh position={[-0.55, 0.3, 0]}><boxGeometry args={[0.1, 0.6, 0.4]} /><meshStandardMaterial color={balconyColor} transparent opacity={0.9} /></mesh>
-        <mesh position={[0.55, 0.3, 0]}><boxGeometry args={[0.1, 0.6, 0.4]} /><meshStandardMaterial color={balconyColor} transparent opacity={0.9} /></mesh>
-      </group>
-
-      {/* Side Balcony (+X) */}
-      <group position={[1.3, -0.4, 0]} rotation={[0, Math.PI / 2, 0]}>
-        <mesh position={[0, 0, 0]}><boxGeometry args={[1.2, 0.1, 0.6]} /><meshStandardMaterial color={balconyColor} /></mesh>
-        <mesh position={[0, 0.3, 0.25]}><boxGeometry args={[1.2, 0.6, 0.1]} /><meshStandardMaterial color={balconyColor} transparent opacity={0.9} /></mesh>
-        <mesh position={[-0.55, 0.3, 0]}><boxGeometry args={[0.1, 0.6, 0.4]} /><meshStandardMaterial color={balconyColor} transparent opacity={0.9} /></mesh>
-        <mesh position={[0.55, 0.3, 0]}><boxGeometry args={[0.1, 0.6, 0.4]} /><meshStandardMaterial color={balconyColor} transparent opacity={0.9} /></mesh>
-      </group>
+      <pointLight position={[0, 0.1, 1.1]} color={windowColor} intensity={hovered ? 1.2 : 0.4} distance={3} />
 
       {/* HTML Tooltip overlay on hover */}
       {hovered && (
@@ -76,8 +62,16 @@ function RoomBox({ room, position }) {
             <div style={{ fontWeight: 'bold', marginBottom: '4px', borderBottom: '1px solid var(--border)', paddingBottom: '2px' }}>
               Room {room.roomNumber}
             </div>
-            <div>Score: <strong style={{ color: windowColor }}>{room.score}</strong></div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              Score: <strong style={{ color: windowColor }}>{room.score}</strong>
+              <div style={{ width: 12, height: 12, borderRadius: '50%', background: windowColor }}></div>
+            </div>
             <div style={{ color: 'var(--text-muted)' }}>Status: {room.studentUid ? 'Occupied' : 'Vacant'}</div>
+            {room.topComplaint && (
+              <div style={{ color: windowColor, marginTop: '2px', fontWeight: 'bold' }}>
+                ↳ {room.topComplaint}
+              </div>
+            )}
             <div style={{ color: 'var(--text-muted)', fontSize: '0.7rem', marginTop: '4px' }}>
               {room.blockName} • {room.buildingName} • Fl {room.floorNumber}
             </div>
@@ -174,14 +168,35 @@ export default function Warden3DView({ hostelId }) {
           color: '#f8c8b4'
         });
 
+        // Solid Building Shell
+        const totalHeight = maxFloors * FLOOR_HEIGHT;
+        sceneData.buildings.push({
+          position: [centerX, (totalHeight / 2) - FLOOR_HEIGHT / 2, centerZ],
+          args: [width, totalHeight, depth],
+          type: 'shell',
+          color: '#e8c9b8'
+        });
+
         // Roof
-        const roofY = (maxFloors - 1) * FLOOR_HEIGHT + 0.85;
+        const roofY = (maxFloors - 1) * FLOOR_HEIGHT + 0.85 + 0.12;
+        const roofWidth = (bldMaxX - bldMinX) + ROOM_SIZE;
+        const roofDepth = (bldMaxZ - bldMinZ) + ROOM_SIZE;
         sceneData.buildings.push({
           position: [centerX, roofY, centerZ],
-          args: [(bldMaxX - bldMinX) + ROOM_SIZE, 0.1, (bldMaxZ - bldMinZ) + ROOM_SIZE],
+          args: [roofWidth, 0.35, roofDepth],
           type: 'roof',
           color: '#e3b5a4'
         });
+
+        // Parapet Ring
+        const pHeight = 0.6;
+        const pThick = 0.3;
+        // Front & Back
+        sceneData.buildings.push({ position: [centerX, roofY + 0.17 + pHeight/2, centerZ + roofDepth/2], args: [roofWidth, pHeight, pThick], type: 'parapet', color: '#d4a090' });
+        sceneData.buildings.push({ position: [centerX, roofY + 0.17 + pHeight/2, centerZ - roofDepth/2], args: [roofWidth, pHeight, pThick], type: 'parapet', color: '#d4a090' });
+        // Left & Right
+        sceneData.buildings.push({ position: [centerX + roofWidth/2, roofY + 0.17 + pHeight/2, centerZ], args: [pThick, pHeight, roofDepth], type: 'parapet', color: '#d4a090' });
+        sceneData.buildings.push({ position: [centerX - roofWidth/2, roofY + 0.17 + pHeight/2, centerZ], args: [pThick, pHeight, roofDepth], type: 'parapet', color: '#d4a090' });
       }
 
       // Shift next building to the right by the width of this building + gap
@@ -224,17 +239,22 @@ export default function Warden3DView({ hostelId }) {
       <Canvas camera={{ position: [10, 15, 20], fov: 45 }}>
         <color attach="background" args={['#0f172a']} />
         
-        {/* Lights */}
-        <ambientLight intensity={0.5} />
-        <directionalLight position={[10, 20, 5]} intensity={1} castShadow />
-        <pointLight position={[-10, -10, -10]} intensity={0.5} />
+        {/* Cinematic Lights */}
+        <ambientLight intensity={0.6} />
+        <directionalLight position={[15, 25, 10]} intensity={1.4} castShadow shadow-mapSize-width={2048} shadow-mapSize-height={2048} />
+        <directionalLight position={[-8, 10, -5]} intensity={0.3} color="#b0c4de" />
+        <hemisphereLight skyColor="#1e3a5f" groundColor="#3d2010" intensity={0.4} />
 
-        {/* Render Structural Buildings */}
+        {/* Render Structural Buildings (Base, Roof, Parapet, Shell) */}
         <group position={[0, 0.5, 0]}>
           {modeledRooms.buildings.map((b, i) => (
-            <mesh key={`bld-${i}`} position={b.position}>
+            <mesh key={`bld-${i}`} position={b.position} castShadow receiveShadow>
               <boxGeometry args={b.args} />
-              <meshStandardMaterial color={b.color} roughness={0.9} />
+              {b.type === 'shell' ? (
+                <meshStandardMaterial color={b.color} roughness={0.85} metalness={0.05} />
+              ) : (
+                <meshStandardMaterial color={b.color} roughness={0.9} />
+              )}
               
               {/* Building Name Tag on the Base */}
               {b.type === 'base' && (
@@ -258,9 +278,11 @@ export default function Warden3DView({ hostelId }) {
           ))}
         </group>
 
-        {/* Floor grid & ground shadow */}
-        <gridHelper args={[100, 100, '#1e293b', '#1e293b']} position={[0, -0.01, 0]} />
-        <ContactShadows position={[0, 0, 0]} opacity={0.4} scale={50} blur={2} far={10} />
+        {/* Solid Ground Plane */}
+        <mesh rotation={[-Math.PI/2, 0, 0]} position={[0, -0.7, 0]} receiveShadow>
+          <planeGeometry args={[80, 80]} />
+          <meshStandardMaterial color="#0a1628" roughness={1} />
+        </mesh>
 
         {/* Controls */}
         <OrbitControls makeDefault autoRotate autoRotateSpeed={0.5} minPolarAngle={0} maxPolarAngle={Math.PI / 2 - 0.05} />

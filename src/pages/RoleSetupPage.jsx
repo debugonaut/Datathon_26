@@ -2,19 +2,30 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { useAuth } from '../context/AuthContext';
-import { createUserDoc } from '../firebase/auth';
+import { createUserDoc, checkWardenExists } from '../firebase/auth';
 
 // This page is shown once to new Google sign-in users who don't have a role yet.
 export default function RoleSetupPage() {
   const { user, setUserDoc } = useAuth();
   const navigate = useNavigate();
   const [role, setRole] = useState('student');
+  const [adminCode, setAdminCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const handleConfirm = async () => {
     setLoading(true);
+    setError('');
     try {
+      if (role === 'warden') {
+        const wardenExists = await checkWardenExists();
+        if (wardenExists && adminCode !== 'MITAOE_WARDEN_2026') {
+          setError('Invalid Admin Code. A warden already exists for this system.');
+          setLoading(false);
+          return;
+        }
+      }
+
       await createUserDoc(
         user.uid,
         user.displayName || user.email.split('@')[0],
@@ -83,6 +94,21 @@ export default function RoleSetupPage() {
               🔑 Warden
             </button>
           </div>
+
+          {role === 'warden' && (
+            <div className="form-group text-left" style={{ marginBottom: '1.5rem', textAlign: 'left' }}>
+              <label className="form-label" style={{ display: 'block' }}>Hostel Admin Code</label>
+              <input 
+                className="form-input" 
+                type="password" 
+                placeholder="Enter code (if a warden already exists)" 
+                value={adminCode} 
+                onChange={(e) => setAdminCode(e.target.value)} 
+                style={{ width: '100%' }}
+              />
+              <p className="text-sm text-muted mt-1">If you are the first warden, leave this blank (auto-approved).</p>
+            </div>
+          )}
 
           <button
             className="btn btn-primary btn-full"

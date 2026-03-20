@@ -7,10 +7,16 @@ import {
   signInWithRedirect,
   getRedirectResult,
 } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { auth, db } from './config';
 
 const ALLOWED_DOMAIN = 'mitaoe.ac.in';
+
+export const checkWardenExists = async () => {
+  const q = query(collection(db, 'users'), where('role', '==', 'warden'), limit(1));
+  const snap = await getDocs(q);
+  return !snap.empty;
+};
 
 // ─── Google Sign-In (popup with redirect fallback) ────────────────────────────
 export const signInWithGoogle = async () => {

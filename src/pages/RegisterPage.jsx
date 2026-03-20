@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
-import { registerUser, signInWithGoogle, getUserDoc } from '../firebase/auth';
+import { registerUser, signInWithGoogle, getUserDoc, checkWardenExists } from '../firebase/auth';
 import { useAuth } from '../context/AuthContext';
 
 export default function RegisterPage() {
@@ -13,6 +13,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
+  const [adminCode, setAdminCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -66,6 +67,15 @@ export default function RegisterPage() {
     setError('');
     setLoading(true);
     try {
+      if (role === 'warden') {
+        const wardenExists = await checkWardenExists();
+        if (wardenExists && adminCode !== 'MITAOE_WARDEN_2026') {
+          setError('Invalid Admin Code. A warden already exists for this system.');
+          setLoading(false);
+          return;
+        }
+      }
+
       await registerUser(email, password, name, role);
       if (role === 'warden') {
         navigate('/warden/setup', { replace: true });
@@ -160,6 +170,18 @@ export default function RegisterPage() {
               <input className="form-input" type="password" placeholder="Repeat password"
                 value={confirm} onChange={(e) => setConfirm(e.target.value)} required />
             </div>
+            
+            {role === 'warden' && (
+              <div className="form-group text-left p-3" style={{ background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span style={{ fontSize: '1.2rem' }}>🛡️</span> Hostel Admin Code
+                </label>
+                <input className="form-input" type="password" placeholder="Enter code (if a warden exists)"
+                  value={adminCode} onChange={(e) => setAdminCode(e.target.value)} />
+                <p className="text-sm text-muted mt-1" style={{ lineHeight: 1.4 }}>If a warden has already registered the network, you need their admin override code. If you are the first warden, leave blank.</p>
+              </div>
+            )}
+
             <button className="btn btn-outline btn-full mt-2" type="submit" disabled={loading}>
               {loading ? 'Creating account…' : `Register as ${role === 'warden' ? 'Warden' : 'Student'}`}
             </button>

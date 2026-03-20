@@ -1,173 +1,135 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Scanner } from '@yudiel/react-qr-scanner';
 import Navbar from '../../components/Navbar';
 import { useAuth } from '../../context/AuthContext';
-import { getBlocks, getBuildings, getFloors, getRooms, joinHostel } from '../../firebase/firestore';
-import { db } from '../../firebase/config';
+import { resolveRoomByCode, joinRoomWithCodeData } from '../../firebase/firestore';
 import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../../firebase/config';
 
 export default function JoinHostel() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
-  const params = new URLSearchParams(location.search);
-  const selectedHostelId = params.get('hostelId');
-
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-
-  // Hierarchy Data
-  const [blocks, setBlocks] = useState([]);
-  const [buildings, setBuildings] = useState([]);
-  const [floors, setFloors] = useState([]);
-  const [rooms, setRooms] = useState([]);
-
-  // Selections
-  const [blockId, setBlockId] = useState('');
-  const [buildingId, setBuildingId] = useState('');
-  const [floorId, setFloorId] = useState('');
-  const [roomId, setRoomId] = useState('');
-
-  // Initial Load
-  useEffect(() => {
-    if (!selectedHostelId) {
-      navigate('/');
-      return;
-    }
-    const loadBlocks = async () => {
-      try {
-        const b = await getBlocks(selectedHostelId);
-        setBlocks(b);
-      } catch (e) {
-        setError('Failed to load hostel blocks.');
-      }
-      setLoading(false);
-    };
-    loadBlocks();
-  }, [selectedHostelId, navigate]);
-
-  // Load Buildings when Block changes
-  useEffect(() => {
-    setBuildingId(''); setFloorId(''); setRoomId('');
-    setBuildings([]); setFloors([]); setRooms([]);
-    if (!blockId) return;
-
-    getBuildings(selectedHostelId, blockId).then(setBuildings).catch(console.error);
-  }, [blockId, selectedHostelId]);
-
-  // Load Floors when Building changes
-  useEffect(() => {
-    setFloorId(''); setRoomId('');
-    setFloors([]); setRooms([]);
-    if (!buildingId) return;
-
-    getFloors(selectedHostelId, blockId, buildingId).then(setFloors).catch(console.error);
-  }, [buildingId, blockId, selectedHostelId]);
-
-  // Load Rooms when Floor changes
-  useEffect(() => {
-    setRoomId('');
-    setRooms([]);
-    if (!floorId) return;
-
-    getRooms(selectedHostelId, blockId, buildingId, floorId).then(setRooms).catch(console.error);
-  }, [floorId, buildingId, blockId, selectedHostelId]);
-
-  const handleJoin = async (e) => {
-    e.preventDefault();
+  
+  const [manualCode, setManualCode] = useState('');
+  const [resolving, setResolving] = useState(false);
+  const [resolvedRoom, setResolvedRoom] = useState(null); // { roomData, hostelName }
+  const [cameraActive, setCameraActive] = useState(false);
+  
+  const handleResolveCode = async (codeStr) => {
+    if (!codeStr || codeStr.length < 6) return;
+    setResolving(true);
     setError('');
-    setSubmitting(true);
-
     try {
-      // 1. Double-assignment prevention check (Read latest from server)
-      const roomRef = doc(db, 'hostels', selectedHostelId, 'blocks', blockId, 'buildings', buildingId, 'floors', floorId, 'rooms', roomId);
-      const roomSnap = await getDoc(roomRef);
+      // If they scanned the full URL, extract the last bit
+      let codeToSearch = typeof codeStr === 'string' ? codeStr : String(codeStr);
+      if (codeToSearch.includes('/room/')) {
+        const parts = codeToSearch.split('/');
+        codeToSearch = parts[parts.length - 1].slice(-6);
+      } else {
+         codeToSearch = codeToSearch.slice(-6);
+      }
+
+      const roomData = await resolveRoomByCode(codeToSearch);
+      if (!roomData) throw new Error("Invalid or unrecognized Room Code.");
       
-      if (!roomSnap.exists()) throw new Error("Room does not exist.");
-      if (roomSnap.data().studentUid) throw new Error("This room is already taken by another student.");
+      const hostelSnap = await getDoc(doc(db, 'hostels', roomData.hostelId));
+      let hName = 'Unknown Hostel';
+      if (hostelSnap.exists()) hName = hostelSnap.data().name;
 
-      const selectedRoom = rooms.find(r => r.id === roomId);
-
-      // 2. Commit transaction via firestore helper
-      await joinHostel(
-        user.uid,
-        selectedHostelId,
-        blockId,
-        buildingId,
-        floorId,
-        roomId,
-        selectedRoom.roomNumber
-      );
-
-      // Redirect to dashboard
-      navigate('/student/dashboard', { replace: true });
+      setResolvedRoom({ roomData, hostelName: hName });
     } catch (err) {
-      console.error(err);
       setError(err.message);
     } finally {
-      setSubmitting(false);
+      setResolving(false);
     }
   };
 
-  if (loading) return (
-    <div className="page">
-      <Navbar />
-      <div className="loading-screen"><div className="spinner" /></div>
-    </div>
-  );
+  const handleConfirmJoin = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      await joinRoomWithCodeData(user.uid, resolvedRoom.roomData);
+      navigate('/student/dashboard', { replace: true });
+    } catch (err) {
+      setError(err.message);
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="page">
       <Navbar />
-      <div className="join-page">
-        <div className="join-card card animation-fade-in">
-          <h2>Select Your Room</h2>
-          <p className="subtitle">Let's map your profile to your exact room.</p>
+      <div className="join-page center-page" style={{ paddingTop: '4rem', paddingBottom: '4rem' }}>
+        <div className="auth-card animation-fade-in" style={{ maxWidth: '500px', width: '100%' }}>
           
-          {error && <div className="form-error">{error}</div>}
+          {!resolvedRoom ? (
+            <>
+              <h2 className="auth-title">Join Your Room</h2>
+              <p className="auth-subtitle mb-3">Scan the QR code on your door, or enter the 6-character room code.</p>
+              
+              {error && <div className="form-error">{error}</div>}
 
-          <form onSubmit={handleJoin}>
-            <div className="form-group">
-              <label className="form-label">Block / Wing</label>
-              <select className="form-input form-select" value={blockId} onChange={e => setBlockId(e.target.value)} required>
-                <option value="" disabled>Select a block</option>
-                {blocks.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-              </select>
-            </div>
+              {cameraActive ? (
+                <div style={{ borderRadius: '12px', overflow: 'hidden', border: '2px solid var(--border)', marginBottom: '1.5rem', background: '#000', position: 'relative' }}>
+                  <Scanner 
+                    onScan={(result) => {
+                      if (!result) return;
+                      const val = Array.isArray(result) ? result[0].rawValue : (result.rawValue || result.text || result);
+                      if (val) handleResolveCode(val);
+                    }} 
+                    components={{ audio: false }}
+                  />
+                  <button className="btn btn-sm btn-ghost" style={{ position: 'absolute', top: 10, right: 10, background: 'rgba(0,0,0,0.5)', color: 'white' }} onClick={() => setCameraActive(false)}>Close Camera</button>
+                </div>
+              ) : (
+                <button className="btn btn-outline btn-full mb-3" onClick={() => setCameraActive(true)}>
+                  📷 Scan Room QR Code
+                </button>
+              )}
 
-            <div className="form-group">
-              <label className="form-label">Building</label>
-              <select className="form-input form-select" value={buildingId} onChange={e => setBuildingId(e.target.value)} required disabled={!blockId || buildings.length === 0}>
-                <option value="" disabled>Select a building</option>
-                {buildings.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-              </select>
-            </div>
+              <div className="divider">OR ENTER MANUALLY</div>
 
-            <div className="form-group">
-              <label className="form-label">Floor</label>
-              <select className="form-input form-select" value={floorId} onChange={e => setFloorId(e.target.value)} required disabled={!buildingId || floors.length === 0}>
-                <option value="" disabled>Select a floor</option>
-                {floors.map(f => <option key={f.id} value={f.id}>Floor {f.floorNumber}</option>)}
-              </select>
-            </div>
+              <div className="flex gap-2">
+                <input 
+                  className="form-input flex-1" 
+                  placeholder="e.g. A9B2C4" 
+                  value={manualCode}
+                  onChange={e => setManualCode(e.target.value.toUpperCase())}
+                  maxLength={6}
+                  style={{ textTransform: 'uppercase', letterSpacing: '2px', textAlign: 'center', fontWeight: 'bold' }}
+                />
+                <button 
+                  className="btn btn-primary" 
+                  disabled={manualCode.length < 6 || resolving}
+                  onClick={() => handleResolveCode(manualCode)}
+                >
+                  {resolving ? 'Searching...' : 'Search'}
+                </button>
+              </div>
+            </>
+          ) : (
+             <div className="text-center">
+               <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🚪</div>
+               <h2 className="font-bold mb-1">Confirm Room</h2>
+               <p className="text-muted mb-3" style={{ lineHeight: 1.5 }}>
+                 You're joining <strong>Room {resolvedRoom.roomData.roomNumber}</strong><br/>
+                 <span style={{ fontSize: '0.9rem' }}>{resolvedRoom.hostelName}</span>
+               </p>
+               
+               {error && <div className="form-error text-left">{error}</div>}
 
-            <div className="form-group">
-              <label className="form-label">Room</label>
-              <select className="form-input form-select" value={roomId} onChange={e => setRoomId(e.target.value)} required disabled={!floorId || rooms.length === 0}>
-                <option value="" disabled>Select a room</option>
-                {rooms.map(r => (
-                  <option key={r.id} value={r.id} disabled={!!r.studentUid}>
-                    Room {r.roomNumber} {r.studentUid ? '(Occupied)' : ''}
-                  </option>
-                ))}
-              </select>
-            </div>
+               <div className="flex gap-2 mt-3">
+                  <button className="btn btn-ghost flex-1" onClick={() => setResolvedRoom(null)} disabled={loading}>Back</button>
+                  <button className="btn btn-primary flex-1" onClick={handleConfirmJoin} disabled={loading}>
+                    {loading ? 'Joining...' : 'Confirm'}
+                  </button>
+               </div>
+             </div>
+          )}
 
-            <button type="submit" className="btn btn-primary btn-full mt-2" disabled={!roomId || submitting}>
-              {submitting ? 'Confirming...' : 'Confirm & Join Room'}
-            </button>
-          </form>
         </div>
       </div>
     </div>
