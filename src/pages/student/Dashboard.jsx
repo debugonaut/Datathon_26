@@ -79,7 +79,7 @@ export default function StudentDashboard() {
           <div className="card" style={{ maxWidth: 400 }}>
             <h2>No Hostel Assigned</h2>
             <p className="text-muted mt-1 mb-2">You haven't joined a hostel room yet. Return to the homepage to search and join.</p>
-            <button className="btn btn-primary" onClick={() => navigate('/')}>Find Hostel</button>
+            <button className="btn btn-primary" onClick={() => navigate('/student/join')}>Join with Room QR</button>
           </div>
         </div>
       </div>

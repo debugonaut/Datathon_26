@@ -73,11 +73,18 @@ export default function RoomLanding() {
     setError('');
 
     try {
+      console.log('Attempting to join room...', roomData.roomId);
       await joinRoomWithCodeData(user.uid, roomData);
-      navigate('/student/dashboard', { replace: true });
+      console.log('Successfully written to Firestore. Navigating shortly...');
+      
+      // Delay navigation intentionally to ensure React Context and Firestore Cache sink locally.
+      setTimeout(() => {
+        navigate('/student/dashboard', { replace: true });
+      }, 1200);
+      
     } catch (err) {
-      console.error(err);
-      setError(err.message || 'Failed to join room.');
+      console.error('Room Join Error:', err);
+      setError(err.message || 'Failed to join room. Please check permissions.');
       setJoining(false);
     }
   };
