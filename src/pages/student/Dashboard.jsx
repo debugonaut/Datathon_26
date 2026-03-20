@@ -5,11 +5,13 @@ import { db } from '../../firebase/config';
 import Navbar from '../../components/Navbar';
 import { useAuth } from '../../context/AuthContext';
 import { getAnnouncements, markAnnouncementRead } from '../../firebase/firestore';
+import StudentAnalytics from '../../components/student/StudentAnalytics';
 
 export default function StudentDashboard() {
   const { user, userDoc } = useAuth();
   const navigate = useNavigate();
 
+  const [activeTab, setActiveTab] = useState('overview');
   const [roomData, setRoomData] = useState(null);
   const [hierarchyNames, setHierarchyNames] = useState({ block: '', building: '', floor: '' });
   const [announcements, setAnnouncements] = useState([]);
@@ -101,7 +103,29 @@ export default function StudentDashboard() {
           <p className="text-muted">Welcome to your hostel portal.</p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 300px', gap: '2rem', alignItems: 'start' }}>
+        {/* Custom Tabs Navigation */}
+        <div style={{ borderBottom: '1px solid var(--border)', display: 'flex', gap: '2rem', marginBottom: '2rem', overflowX: 'auto', whiteSpace: 'nowrap' }}>
+          {[
+            { id: 'overview', label: '🏠 Overview' },
+            { id: 'stats', label: '📊 My Stats' }
+          ].map(t => (
+            <div 
+              key={t.id} 
+              onClick={() => setActiveTab(t.id)}
+              style={{
+                padding: '0.75rem 0', fontWeight: 600, cursor: 'pointer',
+                color: activeTab === t.id ? 'var(--primary)' : 'var(--text-muted)',
+                borderBottom: activeTab === t.id ? '3px solid var(--primary)' : '3px solid transparent',
+                transition: 'all 0.2s'
+              }}
+            >
+              {t.label}
+            </div>
+          ))}
+        </div>
+
+        {activeTab === 'overview' && (
+          <div className="animation-fade-in" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 300px', gap: '2rem', alignItems: 'start' }}>
           
           {/* Main Info Area */}
           <div>
@@ -218,6 +242,13 @@ export default function StudentDashboard() {
           </div>
 
         </div>
+        )}
+
+        {activeTab === 'stats' && (
+          <div className="animation-fade-in">
+            <StudentAnalytics roomScore={roomData?.score} />
+          </div>
+        )}
       </div>
     </div>
   );
