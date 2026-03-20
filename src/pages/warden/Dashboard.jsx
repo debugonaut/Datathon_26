@@ -9,6 +9,7 @@ import WardenAnnouncements from '../../components/warden/WardenAnnouncements';
 import Hostel3DView from '../../components/warden/Hostel3DView';
 import ComplaintsKanban from '../../components/warden/ComplaintsKanban';
 import ComplaintsList from '../../components/warden/ComplaintsList';
+import WardenQRDirectory from '../../components/warden/WardenQRDirectory';
 
 export default function WardenDashboard() {
   const { user, userDoc } = useAuth();
@@ -87,6 +88,7 @@ export default function WardenDashboard() {
   const TABS = [
     { id: 'overview', label: '🏠 Overview' },
     { id: 'complaints', label: '🛠️ Complaints' },
+    { id: 'qrcodes', label: '🖨️ Print QRs' },
     { id: 'announcements', label: '📢 Announcements' },
     { id: '3dview', label: '🏢 3D Visualizer' },
   ];
@@ -169,6 +171,7 @@ export default function WardenDashboard() {
         
       {activeTab === 'announcements' && <WardenAnnouncements hostelId={hostel.id} />}
       {activeTab === '3dview' && <Hostel3DView hostelId={hostel.id} />}
+      {activeTab === 'qrcodes' && <WardenQRDirectory hostelId={hostel.id} />}
 
       {activeTab === 'complaints' && (
         <div className="animation-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', height: '100%', minHeight: '600px' }}>
