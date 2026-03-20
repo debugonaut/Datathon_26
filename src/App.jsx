@@ -6,8 +6,12 @@ import RegisterPage from './pages/RegisterPage';
 import RoleSetupPage from './pages/RoleSetupPage';
 import JoinHostel from './pages/student/JoinHostel';
 import StudentDashboard from './pages/student/Dashboard';
+import NewComplaint from './pages/student/NewComplaint';
+import ComplaintConfirmation from './pages/student/ComplaintConfirmation';
 import SetupHostel from './pages/warden/SetupHostel';
 import WardenDashboard from './pages/warden/Dashboard';
+
+import { useParams } from 'react-router-dom';
 
 const ProtectedRoute = ({ children, allowedRole }) => {
   const { user, userDoc, loading } = useAuth();
@@ -15,6 +19,30 @@ const ProtectedRoute = ({ children, allowedRole }) => {
   if (!user) return <Navigate to="/login" replace />;
   if (allowedRole && userDoc?.role !== allowedRole) return <Navigate to="/" replace />;
   return children;
+};
+
+const RoomQRRedirect = () => {
+  const { roomId } = useParams();
+  const { user, userDoc, loading } = useAuth();
+  
+  if (loading) return <div className="loading-screen"><div className="spinner" /></div>;
+  
+  if (!user) {
+    sessionStorage.setItem('qrRedirect', roomId.slice(-6));
+    return <Navigate to="/login" replace />;
+  }
+
+  if (userDoc?.role === 'warden') return <Navigate to="/warden/dashboard" replace />;
+
+  if (!userDoc?.roomId) {
+    return <Navigate to={`/student/join?code=${roomId.slice(-6)}`} replace />;
+  }
+
+  if (userDoc.roomId === roomId) {
+    return <Navigate to={`/complaint/new?roomId=${roomId}`} replace />;
+  }
+
+  return <Navigate to="/student/dashboard" replace />;
 };
 
 const RoleRedirect = () => {
@@ -41,12 +69,19 @@ const AppRoutes = () => (
     <Route path="/student/dashboard" element={
       <ProtectedRoute allowedRole="student"><StudentDashboard /></ProtectedRoute>
     } />
+    <Route path="/complaint/new" element={
+      <ProtectedRoute allowedRole="student"><NewComplaint /></ProtectedRoute>
+    } />
+    <Route path="/complaint/confirmation" element={
+      <ProtectedRoute allowedRole="student"><ComplaintConfirmation /></ProtectedRoute>
+    } />
     <Route path="/warden/setup" element={
       <ProtectedRoute allowedRole="warden"><SetupHostel /></ProtectedRoute>
     } />
     <Route path="/warden/dashboard" element={
       <ProtectedRoute allowedRole="warden"><WardenDashboard /></ProtectedRoute>
     } />
+    <Route path="/room/:hostelId/:roomId" element={<RoomQRRedirect />} />
     <Route path="*" element={<Navigate to="/" replace />} />
   </Routes>
 );

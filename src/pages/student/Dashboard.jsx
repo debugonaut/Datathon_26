@@ -106,7 +106,16 @@ export default function StudentDashboard() {
           {/* Main Info Area */}
           <div>
             <div className="card mb-3">
-              <h3 className="font-bold mb-2">Room Assignment</h3>
+              <div className="flex align-items-center mb-2" style={{ justifyContent: 'space-between' }}>
+                <h3 className="font-bold">Room Assignment</h3>
+                <button 
+                  className="btn btn-sm" 
+                  style={{ background: '#ef4444', color: 'white', border: 'none', padding: '0.4rem 0.8rem' }}
+                  onClick={() => navigate(`/complaint/new?roomId=${userDoc.roomId}`)}
+                >
+                  ⚠️ Report Issue
+                </button>
+              </div>
               <div className="stats-grid" style={{ marginBottom: 0 }}>
                 <div className="stat-card" style={{ padding: '1rem' }}>
                   <div className="stat-label">Block</div>

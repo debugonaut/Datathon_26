@@ -10,6 +10,7 @@ import {
   serverTimestamp,
   writeBatch,
   collectionGroup,
+  increment,
 } from 'firebase/firestore';
 import { db } from './config';
 
@@ -87,6 +88,9 @@ export const getAllRooms = async (hostelId) => {
         const r = await getRooms(hostelId, b.id, bld.id, fl.id);
         rooms.push(...r.map(room => ({
           ...room,
+          blockId: b.id,
+          buildingId: bld.id,
+          floorId: fl.id,
           blockName: b.name,
           buildingName: bld.name,
           floorNumber: fl.floorNumber
@@ -94,7 +98,37 @@ export const getAllRooms = async (hostelId) => {
       }
     }
   }
-  return rooms;
+
+  // ── 3D VISUALIZER UPGRADE ── Fetch open complaints to attach `topComplaint`
+  const compQ = query(
+    collection(db, 'complaints'), 
+    where('hostelId', '==', hostelId),
+    where('status', 'in', ['todo', 'in_progress'])
+  );
+  const compSnap = await getDocs(compQ);
+  
+  const roomComplaints = {}; // roomId -> complaint[]
+  compSnap.docs.forEach(d => {
+    const data = d.data();
+    if (!roomComplaints[data.roomId]) roomComplaints[data.roomId] = [];
+    roomComplaints[data.roomId].push(data);
+  });
+
+  const priorityWeight = { high: 3, medium: 2, low: 1 };
+
+  return rooms.map(room => {
+    const comps = roomComplaints[room.id];
+    let topC = null;
+    if (comps && comps.length > 0) {
+      comps.sort((a,b) => {
+        const pDiff = priorityWeight[b.priority] - priorityWeight[a.priority];
+        if (pDiff !== 0) return pDiff;
+        return (a.createdAt?.toMillis() || 0) - (b.createdAt?.toMillis() || 0);
+      });
+      topC = comps[0].title;
+    }
+    return { ...room, topComplaint: topC };
+  });
 };
 
 // ─── Student join ────────────────────────────────────────────────────────────
@@ -173,4 +207,76 @@ export const markAnnouncementRead = async (announcementId, uid, currentReadBy = 
   await updateDoc(doc(db, 'announcements', announcementId), {
     readBy: [...currentReadBy, uid]
   });
+};
+
+// ─── Complaints Ticketing System ──────────────────────────────────────────────
+export const createComplaint = async (data) => {
+  const batch = writeBatch(db);
+  const complaintRef = doc(collection(db, 'complaints'));
+  
+  const compData = {
+    ...data,
+    id: complaintRef.id,
+    status: 'todo',
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+    resolvedAt: null,
+  };
+  
+  batch.set(complaintRef, compData);
+
+  // Score Logic: Deduct based on priority
+  let scoreDrop = 0;
+  if (data.priority === 'low') scoreDrop = -5;
+  if (data.priority === 'medium') scoreDrop = -15;
+  if (data.priority === 'high') scoreDrop = -30;
+
+  const roomRef = doc(db, 'hostels', data.hostelId, 'blocks', data.blockId, 'buildings', data.buildingId, 'floors', data.floorId, 'rooms', data.roomId);
+  
+  batch.update(roomRef, {
+    score: increment(scoreDrop)
+  });
+
+  await batch.commit();
+  return complaintRef.id;
+};
+
+export const updateComplaintStatus = async (complaint, newStatus) => {
+  if (complaint.status === newStatus) return; // redundant
+  
+  const batch = writeBatch(db);
+  const complaintRef = doc(db, 'complaints', complaint.id);
+  
+  const updateData = {
+    status: newStatus,
+    updatedAt: serverTimestamp()
+  };
+  
+  const wasOpen = complaint.status !== 'resolved';
+  const isNowResolved = newStatus === 'resolved';
+
+  let scoreChange = 0;
+  let penalty = 0;
+  if (complaint.priority === 'low') penalty = 5;
+  if (complaint.priority === 'medium') penalty = 15;
+  if (complaint.priority === 'high') penalty = 30;
+
+  if (wasOpen && isNowResolved) {
+    scoreChange = penalty; // restore points
+    updateData.resolvedAt = serverTimestamp();
+  } else if (!wasOpen && !isNowResolved) {
+    scoreChange = -penalty; // deduct points again
+    updateData.resolvedAt = null;
+  }
+
+  batch.update(complaintRef, updateData);
+
+  if (scoreChange !== 0) {
+    const roomRef = doc(db, 'hostels', complaint.hostelId, 'blocks', complaint.blockId, 'buildings', complaint.buildingId, 'floors', complaint.floorId, 'rooms', complaint.roomId);
+    batch.update(roomRef, {
+      score: increment(scoreChange)
+    });
+  }
+
+  await batch.commit();
 };

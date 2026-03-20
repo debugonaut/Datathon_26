@@ -45,7 +45,15 @@ export default function RoleSetupPage() {
       setUserDoc(newDoc);
 
       if (role === 'warden') navigate('/warden/setup', { replace: true });
-      else navigate('/student/join', { replace: true });
+      else {
+        const qrCode = sessionStorage.getItem('qrRedirect');
+        if (qrCode) {
+          sessionStorage.removeItem('qrRedirect');
+          navigate(`/student/join?code=${qrCode}`, { replace: true });
+        } else {
+          navigate('/student/join', { replace: true });
+        }
+      }
     } catch {
       setError('Something went wrong. Please try again.');
     } finally {

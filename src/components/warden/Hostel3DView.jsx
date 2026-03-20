@@ -16,14 +16,24 @@ function RoomBox({ room, position }) {
     else windowColor = '#10b981'; // Green
   }
 
-  const wallColor = '#f5cbba'; 
-  const corniceColor = '#e3b5a4';
+    const meshRef = useRef();
+
+    useFrame(() => {
+      if (meshRef.current) {
+        const target = hovered ? 1.04 : 1.0;
+        meshRef.current.scale.lerp(new THREE.Vector3(target, target, target), 0.12);
+      }
+    });
+
+  const wallColor = '#deb99a'; 
+  const corniceColor = '#c9a080';
   const balconyColor = '#82e0aa';
 
   return (
     <group position={position}>
       {/* Main Room Cube */}
       <mesh
+        ref={meshRef}
         onPointerOver={(e) => { e.stopPropagation(); setHovered(true); }}
         onPointerOut={(e) => { e.stopPropagation(); setHovered(false); }}
       >
@@ -33,7 +43,7 @@ function RoomBox({ room, position }) {
 
       {/* Top Cornice */}
       <mesh position={[0, 0.8, 0]}>
-        <boxGeometry args={[2.0, 0.1, 2.0]} />
+        <boxGeometry args={[2.05, 0.22, 2.05]} />
         <meshStandardMaterial color={corniceColor} roughness={0.9} />
       </mesh>
       
@@ -59,8 +69,9 @@ function RoomBox({ room, position }) {
             padding: '8px 12px', borderRadius: '8px', color: 'white', whiteSpace: 'nowrap',
             boxShadow: '0 4px 12px rgba(0,0,0,0.5)', fontSize: '0.8rem', pointerEvents: 'none'
           }}>
-            <div style={{ fontWeight: 'bold', marginBottom: '4px', borderBottom: '1px solid var(--border)', paddingBottom: '2px' }}>
-              Room {room.roomNumber}
+            <div style={{ fontWeight: 'bold', marginBottom: '4px', borderBottom: '1px solid var(--border)', paddingBottom: '2px', display: 'flex', justifyContent: 'space-between' }}>
+              <span>Room {room.roomNumber}</span>
+              <span className="text-muted" style={{ fontWeight: 'normal', fontSize: '0.75rem' }}>Code: {room.id.slice(-6).toUpperCase()}</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               Score: <strong style={{ color: windowColor }}>{room.score}</strong>
@@ -161,20 +172,22 @@ export default function Warden3DView({ hostelId }) {
         
         // Base Foundation
         sceneData.buildings.push({
-          position: [centerX, -0.9, centerZ], // Under the first floor
+          position: [centerX, -0.9, centerZ],
           args: [width, 0.4, depth],
           name: bldName,
           type: 'base',
-          color: '#f8c8b4'
+          color: '#c9a090'
         });
 
-        // Solid Building Shell
-        const totalHeight = maxFloors * FLOOR_HEIGHT;
-        sceneData.buildings.push({
-          position: [centerX, (totalHeight / 2) - FLOOR_HEIGHT / 2, centerZ],
-          args: [width, totalHeight, depth],
-          type: 'shell',
-          color: '#e8c9b8'
+        Object.keys(floors).forEach(floorNumStr => {
+          const floorNum = parseInt(floorNumStr, 10);
+          const slabY = (floorNum - 1) * FLOOR_HEIGHT - 0.1;
+          sceneData.buildings.push({
+            position: [centerX, slabY, centerZ],
+            args: [width, 0.18, depth],
+            type: 'slab',
+            color: '#c4956e'
+          });
         });
 
         // Roof
@@ -245,16 +258,12 @@ export default function Warden3DView({ hostelId }) {
         <directionalLight position={[-8, 10, -5]} intensity={0.3} color="#b0c4de" />
         <hemisphereLight skyColor="#1e3a5f" groundColor="#3d2010" intensity={0.4} />
 
-        {/* Render Structural Buildings (Base, Roof, Parapet, Shell) */}
-        <group position={[0, 0.5, 0]}>
+        {/* Render Structural Buildings (Base, Roof, Parapet, Slab) */}
+        <group position={[0, 0.5, 0]} renderOrder={0}>
           {modeledRooms.buildings.map((b, i) => (
             <mesh key={`bld-${i}`} position={b.position} castShadow receiveShadow>
               <boxGeometry args={b.args} />
-              {b.type === 'shell' ? (
-                <meshStandardMaterial color={b.color} roughness={0.85} metalness={0.05} />
-              ) : (
-                <meshStandardMaterial color={b.color} roughness={0.9} />
-              )}
+              <meshStandardMaterial color={b.color} roughness={0.9} />
               
               {/* Building Name Tag on the Base */}
               {b.type === 'base' && (
@@ -272,7 +281,7 @@ export default function Warden3DView({ hostelId }) {
         </group>
 
         {/* Render Rooms */}
-        <group position={[0, 0.5, 0]}>
+        <group position={[0, 0.5, 0]} renderOrder={1}>
           {modeledRooms.rooms.map((data, idx) => (
             <RoomBox key={`${data.room.id}-${idx}`} room={data.room} position={data.position} />
           ))}
@@ -283,6 +292,15 @@ export default function Warden3DView({ hostelId }) {
           <planeGeometry args={[80, 80]} />
           <meshStandardMaterial color="#0a1628" roughness={1} />
         </mesh>
+
+        <ContactShadows
+          position={[0, -0.68, 0]}
+          opacity={0.6}
+          scale={40}
+          blur={2.5}
+          far={12}
+          color="#000820"
+        />
 
         {/* Controls */}
         <OrbitControls makeDefault autoRotate autoRotateSpeed={0.5} minPolarAngle={0} maxPolarAngle={Math.PI / 2 - 0.05} />

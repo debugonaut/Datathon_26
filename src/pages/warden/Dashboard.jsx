@@ -3,8 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 import { useAuth } from '../../context/AuthContext';
 import { getWardenHostel, getBlocks, getBuildings, getFloors, getRooms } from '../../firebase/firestore';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { db } from '../../firebase/config';
 import WardenAnnouncements from '../../components/warden/WardenAnnouncements';
 import Hostel3DView from '../../components/warden/Hostel3DView';
+import ComplaintsKanban from '../../components/warden/ComplaintsKanban';
+import ComplaintsList from '../../components/warden/ComplaintsList';
 
 export default function WardenDashboard() {
   const { user, userDoc } = useAuth();
@@ -13,6 +17,11 @@ export default function WardenDashboard() {
   const [stats, setStats] = useState({ floors: 0, blocks: 0, rooms: 0, buildings: 0 });
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+  
+  // Complaints State
+  const [complaints, setComplaints] = useState([]);
+  const [viewMode, setViewMode] = useState('kanban'); // kanban | list
+  const [filters, setFilters] = useState({ building: '', category: '', priority: '', status: '' });
 
   useEffect(() => {
     if (!user) return;
@@ -49,6 +58,25 @@ export default function WardenDashboard() {
     load();
   }, [user]);
 
+  // Live Complaints Subscription
+  useEffect(() => {
+    if (!hostel) return;
+    const q = query(collection(db, 'complaints'), where('hostelId', '==', hostel.id));
+    const unsub = onSnapshot(q, (snap) => {
+      const data = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+      setComplaints(data);
+    });
+    return () => unsub();
+  }, [hostel]);
+
+  const filteredComplaints = complaints.filter(c => {
+    if (filters.building && c.buildingName !== filters.building) return false;
+    if (filters.category && c.category !== filters.category) return false;
+    if (filters.priority && c.priority !== filters.priority) return false;
+    if (filters.status && c.status !== filters.status) return false;
+    return true;
+  });
+
   if (loading) return (
     <div className="page">
       <Navbar />
@@ -58,6 +86,7 @@ export default function WardenDashboard() {
 
   const TABS = [
     { id: 'overview', label: '🏠 Overview' },
+    { id: 'complaints', label: '🛠️ Complaints' },
     { id: 'announcements', label: '📢 Announcements' },
     { id: '3dview', label: '🏢 3D Visualizer' },
   ];
@@ -139,8 +168,73 @@ export default function WardenDashboard() {
         )}
         
       {activeTab === 'announcements' && <WardenAnnouncements hostelId={hostel.id} />}
-
       {activeTab === '3dview' && <Hostel3DView hostelId={hostel.id} />}
+
+      {activeTab === 'complaints' && (
+        <div className="animation-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', height: '100%', minHeight: '600px' }}>
+          
+          {/* Top Control Bar */}
+          <div className="card" style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', justifyContent: 'space-between', alignItems: 'center', padding: '1rem' }}>
+            
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button 
+                className={`btn btn-sm ${viewMode === 'kanban' ? 'btn-primary' : 'btn-outline'}`} 
+                onClick={() => setViewMode('kanban')}
+              >
+                Kanban Board
+              </button>
+              <button 
+                className={`btn btn-sm ${viewMode === 'list' ? 'btn-primary' : 'btn-outline'}`}
+                onClick={() => setViewMode('list')}
+              >
+                List View
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <select className="form-input" style={{ width: 'auto', padding: '0.4rem', outline: 'none' }} value={filters.building} onChange={e => setFilters({...filters, building: e.target.value})}>
+                <option value="">All Buildings</option>
+                {[...new Set(complaints.map(c => c.buildingName))].map(b => (
+                  <option key={b} value={b}>{b}</option>
+                ))}
+              </select>
+              <select className="form-input" style={{ width: 'auto', padding: '0.4rem', outline: 'none' }} value={filters.category} onChange={e => setFilters({...filters, category: e.target.value})}>
+                <option value="">All Categories</option>
+                {['Plumbing', 'Electrical', 'Cleaning', 'Furniture', 'Other'].map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+              <select className="form-input" style={{ width: 'auto', padding: '0.4rem', outline: 'none' }} value={filters.priority} onChange={e => setFilters({...filters, priority: e.target.value})}>
+                <option value="">All Priorities</option>
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+              </select>
+              {viewMode === 'list' && (
+                <select className="form-input" style={{ width: 'auto', padding: '0.4rem', outline: 'none' }} value={filters.status} onChange={e => setFilters({...filters, status: e.target.value})}>
+                  <option value="">All Statuses</option>
+                  <option value="todo">To Do</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="resolved">Resolved</option>
+                </select>
+              )}
+              {Object.values(filters).some(v => v !== '') && (
+                <button className="btn btn-sm" style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-muted)' }} onClick={() => setFilters({ building: '', category: '', priority: '', status: '' })}>
+                  Clear
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div style={{ flex: 1, minHeight: 0 }}>
+            {viewMode === 'kanban' 
+              ? <ComplaintsKanban complaints={filteredComplaints} /> 
+              : <ComplaintsList complaints={filteredComplaints} />
+            }
+          </div>
+
+        </div>
+      )}
 
       </div>
     </div>

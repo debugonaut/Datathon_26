@@ -80,9 +80,13 @@ export default function RegisterPage() {
       if (role === 'warden') {
         navigate('/warden/setup', { replace: true });
       } else {
-        const savedId = sessionStorage.getItem('selectedHostelId');
-        if (savedId) navigate(`/student/join?hostelId=${savedId}`, { replace: true });
-        else navigate('/', { replace: true });
+        const qrCode = sessionStorage.getItem('qrRedirect');
+        if (qrCode) {
+          sessionStorage.removeItem('qrRedirect');
+          navigate(`/student/join?code=${qrCode}`, { replace: true });
+        } else {
+          navigate('/student/join', { replace: true });
+        }
       }
     } catch (err2) {
       setError(getFirebaseError(err2.code));
