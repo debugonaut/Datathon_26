@@ -102,20 +102,20 @@ export default function StudentAnalytics({ roomScore }) {
           <div style={{ ...card, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
             <div style={label}>Room Score</div>
             <div style={{
-              width: '100px', height: '100px', margin: '0.5rem auto',
+              width: '140px', height: '140px', margin: '1rem auto',
               borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
               background: `conic-gradient(${sc} ${score}%, rgba(255,255,255,0.05) ${score}%)`,
               position: 'relative'
             }}>
               <div style={{
-                position: 'absolute', inset: '7px', background: 'var(--surface)', borderRadius: '50%',
+                position: 'absolute', inset: '10px', background: 'var(--surface)', borderRadius: '50%',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column'
               }}>
-                <span style={{ fontSize: '1.5rem', fontWeight: 800, color: sc }}>{score}</span>
-                <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>/ 100</span>
+                <span style={{ fontSize: '2.5rem', fontWeight: 800, color: sc }}>{score}</span>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>/ 100</span>
               </div>
             </div>
-            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textAlign: 'center' }}>
+            <div style={{ fontSize: '0.8.5rem', color: 'var(--text-muted)', textAlign: 'center' }}>
               {score >= 71 ? 'Good shape' : score >= 41 ? 'Needs attention' : 'Critical'}
             </div>
           </div>
@@ -123,9 +123,9 @@ export default function StudentAnalytics({ roomScore }) {
           {/* Category donut */}
           <div style={card}>
             <div style={label}>By Category</div>
-            <ResponsiveContainer width="100%" height={140}>
+            <ResponsiveContainer width="100%" height={220}>
               <PieChart>
-                <Pie data={cats} cx="50%" cy="50%" innerRadius={30} outerRadius={50} paddingAngle={2} dataKey="value">
+                <Pie data={cats} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={2} dataKey="value">
                   {cats.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
                 </Pie>
                 <Tooltip contentStyle={TT} />
@@ -138,8 +138,8 @@ export default function StudentAnalytics({ roomScore }) {
           {resComp.length > 0 && (
             <div style={card}>
               <div style={label}>My vs Hostel Avg</div>
-              <ResponsiveContainer width="100%" height={100}>
-                <RadialBarChart cx="50%" cy="50%" innerRadius="20%" outerRadius="90%" data={resComp} startAngle={90} endAngle={-270}>
+              <ResponsiveContainer width="100%" height={160}>
+                <RadialBarChart cx="50%" cy="50%" innerRadius="30%" outerRadius="90%" data={resComp} startAngle={90} endAngle={-270}>
                   <RadialBar dataKey="hours" cornerRadius={4}>{resComp.map((e, i) => <Cell key={i} fill={e.fill} />)}</RadialBar>
                   <Legend iconType="circle" iconSize={6} wrapperStyle={{ fontSize: '0.6rem' }} />
                   <Tooltip contentStyle={TT} formatter={v => [`${v}h`, 'Avg']} />
@@ -153,7 +153,7 @@ export default function StudentAnalytics({ roomScore }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <div style={card}>
             <div style={label}>Room Score — 30 Days</div>
-            <ResponsiveContainer width="100%" height={160}>
+            <ResponsiveContainer width="100%" height={300}>
               <AreaChart data={hist}>
                 <defs>
                   <linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
@@ -184,30 +184,30 @@ export default function StudentAnalytics({ roomScore }) {
         </div>
 
         {/* Right: Complaint Timeline */}
-        <div style={{ ...card, overflowY: 'auto', maxHeight: '450px' }}>
+        <div style={{ ...card, overflowY: 'auto', maxHeight: '600px' }}>
           <div style={label}>Complaint Timeline</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0', marginTop: '6px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0', marginTop: '12px' }}>
             {data.map((c, i) => (
-              <div key={c.id} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', paddingBottom: i < data.length - 1 ? '12px' : '0', position: 'relative' }}>
-                {i < data.length - 1 && <div style={{ position: 'absolute', left: '6px', top: '16px', width: '2px', bottom: 0, background: 'var(--border)' }} />}
-                <div style={{ width: '14px', height: '14px', borderRadius: '50%', flexShrink: 0, marginTop: '2px', background: ST_C[c.status], boxShadow: `0 0 6px ${ST_C[c.status]}66` }} />
+              <div key={c.id} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', paddingBottom: i < data.length - 1 ? '16px' : '0', position: 'relative' }}>
+                {i < data.length - 1 && <div style={{ position: 'absolute', left: '7px', top: '18px', width: '2px', bottom: 0, background: 'var(--border)' }} />}
+                <div style={{ width: '16px', height: '16px', borderRadius: '50%', flexShrink: 0, marginTop: '2px', background: ST_C[c.status], boxShadow: `0 0 6px ${ST_C[c.status]}66` }} />
                 <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                    <span style={{ fontWeight: 600, fontSize: '0.78rem', color: 'var(--text-primary)' }}>{c.title}</span>
-                    <span style={{ fontSize: '0.6rem', padding: '1px 6px', borderRadius: '8px', background: `${PRI_C[c.priority]}22`, color: PRI_C[c.priority], fontWeight: 600 }}>{c.priority}</span>
-                    {isOverdue(c) && <span style={{ fontSize: '0.6rem', padding: '1px 6px', borderRadius: '8px', background: 'rgba(239,68,68,0.15)', color: '#ef4444', fontWeight: 600 }}>OVERDUE</span>}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <span style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-primary)' }}>{c.title}</span>
+                    <span style={{ fontSize: '0.7rem', padding: '1px 8px', borderRadius: '8px', background: `${PRI_C[c.priority]}22`, color: PRI_C[c.priority], fontWeight: 600 }}>{c.priority}</span>
+                    {isOverdue(c) && <span style={{ fontSize: '0.7rem', padding: '1px 8px', borderRadius: '8px', background: 'rgba(239,68,68,0.15)', color: '#ef4444', fontWeight: 600 }}>OVERDUE</span>}
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', margin: '3px 0', fontSize: '0.65rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', margin: '4px 0', fontSize: '0.75rem' }}>
                     {['todo', 'in_progress', 'resolved'].map((s, si) => {
                       const ci = ['todo', 'in_progress', 'resolved'].indexOf(c.status);
                       const past = si <= ci;
                       return (
                         <Fragment key={s}>
-                          <span style={{ padding: '1px 6px', borderRadius: '8px', fontSize: '0.6rem',
+                          <span style={{ padding: '2px 8px', borderRadius: '8px', fontSize: '0.7rem',
                             background: past ? `${ST_C[s]}22` : 'rgba(255,255,255,0.04)',
                             color: past ? ST_C[s] : 'var(--text-muted)', fontWeight: past ? 600 : 400,
                             border: c.status === s ? `1px solid ${ST_C[s]}` : '1px solid transparent' }}>{ST_L[s]}</span>
-                          {si < 2 && <span style={{ color: 'var(--text-muted)', fontSize: '0.55rem' }}>→</span>}
+                          {si < 2 && <span style={{ color: 'var(--text-muted)', fontSize: '0.65rem' }}>→</span>}
                         </Fragment>
                       );
                     })}

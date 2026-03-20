@@ -142,9 +142,9 @@ export default function WardenAnalytics({ hostelId }) {
           {/* Category donut */}
           <div style={card}>
             <div style={label}>By Category</div>
-            <ResponsiveContainer width="100%" height={140}>
+            <ResponsiveContainer width="100%" height={200}>
               <PieChart>
-                <Pie data={cats} cx="50%" cy="50%" innerRadius={35} outerRadius={55} paddingAngle={2} dataKey="value">
+                <Pie data={cats} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={2} dataKey="value">
                   {cats.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
                 </Pie>
                 <Tooltip contentStyle={TT} />
@@ -155,9 +155,9 @@ export default function WardenAnalytics({ hostelId }) {
           {/* Priority pie */}
           <div style={card}>
             <div style={label}>Priority Split</div>
-            <ResponsiveContainer width="100%" height={140}>
+            <ResponsiveContainer width="100%" height={200}>
               <PieChart>
-                <Pie data={pris} cx="50%" cy="50%" outerRadius={55} paddingAngle={2} dataKey="value">
+                <Pie data={pris} cx="50%" cy="50%" outerRadius={80} paddingAngle={2} dataKey="value">
                   {pris.map((e, i) => <Cell key={i} fill={e.fill} />)}
                 </Pie>
                 <Tooltip contentStyle={TT} />
@@ -168,7 +168,7 @@ export default function WardenAnalytics({ hostelId }) {
           {/* Funnel */}
           <div style={card}>
             <div style={label}>Resolution Funnel</div>
-            <ResponsiveContainer width="100%" height={100}>
+            <ResponsiveContainer width="100%" height={160}>
               <BarChart data={fun} layout="vertical">
                 <XAxis type="number" hide />
                 <YAxis type="category" dataKey="stage" tick={{ fontSize: 9, fill: 'var(--text-muted)' }} width={60} />
@@ -186,7 +186,7 @@ export default function WardenAnalytics({ hostelId }) {
           {/* Volume area chart */}
           <div style={card}>
             <div style={label}>Complaint Volume — 30 Days</div>
-            <ResponsiveContainer width="100%" height={160}>
+            <ResponsiveContainer width="100%" height={220}>
               <AreaChart data={vol}>
                 <defs>
                   <linearGradient id="vg" x1="0" y1="0" x2="0" y2="1">
@@ -205,7 +205,7 @@ export default function WardenAnalytics({ hostelId }) {
           {/* Peak hours */}
           <div style={card}>
             <div style={label}>Peak Hours (24h)</div>
-            <ResponsiveContainer width="100%" height={110}>
+            <ResponsiveContainer width="100%" height={150}>
               <BarChart data={peaks}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                 <XAxis dataKey="hour" tick={{ fontSize: 7, fill: 'var(--text-muted)' }} interval={2} />
@@ -220,7 +220,7 @@ export default function WardenAnalytics({ hostelId }) {
           {/* Cumulative filed vs resolved */}
           <div style={card}>
             <div style={label}>Cumulative Filed vs Resolved</div>
-            <ResponsiveContainer width="100%" height={120}>
+            <ResponsiveContainer width="100%" height={170}>
               <LineChart data={(() => {
                 let f = 0, r = 0;
                 return vol.map(day => {
@@ -246,7 +246,7 @@ export default function WardenAnalytics({ hostelId }) {
           {/* Radar */}
           <div style={card}>
             <div style={label}>Status by Category</div>
-            <ResponsiveContainer width="100%" height={170}>
+            <ResponsiveContainer width="100%" height={250}>
               <RadarChart data={[...new Set(data.map(c => c.category))].map(cat => ({
                 category: cat.slice(0, 5),
                 open: data.filter(c => c.category === cat && c.status === 'todo').length,
@@ -266,7 +266,7 @@ export default function WardenAnalytics({ hostelId }) {
           {/* Avg resolution by category */}
           <div style={card}>
             <div style={label}>Avg Resolution (hrs)</div>
-            <ResponsiveContainer width="100%" height={100}>
+            <ResponsiveContainer width="100%" height={140}>
               <BarChart data={resCat} layout="vertical">
                 <XAxis type="number" tick={{ fontSize: 8, fill: 'var(--text-muted)' }} />
                 <YAxis type="category" dataKey="category" tick={{ fontSize: 8, fill: 'var(--text-muted)' }} width={55} />
