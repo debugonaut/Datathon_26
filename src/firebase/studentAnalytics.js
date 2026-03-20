@@ -80,7 +80,7 @@ export const getMyCategoryBreakdown = (complaints) => {
 
 // Time since complaint was last updated in human readable form
 export const timeAgo = (timestamp) => {
-  if (!timestamp) return 'Unknown';
+  if (!timestamp || typeof timestamp.toDate !== 'function') return 'Unknown';
   const diff = Date.now() - timestamp.toDate().getTime();
   const mins = Math.floor(diff / 60000);
   const hrs = Math.floor(diff / 3600000);
@@ -93,7 +93,9 @@ export const timeAgo = (timestamp) => {
 // Check if complaint is overdue
 export const isOverdue = (complaint) => {
   if (complaint.status === 'resolved') return false;
-  const hrs = (Date.now() - complaint.createdAt?.toDate?.().getTime()) / 3600000;
+  const dateObj = complaint.createdAt?.toDate?.();
+  if (!dateObj) return false;
+  const hrs = (Date.now() - dateObj.getTime()) / 3600000;
   if (complaint.priority === 'high' && hrs > 48) return true;
   if (complaint.priority === 'medium' && hrs > 96) return true;
   if (complaint.priority === 'low' && hrs > 168) return true;
