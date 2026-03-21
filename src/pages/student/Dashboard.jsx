@@ -6,7 +6,6 @@ import Navbar from '../../components/Navbar';
 import { useAuth } from '../../context/AuthContext';
 import { logoutUser } from '../../firebase/auth';
 import ThemeToggle from '../../components/ThemeToggle';
-import { Link } from 'react-router-dom';
 import { getAnnouncements, markAnnouncementRead } from '../../firebase/firestore';
 import { fetchRoomHistory, generateRoomSummary } from '../../firebase/roomHistory';
 import StudentAnalytics from '../../components/student/StudentAnalytics';

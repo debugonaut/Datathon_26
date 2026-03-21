@@ -14,7 +14,7 @@ import ComplaintsList from '../../components/warden/ComplaintsList';
 import WardenQRDirectory from '../../components/warden/WardenQRDirectory';
 import OverviewOccupancy from '../../components/warden/OverviewOccupancy';
 import WardenAnalytics from '../../components/warden/WardenAnalytics';
-import clusterComplaints from '../../utils/clusterComplaints';
+import { clusterComplaints } from '../../utils/clusterComplaints';
 import { getSLAStatus } from '../../utils/sla';
 
 export default function WardenDashboard() {
