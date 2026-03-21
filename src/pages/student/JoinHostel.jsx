@@ -4,6 +4,7 @@ import { Scanner } from '@yudiel/react-qr-scanner';
 import Navbar from '../../components/Navbar';
 import { useAuth } from '../../context/AuthContext';
 import { resolveRoomByCode, joinRoomWithCodeData } from '../../firebase/firestore';
+import { fetchRoomHistory, generateRoomSummary } from '../../firebase/roomHistory';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 
@@ -17,6 +18,26 @@ export default function JoinHostel() {
   const [resolving, setResolving] = useState(false);
   const [resolvedRoom, setResolvedRoom] = useState(null); // { roomData, hostelName }
   const [cameraActive, setCameraActive] = useState(false);
+
+  const [roomHistory, setRoomHistory] = useState(null);
+  const [historySummary, setHistorySummary] = useState(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
+
+  // Fetch when roomId is resolved
+  useEffect(() => {
+    if (!resolvedRoom?.roomData?.roomId) return;
+    const load = async () => {
+      setHistoryLoading(true);
+      const history = await fetchRoomHistory(resolvedRoom.roomData.roomId);
+      setRoomHistory(history);
+      if (history.length > 0) {
+        const summary = await generateRoomSummary(history);
+        setHistorySummary(summary);
+      }
+      setHistoryLoading(false);
+    };
+    load();
+  }, [resolvedRoom?.roomData?.roomId]);
   
   const handleResolveCode = async (codeStr) => {
     if (!codeStr || codeStr.length < 6) return;
@@ -118,6 +139,110 @@ export default function JoinHostel() {
                  You're joining <strong>Room {resolvedRoom.roomData.roomNumber}</strong><br/>
                  <span style={{ fontSize: '0.9rem' }}>{resolvedRoom.hostelName}</span>
                </p>
+
+               {historyLoading && (
+                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)',
+                   textAlign: 'center', padding: '12px' }}>
+                   Loading room history...
+                 </div>
+               )}
+
+               {!historyLoading && roomHistory !== null && (
+                 <div style={{
+                   marginTop: '16px', padding: '14px 16px', textShadow: 'none',
+                   background: 'rgba(255,255,255,0.03)', textAlign: 'left',
+                   border: '1px solid var(--border)', borderRadius: '10px',
+                   marginBottom: '1rem'
+                 }}>
+                   <div style={{ fontWeight: 600, fontSize: '0.85rem',
+                     marginBottom: '10px', color: 'var(--text-primary)' }}>
+                     Room History
+                   </div>
+
+                   {roomHistory.length === 0 ? (
+                     <div style={{ fontSize: '0.82rem', color: '#10b981' }}>
+                       ✓ No complaints on record. This room has a clean history.
+                     </div>
+                   ) : (
+                     <>
+                       {historySummary?.aiSummary && (
+                         <div style={{
+                           fontSize: '0.82rem', color: 'var(--text-muted)',
+                           fontStyle: 'italic', marginBottom: '12px',
+                           padding: '8px 12px', borderRadius: '8px',
+                           background: 'rgba(55,138,221,0.08)',
+                           border: '1px solid rgba(55,138,221,0.2)'
+                         }}>
+                           "{historySummary.aiSummary}"
+                         </div>
+                       )}
+
+                       <div style={{ display: 'flex', gap: '12px',
+                         flexWrap: 'wrap', marginBottom: '12px' }}>
+                         {[
+                           { label: 'Total complaints', value: historySummary?.total },
+                           { label: 'Resolved', value: historySummary?.resolved },
+                           { label: 'Top issue', value: historySummary?.topCategory },
+                           { label: 'Avg fix time',
+                             value: historySummary?.avgResolutionHours
+                               ? `${historySummary.avgResolutionHours}h` : 'N/A' },
+                         ].map(({ label, value }) => (
+                           <div key={label} style={{
+                             background: 'rgba(255,255,255,0.04)',
+                             borderRadius: '8px', padding: '8px 12px', flex: '1',
+                             minWidth: '70px', textAlign: 'center'
+                           }}>
+                             <div style={{ fontSize: '0.68rem',
+                               color: 'var(--text-muted)', marginBottom: '2px' }}>
+                               {label}
+                             </div>
+                             <div style={{ fontSize: '0.9rem', fontWeight: 600,
+                               color: 'var(--text-primary)' }}>
+                               {value}
+                             </div>
+                           </div>
+                         ))}
+                       </div>
+
+                       <div style={{ fontSize: '0.75rem',
+                         color: 'var(--text-muted)', marginBottom: '6px' }}>
+                         Recent complaints
+                       </div>
+                       {roomHistory.slice(0, 3).map((c, i) => (
+                         <div key={i} style={{
+                           display: 'flex', alignItems: 'center',
+                           gap: '8px', padding: '5px 0',
+                           borderBottom: i < 2 ? '1px solid var(--border)' : 'none',
+                           fontSize: '0.78rem'
+                         }}>
+                           <span style={{
+                             width: '8px', height: '8px', borderRadius: '50%', flexShrink: 0,
+                             background: c.status === 'resolved' ? '#10b981'
+                               : c.priority === 'high' ? '#ef4444' : '#f59e0b'
+                           }} />
+                           <span style={{ color: 'var(--text-primary)', flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                             {c.title}
+                           </span>
+                           <span style={{ color: 'var(--text-muted)' }}>
+                             {c.category}
+                           </span>
+                           <span style={{
+                             color: c.status === 'resolved' ? '#10b981' : 'var(--text-muted)'
+                           }}>
+                             {c.status === 'resolved' ? '✓' : '○'}
+                           </span>
+                         </div>
+                       ))}
+                       {roomHistory.length > 3 && (
+                         <div style={{ fontSize: '0.72rem',
+                           color: 'var(--text-muted)', marginTop: '6px' }}>
+                           +{roomHistory.length - 3} more complaints on record
+                         </div>
+                       )}
+                     </>
+                   )}
+                 </div>
+               )}
                
                {error && <div className="form-error text-left">{error}</div>}
 

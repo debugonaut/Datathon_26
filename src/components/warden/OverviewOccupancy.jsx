@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import { getAllRooms, ejectStudentTransaction } from '../../firebase/firestore';
+import { fetchRoomHistory, generateRoomSummary } from '../../firebase/roomHistory';
 
 export default function OverviewOccupancy({ hostelId }) {
   const [rooms, setRooms] = useState([]);
@@ -9,6 +10,24 @@ export default function OverviewOccupancy({ hostelId }) {
   const [ejecting, setEjecting] = useState(null); // uid being ejected
   const [expandedRoom, setExpandedRoom] = useState(null);
   const [occupantDetails, setOccupantDetails] = useState({}); // uid -> { name, PRN, email }
+
+  const [historyDrawerRoom, setHistoryDrawerRoom] = useState(null);
+  const [fullRoomHistory, setFullRoomHistory] = useState([]);
+  const [roomSummary, setRoomSummary] = useState(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
+
+  const openHistoryDrawer = async (e, room) => {
+    e.stopPropagation();
+    setHistoryDrawerRoom(room);
+    setHistoryLoading(true);
+    const history = await fetchRoomHistory(room.id);
+    setFullRoomHistory(history);
+    if (history.length > 0) {
+      const summary = await generateRoomSummary(history);
+      setRoomSummary(summary);
+    }
+    setHistoryLoading(false);
+  };
 
   useEffect(() => {
     loadRooms();
@@ -181,12 +200,117 @@ export default function OverviewOccupancy({ hostelId }) {
                       })}
                     </div>
                   )}
+
+                  <button
+                    onClick={(e) => openHistoryDrawer(e, room)}
+                    style={{
+                      width: '100%', marginTop: '12px', padding: '8px',
+                      background: 'rgba(55,138,221,0.1)', border: '1px solid rgba(55,138,221,0.3)',
+                      borderRadius: '6px', color: '#378ADD', fontSize: '0.8rem',
+                      cursor: 'pointer', fontWeight: 600
+                    }}
+                  >
+                    🔍 View Full Room History
+                  </button>
                 </div>
               )}
             </div>
           );
         })}
       </div>
+
+      {historyDrawerRoom && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.5)',
+          display: 'flex', justifyContent: 'flex-end'
+        }} onClick={() => setHistoryDrawerRoom(null)}>
+          <div style={{
+            width: '400px', maxWidth: '100%', background: 'var(--bg-primary)',
+            height: '100%', padding: '1.5rem', overflowY: 'auto',
+            transform: 'translateX(0)', transition: 'transform 0.3s',
+            boxShadow: '-4px 0 15px rgba(0,0,0,0.3)'
+          }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h2 style={{ margin: 0 }}>Room {historyDrawerRoom.roomNumber} History</h2>
+              <button onClick={() => setHistoryDrawerRoom(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '1.5rem', cursor: 'pointer' }}>&times;</button>
+            </div>
+
+            {historyLoading ? (
+              <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>Loading history...</div>
+            ) : (
+              <>
+                {fullRoomHistory.length === 0 ? (
+                  <div style={{ color: '#10b981', textAlign: 'center', padding: '2rem' }}>
+                    ✓ No complaints on record. This room has a clean history.
+                  </div>
+                ) : (
+                  <>
+                    {roomSummary?.aiSummary && (
+                      <div style={{
+                        fontSize: '0.85rem', color: 'var(--text-muted)',
+                        fontStyle: 'italic', marginBottom: '1rem',
+                        padding: '12px', borderRadius: '8px',
+                        background: 'rgba(55,138,221,0.08)',
+                        border: '1px solid rgba(55,138,221,0.2)'
+                      }}>
+                        "{roomSummary.aiSummary}"
+                      </div>
+                    )}
+
+                    <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
+                      {[
+                        { label: 'Total complaints', value: roomSummary?.total },
+                        { label: 'Resolved', value: roomSummary?.resolved },
+                        { label: 'Top issue', value: roomSummary?.topCategory },
+                        { label: 'Avg fix time', value: roomSummary?.avgResolutionHours ? `${roomSummary.avgResolutionHours}h` : 'N/A' },
+                      ].map(({ label, value }) => (
+                        <div key={label} style={{
+                          background: 'rgba(255,255,255,0.04)', borderRadius: '8px', padding: '8px 12px',
+                          flex: '1', minWidth: '80px'
+                        }}>
+                          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '4px' }}>{label}</div>
+                          <div style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)' }}>{value}</div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>
+                      Full Complaint Timeline
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      {fullRoomHistory.map((c, i) => (
+                        <div key={c.id} style={{ display: 'flex', gap: '12px', paddingBottom: i < fullRoomHistory.length - 1 ? '16px' : '0', position: 'relative' }}>
+                          {i < fullRoomHistory.length - 1 && (
+                            <div style={{ position: 'absolute', left: '7px', top: '18px', width: '2px', bottom: 0, background: 'var(--border)' }} />
+                          )}
+                          <div style={{
+                            width: '16px', height: '16px', borderRadius: '50%', flexShrink: 0, marginTop: '2px',
+                            background: c.status === 'resolved' ? '#10b981' : c.priority === 'high' ? '#ef4444' : '#f59e0b'
+                          }} />
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)' }}>{c.title}</div>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                              {c.category} • {c.priority} priority<br/>
+                              Filed by: {c.studentName || c.studentUid} on {c.createdAt?.toDate?.().toLocaleDateString('en-IN')}<br/>
+                              {c.status === 'resolved' && c.resolvedAt && (
+                                <span style={{ color: '#10b981' }}>Fixed in {Math.round((c.resolvedAt.toDate() - c.createdAt.toDate()) / 3600000)}h</span>
+                              )}
+                            </div>
+                            <div style={{ marginTop: '6px', fontSize: '0.8rem', color: 'var(--text-primary)' }}>
+                              {c.descriptionTranslated || c.description}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

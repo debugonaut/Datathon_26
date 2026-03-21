@@ -5,6 +5,7 @@ import { db } from '../../firebase/config';
 import Navbar from '../../components/Navbar';
 import { useAuth } from '../../context/AuthContext';
 import { getAnnouncements, markAnnouncementRead } from '../../firebase/firestore';
+import { fetchRoomHistory, generateRoomSummary } from '../../firebase/roomHistory';
 import StudentAnalytics from '../../components/student/StudentAnalytics';
 
 export default function StudentDashboard() {
@@ -16,6 +17,20 @@ export default function StudentDashboard() {
   const [hierarchyNames, setHierarchyNames] = useState({ block: '', building: '', floor: '' });
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const [fullRoomHistory, setFullRoomHistory] = useState([]);
+  const [roomSummary, setRoomSummary] = useState(null);
+  const [showFullHistory, setShowFullHistory] = useState(false);
+
+  useEffect(() => {
+    if (!userDoc?.roomId) return;
+    fetchRoomHistory(userDoc.roomId).then(history => {
+      setFullRoomHistory(history);
+      if (history.length > 0) {
+        generateRoomSummary(history).then(setRoomSummary);
+      }
+    });
+  }, [userDoc?.roomId]);
 
   useEffect(() => {
     if (!userDoc?.hostelId) {
@@ -219,6 +234,93 @@ export default function StudentDashboard() {
                 </div>
               </div>
               <p className="text-muted text-sm mt-2">Maintain above 70 to keep a green rating.</p>
+            </div>
+
+            <div style={{ marginTop: '0px' }}>
+              <button
+                onClick={() => setShowFullHistory(p => !p)}
+                style={{
+                  width: '100%', padding: '10px 16px',
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid var(--border)', borderRadius: '10px',
+                  color: 'var(--text-primary)', cursor: 'pointer',
+                  display: 'flex', justifyContent: 'space-between',
+                  alignItems: 'center', fontSize: '0.85rem', fontWeight: 600
+                }}
+              >
+                <span>Room History — All Tenants</span>
+                <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>
+                  {fullRoomHistory.length} complaints on record
+                  {showFullHistory ? ' ▲' : ' ▼'}
+                </span>
+              </button>
+
+              {showFullHistory && (
+                <div style={{
+                  marginTop: '8px', padding: '14px 16px',
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid var(--border)', borderRadius: '10px',
+                  maxHeight: '400px', overflowY: 'auto'
+                }}>
+                  {roomSummary?.aiSummary && (
+                    <div style={{
+                      fontSize: '0.82rem', color: 'var(--text-muted)',
+                      fontStyle: 'italic', marginBottom: '14px',
+                      padding: '8px 12px', borderRadius: '8px',
+                      background: 'rgba(55,138,221,0.08)',
+                      border: '1px solid rgba(55,138,221,0.2)'
+                    }}>
+                      "{roomSummary.aiSummary}"
+                    </div>
+                  )}
+
+                  {fullRoomHistory.map((c, i) => (
+                    <div key={c.id} style={{
+                      display: 'flex', gap: '12px',
+                      paddingBottom: i < fullRoomHistory.length - 1 ? '14px' : '0',
+                      position: 'relative'
+                    }}>
+                      {i < fullRoomHistory.length - 1 && (
+                        <div style={{
+                          position: 'absolute', left: '7px', top: '18px',
+                          width: '2px', bottom: 0, background: 'var(--border)'
+                        }} />
+                      )}
+                      <div style={{
+                        width: '16px', height: '16px', borderRadius: '50%',
+                        flexShrink: 0, marginTop: '2px',
+                        background: c.status === 'resolved' ? '#10b981'
+                          : c.priority === 'high' ? '#ef4444' : '#f59e0b'
+                      }} />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '0.85rem', fontWeight: 600,
+                          color: 'var(--text-primary)' }}>
+                          {c.title}
+                        </div>
+                        <div style={{ fontSize: '0.75rem',
+                          color: 'var(--text-muted)', marginTop: '2px' }}>
+                          {c.category} • {c.priority} priority •{' '}
+                          {c.createdAt?.toDate?.().toLocaleDateString('en-IN', {
+                            day: 'numeric', month: 'short', year: 'numeric'
+                          })}
+                          {c.status === 'resolved' && c.resolvedAt && (
+                            <span style={{ color: '#10b981' }}>
+                              {' '}• Fixed in {Math.round(
+                                (c.resolvedAt.toDate() - c.createdAt.toDate()) / 3600000
+                              )}h
+                            </span>
+                          )}
+                          {c.studentUid !== user?.uid && (
+                            <span style={{ color: 'var(--text-muted)' }}>
+                              {' '}• Previous tenant
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* QR Code */}

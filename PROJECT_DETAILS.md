@@ -4,13 +4,13 @@
 
 **Project Name:** Fix My Hostel
 **Target Event:** Datathon 2026
-**Theme/Domain:** Smart Campus & Infrastructure Management
+**Theme/Domain:** Smart Campus Infrastructure — Hostel Maintenance Intelligence Platform
 
 **The Problem:** 
 Managing hostel infrastructure is historically chaotic. Students report issues (plumbing, electrical, furniture) through outdated methods like physical registers or scattered WhatsApp groups. Wardens struggle to track open issues, prioritize them, and communicate ETA to students. There is no data to identify recurring systemic issues (e.g., constant pipe leaks on a specific floor) or to hold maintenance staff accountable.
 
 **The Solution:**
-"Fix My Hostel" is an enterprise-grade, intelligent issue tracking system bridging the communication gap between students and wardens. By leveraging modern web technologies, real-time databases, and generative AI, the platform automates triage, enforces service-level agreements (SLAs), and provides a transparent, visual dashboard for both students and administration.
+"Fix My Hostel" is an enterprise-grade, intelligent issue tracking system bridging the communication gap between students and wardens. By leveraging modern web technologies, real-time databases, and generative AI, the platform automates triage, enforces service-level agreements (SLAs), and provides a transparent, visual dashboard for both students and administration. The system is designed for universal deployment — any hostel worldwide can be fully onboarded in under 5 minutes using the guided setup wizard, requiring zero technical knowledge from the administrator.
 
 ---
 
@@ -20,11 +20,11 @@ Managing hostel infrastructure is historically chaotic. Students report issues (
 *   **Routing:** React Router v6
 *   **Styling:** Custom CSS with an emphasis on a glassmorphic, premium dark-mode aesthetic.
 *   **Database & Backend:** Firebase Firestore (NoSQL Document Database)
-*   **Authentication:** Firebase Auth (Email/Password)
+*   **Authentication:** Firebase Auth (Google OAuth, restricted to @mitaoe.ac.in institutional emails only)
 *   **Storage:** Firebase Storage (for media, images, audio blobs)
 *   **Data Visualization:** Recharts (Area, Pie, Radial charts)
 *   **Interactive UI:** `@dnd-kit` for drag-and-drop Kanban boards.
-*   **Artificial Intelligence:** Anthropic Claude 3.5 Sonnet API via `@anthropic-ai/sdk`.
+*   **Artificial Intelligence:** Anthropic Claude API (claude-sonnet-4-20250514) via direct fetch
 *   **Voice APIs:** Native Web Speech API, MediaRecorder API.
 
 ---
@@ -63,6 +63,39 @@ Wardens manage issues via a real-time, interactive Kanban Board ("To Do", "In Pr
 *   **Search & Filter Engine:** As complaint history grows, students can filter by Status, Category, Priority, or free-text search to find old issues.
 *   **Withdrawal System:** If an issue resolves itself (e.g., internet comes back online), the student can instantly "Withdraw" the complaint, automatically refunding the room score.
 *   **Re-Open System:** If maintenance claims an issue is resolved but it isn't, the student has up to 2 chances to "Re-open" the ticket with a mandatory justification, immediately pinging the warden back.
+
+### F. Secure Student Onboarding & Room Registration
+
+Student registration is a one-time, verified process designed to prevent
+unauthorized room claims and ensure institutional data integrity.
+
+**Profile Setup:**
+- Students complete a one-time profile form after Google OAuth
+- PRN (Permanent Registration Number) is validated as exactly 12 digits,
+  purely numerical, non-zero leading, and cross-checked against the
+  student's college email (MITAOE format: {PRN}@mitaoe.ac.in)
+- PRN uniqueness is enforced via a Firestore-wide query before submission
+  preventing identity duplication across the entire system
+
+**Room Claiming:**
+- Students scan the QR code on their physical door or enter the 6-character
+  room code to claim their room
+- Before confirming, the student's PRN is SHA-256 hashed using the native
+  Web Crypto API and compared against all existing occupant hashes in the
+  room document — preventing the same student from claiming multiple rooms
+- Room joins use atomic Firestore transactions to prevent race conditions
+  when multiple students attempt to claim the last available bed simultaneously
+- Wardens control maxOccupants per room and can eject and reassign
+  students from the dashboard
+
+**QR Smart Routing:**
+- The /room/:roomId route intelligently handles all states:
+  unauthenticated users are redirected to login with the roomId preserved
+  in localStorage, unregistered students are taken through the profile and
+  room setup flow, and registered students are taken directly to the
+  complaint filing form for their room
+- Cross-room complaint filing is blocked — students can only file complaints
+  for their own assigned room
 
 ---
 

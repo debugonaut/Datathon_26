@@ -29,7 +29,7 @@ export const analyzeComplaint = async ({ imageBase64, transcript, typedText }) =
         'anthropic-dangerous-client-side-api-key-allowed': 'true'
       },
       body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20240620', // updated model name per best practices 
+        model: 'claude-sonnet-4-20250514', // updated model name per best practices 
         max_tokens: 256,
         messages: [{ role: 'user', content: inputs }]
       })
