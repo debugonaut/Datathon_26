@@ -63,7 +63,18 @@ const SortableComplaintCard = ({ complaint }) => {
   const [showingOriginal, setShowingOriginal] = useState(false);
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="card p-2 mb-2" style={{ cursor: 'grab', background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
+    <div 
+      ref={setNodeRef} 
+      style={{
+        ...style,
+        cursor: 'grab', 
+        background: 'var(--bg-secondary)', 
+        border: '1px solid var(--border)'
+      }} 
+      {...attributes} 
+      {...listeners} 
+      className="card p-2 mb-2"
+    >
       
       {/* Withdrawn Badge */}
       {complaint.withdrawnAt && (
@@ -281,7 +292,13 @@ export default function ComplaintsKanban({ complaints }) {
   const columnsData = useMemo(() => {
     return COLUMNS.map(col => ({
       ...col,
-      items: complaints.filter(c => c.status === col.id).sort((a, b) => b.createdAt - a.createdAt) // Newest first
+      items: complaints
+        .filter(c => c.status === col.id)
+        .sort((a, b) => {
+          const aTime = a.createdAt?.toMillis?.() || a.createdAt?.seconds * 1000 || 0;
+          const bTime = b.createdAt?.toMillis?.() || b.createdAt?.seconds * 1000 || 0;
+          return bTime - aTime;
+        })
     }));
   }, [complaints]);
 

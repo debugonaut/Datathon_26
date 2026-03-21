@@ -17,7 +17,7 @@ envContent.split('\n').forEach(line => {
 
 import { initializeApp } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
-import { getFirestore, collection, doc, setDoc, getDoc, getDocs, query, where, Timestamp } from 'firebase/firestore';
+import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, query, where, Timestamp } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: env.VITE_FIREBASE_API_KEY,
@@ -70,12 +70,22 @@ async function run() {
   const studentSnap = await getDoc(doc(db, 'users', studentUid));
   const wardenSnap = await getDoc(doc(db, 'users', wardenUid));
 
-  if (studentSnap.exists() && wardenSnap.exists() && false) { // Force re-seed for blockName fix
+  if (studentSnap.exists() && wardenSnap.exists() && false) { // Force re-seed for hostel cleanup fix
     const sData = studentSnap.data();
     const wData = wardenSnap.data();
-    if (sData.isProfileComplete && sData.isRegistered && sData.roomId && wData.isProfileComplete && wData.hostelId && sData.blockName) {
+    if (sData.isProfileComplete && sData.isRegistered && sData.roomId && wData.isProfileComplete && wData.hostelId && sData.blockName && false) { 
       console.log('✅ Demo users already fully populated. Exiting early (idempotent skip).');
       process.exit(0);
+    }
+  }
+
+  console.log('--- CLEANUP: Removing duplicate demo hostels for warden ---');
+  const hostelQ = query(collection(db, 'hostels'), where('wardenId', '==', wardenUid));
+  const hostelSnap = await getDocs(hostelQ);
+  for (const hDoc of hostelSnap.docs) {
+    if (hDoc.id !== hostelId) {
+      console.log(`Deleting stray hostel: ${hDoc.id}`);
+      await deleteDoc(hDoc.ref);
     }
   }
 
@@ -101,6 +111,7 @@ async function run() {
   });
   
   console.log('Seeding hostel hierarchy...');
+
   // Ensure hostel exists
   await setDoc(doc(db, 'hostels', hostelId), {
     name: 'MITAOE Boys Hostel',

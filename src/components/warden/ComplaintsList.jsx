@@ -26,7 +26,11 @@ export default function ComplaintsList({ complaints }) {
   };
 
   // Default Sort by newest
-  const sorted = [...complaints].sort((a,b) => b.createdAt - a.createdAt);
+  const sorted = [...complaints].sort((a,b) => {
+    const aTime = a.createdAt?.toMillis?.() || a.createdAt?.seconds * 1000 || 0;
+    const bTime = b.createdAt?.toMillis?.() || b.createdAt?.seconds * 1000 || 0;
+    return bTime - aTime;
+  });
 
   return (
     <div style={{ display: 'flex', height: '100%', position: 'relative', overflow: 'hidden' }}>
