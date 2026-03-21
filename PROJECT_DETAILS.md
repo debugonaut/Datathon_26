@@ -58,6 +58,12 @@ Wardens manage issues via a real-time, interactive Kanban Board ("To Do", "In Pr
     *   Resolving the complaint refunds the points.
     *   The student dashboard features a massive conic-gradient gauge showing their real-time "Room Health".
 *   **Warden Global Analytics:** Wardens see application-wide metrics: breakdown of issues by category, average resolution times compared across blocks, and historical trend lines.
+*   **Student Personal Analytics:** Each student has a personal 
+    "My Stats" dashboard showing their room health gauge (radial), 
+    30-day score trend (area chart), complaint category breakdown 
+    (donut chart), personal vs hostel-average resolution time 
+    (radial bar chart), and a full complaint status timeline 
+    with overdue flags.
 
 ### E. Student Empowerment & Feedback Loop
 *   **Search & Filter Engine:** As complaint history grows, students can filter by Status, Category, Priority, or free-text search to find old issues.
@@ -98,6 +104,36 @@ unauthorized room claims and ensure institutional data integrity.
   for their own assigned room
 
 ---
+
+### G. Room History & Institutional Memory
+
+Every room maintains a permanent complaint record that persists across 
+tenant changes, giving new students full transparency into the room's 
+maintenance history before they move in.
+
+**Pre-move-in transparency:**
+- Before confirming room registration, students see the room's full 
+  complaint history, an AI-generated summary, top recurring issue 
+  category, and average resolution time across all previous tenants
+
+**Persistent timeline:**
+- The room history view on the student dashboard shows all complaints 
+  ever filed for that room across all tenants
+- Previous tenant complaints are anonymized — shown as "Previous tenant" 
+  with no name or UID exposed to protect privacy
+
+**AI-generated briefing:**
+- Claude (claude-sonnet-4-20250514) generates a 2-sentence neutral 
+  summary of the room's maintenance record written as a briefing 
+  for an incoming tenant
+- Generated from: total complaints, resolution rate, most common issue 
+  category, average resolution time, and re-open count
+
+**Warden institutional memory:**
+- Wardens can view full room histories with tenant details intact
+- Enables identification of chronic problem rooms before new allocations
+- Complements the 3D visualizer's real-time health scores with 
+  historical context
 
 ## 4. Security & Data Integrity
 
