@@ -12,6 +12,7 @@ import ComplaintConfirmation from './pages/student/ComplaintConfirmation';
 import SetupHostel from './pages/warden/SetupHostel';
 import WardenDashboard from './pages/warden/Dashboard';
 import RoomLanding from './pages/RoomLanding';
+import DemoLanding from './pages/DemoLanding';
 
 // ── Generic auth guard ────────────────────────────────────────────────────────
 const ProtectedRoute = ({ children, allowedRole }) => {
@@ -109,6 +110,7 @@ const AppRoutes = () => (
     <Route path="/room/:roomId" element={<RoomLanding />} />
     <Route path="/room/:hostelId/:roomId" element={<RoomLanding />} />
 
+    <Route path="/demo" element={<DemoLanding />} />
     <Route path="*" element={<Navigate to="/" replace />} />
   </Routes>
 );
