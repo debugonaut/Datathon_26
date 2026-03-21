@@ -141,14 +141,34 @@ const SortableComplaintCard = ({ complaint }) => {
           background: complaint.priority === 'low' ? 'rgba(16,185,129,0.2)' : complaint.priority === 'medium' ? 'rgba(245,158,11,0.2)' : 'rgba(239,68,68,0.2)',
           color: complaint.priority === 'low' ? '#10b981' : complaint.priority === 'medium' ? '#f59e0b' : '#ef4444'
         }}>
-          {complaint.priority.toUpperCase()}
+          {complaint.priority?.toUpperCase() || 'UNKNOWN'}
         </span>
       </div>
 
       <div className="flex align-items-center justify-content-between text-xs text-muted mb-2">
         <div>👤 {complaint.studentName}</div>
-        {complaint.mediaUrls?.length > 0 && <div>📎 {complaint.mediaUrls.length} File(s)</div>}
       </div>
+
+      {complaint.mediaUrls?.length > 0 && (
+        <div style={{ display: 'flex', gap: '6px', marginBottom: '8px', flexWrap: 'wrap' }} onPointerDown={(e) => e.stopPropagation()}>
+          {complaint.mediaUrls.map((url, idx) => {
+            const type = complaint.mediaTypes?.[idx] || 'document';
+            return (
+              <a 
+                key={idx} href={url} target="_blank" rel="noreferrer" 
+                style={{ 
+                  display: 'inline-flex', alignItems: 'center', padding: '3px 8px', 
+                  background: 'rgba(55,138,221,0.15)', borderRadius: '6px',
+                  fontSize: '0.72rem', color: '#378ADD', textDecoration: 'none',
+                  border: '1px solid rgba(55,138,221,0.3)', fontWeight: 600
+                }}
+              >
+                {type === 'image' ? '🖼️ View Image' : type === 'video' ? '🎥 View Video' : type === 'audio' ? '🔊 Play Audio' : '📎 View File'}
+              </a>
+            );
+          })}
+        </div>
+      )}
 
       {/* SLA Timer */}
       {sla && (

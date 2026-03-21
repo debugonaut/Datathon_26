@@ -274,17 +274,19 @@ export const updateComplaintStatus = async (complaint, newStatus) => {
     updatedAt: serverTimestamp()
   };
   
-  // ── AUTO-DELETION ON ACKNOWLEDGMENT ───────────────────────────────────
   // Acknowledge = move from todo to in_progress
   if (complaint.status === 'todo' && newStatus === 'in_progress') {
     updateData.acknowledgedAt = serverTimestamp();
-    
-    // Deletion logic (Cloudinary Migration: Just scrub the links from the DB)
+  }
+
+  // ── AUTO-DELETION ON RESOLVED ───────────────────────────────────
+  // Cloudinary Migration: Just scrub the links from the DB to protect privacy once the issue is fixed
+  if (newStatus === 'resolved') {
     if (complaint.mediaUrls && complaint.mediaUrls.length > 0) {
       updateData.mediaUrls = [];
       updateData.mediaPaths = [];
       updateData.internalNotes = arrayUnion({
-        text: "System: Original media attachments scrubbed from complaint view upon acknowledgment to protect privacy.",
+        text: "System: Original media attachments scrubbed from complaint view upon resolution to protect privacy.",
         createdAt: Timestamp.now(),
         wardenName: "System"
       });
