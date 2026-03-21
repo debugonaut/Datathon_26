@@ -83,9 +83,15 @@ export default function LandingPage() {
         )}
 
         <div className="hero-divider mt-3">— or —</div>
-        <Link to="/register?role=warden" className="btn btn-outline">
-          🔑 I'm a Warden — Register My Hostel
-        </Link>
+
+        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '1.5rem', flexWrap: 'wrap' }}>
+          <Link to="/demo" className="btn btn-primary" style={{ background: 'linear-gradient(135deg, #10b981, #3b82f6)', border: 'none', padding: '0.8rem 2rem' }}>
+            🚀 Try Datathon Demo (PS-15)
+          </Link>
+          <Link to="/register?role=warden" className="btn btn-outline">
+            🔑 Warden Registration
+          </Link>
+        </div>
       </section>
     </div>
   );
