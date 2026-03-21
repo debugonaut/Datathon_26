@@ -74,8 +74,13 @@ async function run() {
     const sData = studentSnap.data();
     const wData = wardenSnap.data();
     if (sData.isProfileComplete && sData.isRegistered && sData.roomId && wData.isProfileComplete && wData.hostelId && sData.blockName) {
-      console.log('✅ Demo users already fully populated. Exiting early (idempotent skip).');
-      process.exit(0);
+      // Verify hierarchy is correctly nested before skipping
+      const roomCheck = await getDoc(doc(db, 'hostels', hostelId, 'blocks', blockId, 'buildings', buildingId, 'floors', 'demo-floor-2', 'rooms', 'demo-room-204'));
+      if (roomCheck.exists()) {
+        console.log('✅ Demo data fully populated with correct hierarchy. Exiting early.');
+        process.exit(0);
+      }
+      console.log('⚠️  User docs exist but room hierarchy is missing/wrong — reseeding hierarchy...');
     }
   }
 
@@ -120,18 +125,18 @@ async function run() {
     createdAt: Timestamp.now()
   });
 
-  // Block
+  // 1. Block
   await setDoc(doc(db, 'hostels', hostelId, 'blocks', blockId), { name: 'A Block' });
 
-  // Building
-  await setDoc(doc(db, 'hostels', hostelId, 'buildings', buildingId), { name: 'A1', blockId });
+  // 2. Building
+  await setDoc(doc(db, 'hostels', hostelId, 'blocks', blockId, 'buildings', buildingId), { name: 'A1', blockId });
 
-  // Floors & Rooms
+  // 3. Floors
   const roomDocRefs = [];
 
   for (let f = 1; f <= 3; f++) {
     const floorId = `demo-floor-${f}`;
-    await setDoc(doc(db, 'hostels', hostelId, 'floors', floorId), {
+    await setDoc(doc(db, 'hostels', hostelId, 'blocks', blockId, 'buildings', buildingId, 'floors', floorId), {
       name: `Floor ${f}`, buildingId, floorNumber: f
     });
 

@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
@@ -8,34 +7,37 @@ import { useAuth } from '../context/AuthContext';
 export default function DemoLanding() {
   const [loadingRole, setLoadingRole] = useState(null);
   const [error, setError] = useState('');
-  const navigate = useNavigate();
   const { setUserDoc } = useAuth();
 
   const handleDemoLogin = async (role) => {
     setLoadingRole(role);
     setError('');
-    
+
     const email = role === 'student' ? 'demo.student@fixmyhostel.dev' : 'demo.warden@fixmyhostel.dev';
     const password = role === 'student' ? 'DemoStudent123' : 'DemoWarden123';
 
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const userSnap = await getDoc(doc(db, 'users', userCredential.user.uid));
-      
-      if (userSnap.exists()) {
-        const uDoc = userSnap.data();
-        setUserDoc(uDoc);
-        if (uDoc.role === 'warden') {
-          window.open('/warden/dashboard', '_blank');
-        } else {
-          window.open('/student/dashboard', '_blank');
-        }
-        
-        // Sign out of the demo page so it stays ready for the next click
-        await auth.signOut();
-      } else {
+
+      if (!userSnap.exists()) {
         throw new Error('User document not found. Run the seed script first.');
       }
+
+      const uDoc = userSnap.data();
+      setUserDoc(uDoc);
+
+      const destination = uDoc.role === 'warden' ? '/warden/dashboard' : '/student/dashboard';
+
+      // Open dashboard in new tab — judge keeps /demo open to switch roles
+      window.open(destination, '_blank');
+
+      // Wait 2.5s so new tab fully loads auth state before signing out here
+      setTimeout(async () => {
+        await auth.signOut();
+        setUserDoc(null);
+      }, 2500);
+
     } catch (err) {
       console.error(err);
       setError(`Login failed: ${err.message}. Ensure seed script has been run.`);
@@ -60,6 +62,10 @@ export default function DemoLanding() {
           Experience the full platform instantly. Click a role below to bypass authentication and enter the populated demo environment.
         </p>
 
+        <p className="text-center mb-4" style={{ fontSize: '0.8rem', color: 'var(--text-muted)', background: 'var(--bg-secondary)', borderRadius: '8px', padding: '0.6rem 1rem' }}>
+          💡 Each role opens in a <strong>new tab</strong> — open both to see real-time sync side by side
+        </p>
+
         {error && (
           <div className="form-error mb-4" style={{ textAlign: 'center' }}>
             {error}
@@ -67,27 +73,31 @@ export default function DemoLanding() {
         )}
 
         <div style={{ display: 'flex', gap: '1rem', flexDirection: 'column' }}>
-          <button 
-            className="btn btn-primary" 
+          <button
+            className="btn btn-primary"
             style={{ padding: '1rem', fontSize: '1rem', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
             onClick={() => handleDemoLogin('student')}
             disabled={loadingRole !== null}
           >
-            {loadingRole === 'student' ? <div className="spinner" style={{ width: 20, height: 20, borderWidth: 2 }} /> : '🎓 Enter as Student'}
+            {loadingRole === 'student'
+              ? <div className="spinner" style={{ width: 20, height: 20, borderWidth: 2 }} />
+              : '🎓 Enter as Student'}
           </button>
 
-          <button 
-            className="btn btn-outline" 
+          <button
+            className="btn btn-outline"
             style={{ padding: '1rem', fontSize: '1rem', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
             onClick={() => handleDemoLogin('warden')}
             disabled={loadingRole !== null}
           >
-            {loadingRole === 'warden' ? <div className="spinner" style={{ width: 20, height: 20, borderWidth: 2 }} /> : '🛡️ Enter as Warden'}
+            {loadingRole === 'warden'
+              ? <div className="spinner" style={{ width: 20, height: 20, borderWidth: 2 }} />
+              : '🛡️ Enter as Warden'}
           </button>
         </div>
-        
+
         <div className="text-center mt-4">
-           <div className="text-xs text-muted">Datathon 2026 Presentation</div>
+          <div className="text-xs text-muted">Datathon 2026 Presentation · PS-15</div>
         </div>
       </div>
     </div>
