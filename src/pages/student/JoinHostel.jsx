@@ -107,7 +107,8 @@ export default function JoinHostel() {
                 </div>
               ) : (
                 <button className="btn btn-outline btn-full mb-3" onClick={() => setCameraActive(true)}>
-                  📷 Scan Room QR Code
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px', verticalAlign: 'middle' }}><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                  Scan Room QR Code
                 </button>
               )}
 
@@ -133,7 +134,11 @@ export default function JoinHostel() {
             </>
           ) : (
              <div className="text-center">
-               <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🚪</div>
+               <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'center' }}>
+                 <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                   <path d="M20 20V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v16M2 20h20M14 12v.01" />
+                 </svg>
+               </div>
                <h2 className="font-bold mb-1">Confirm Room</h2>
                <p className="text-muted mb-3" style={{ lineHeight: 1.5 }}>
                  You're joining <strong>Room {resolvedRoom.roomData.roomNumber}</strong><br/>
@@ -160,7 +165,7 @@ export default function JoinHostel() {
                    </div>
 
                    {roomHistory.length === 0 ? (
-                     <div style={{ fontSize: '0.82rem', color: '#10b981' }}>
+                     <div style={{ fontSize: '0.82rem', color: 'var(--green)' }}>
                        ✓ No complaints on record. This room has a clean history.
                      </div>
                    ) : (
@@ -217,8 +222,8 @@ export default function JoinHostel() {
                          }}>
                            <span style={{
                              width: '8px', height: '8px', borderRadius: '50%', flexShrink: 0,
-                             background: c.status === 'resolved' ? '#10b981'
-                               : c.priority === 'high' ? '#ef4444' : '#f59e0b'
+                             background: c.status === 'resolved' ? 'var(--green)'
+                               : c.priority === 'high' ? 'var(--red)' : 'var(--amber)'
                            }} />
                            <span style={{ color: 'var(--text-primary)', flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                              {c.title}
@@ -227,7 +232,7 @@ export default function JoinHostel() {
                              {c.category}
                            </span>
                            <span style={{
-                             color: c.status === 'resolved' ? '#10b981' : 'var(--text-muted)'
+                             color: c.status === 'resolved' ? 'var(--green)' : 'var(--text-muted)'
                            }}>
                              {c.status === 'resolved' ? '✓' : '○'}
                            </span>

@@ -148,7 +148,10 @@ export default function ProfileSetup() {
       <Navbar />
       <div className="center-page" style={{ paddingTop: '3rem', paddingBottom: '3rem' }}>
         <div className="auth-card animation-fade-in" style={{ maxWidth: 480 }}>
-          <div style={{ fontSize: '2.5rem', textAlign: 'center', marginBottom: '0.5rem' }}>🎓</div>
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ margin: '0 auto 1rem', display: 'block' }}>
+            <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+            <path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5" />
+          </svg>
           <h1 className="auth-title">Complete Your Profile</h1>
           <p className="auth-subtitle mb-3">One-time setup before you can join your room.</p>
 
@@ -186,9 +189,9 @@ export default function ProfileSetup() {
                 onBlur={handlePRNBlur}
                 placeholder="e.g. 211090100001"
                 required
-                style={prnError ? { borderColor: '#ef4444' } : {}}
+                style={prnError ? { borderColor: 'var(--red)' } : {}}
               />
-              {prnError && <p className="text-sm mt-1" style={{ color: '#ef4444' }}>{prnError}</p>}
+              {prnError && <p className="text-sm mt-1" style={{ color: 'var(--red)' }}>{prnError}</p>}
               {prnChecking && <p className="text-sm mt-1 text-muted">Checking uniqueness...</p>}
             </div>
 

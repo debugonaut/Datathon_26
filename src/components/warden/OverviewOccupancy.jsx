@@ -116,7 +116,7 @@ export default function OverviewOccupancy({ hostelId }) {
             <div style={{
               height: '100%', borderRadius: 5,
               width: `${overallPercent}%`,
-              background: overallPercent > 90 ? '#ef4444' : overallPercent > 70 ? '#f59e0b' : '#10b981',
+              background: overallPercent > 90 ? '#F06565' : overallPercent > 70 ? '#F5A623' : '#22D3A0',
               transition: 'width 0.4s'
             }} />
           </div>
@@ -139,7 +139,7 @@ export default function OverviewOccupancy({ hostelId }) {
               className="card"
               style={{
                 cursor: 'pointer',
-                border: current >= max ? '1px solid rgba(239,68,68,0.3)' : '1px solid var(--border)',
+                border: current >= max ? '1px solid rgba(240,101,101,0.3)' : '1px solid var(--border)',
                 transition: 'border-color 0.2s'
               }}
               onClick={() => toggleExpand(room)}
@@ -150,8 +150,8 @@ export default function OverviewOccupancy({ hostelId }) {
                   <div className="text-muted text-xs">{room.buildingName} · Fl {room.floorNumber}</div>
                 </div>
                 <div className="badge" style={{
-                  background: current >= max ? 'rgba(239,68,68,0.2)' : 'rgba(16,185,129,0.2)',
-                  color: current >= max ? '#ef4444' : '#10b981'
+                  background: current >= max ? 'rgba(240,101,101,0.2)' : 'rgba(34,211,160,0.2)',
+                  color: current >= max ? '#F06565' : '#22D3A0'
                 }}>
                   {current}/{max}
                 </div>
@@ -162,7 +162,7 @@ export default function OverviewOccupancy({ hostelId }) {
                 <div style={{
                   height: '100%', borderRadius: 3,
                   width: `${percent}%`,
-                  background: current >= max ? '#ef4444' : percent > 75 ? '#f59e0b' : '#10b981',
+                  background: current >= max ? '#F06565' : percent > 75 ? '#F5A623' : '#22D3A0',
                   transition: 'width 0.3s'
                 }} />
               </div>
@@ -189,7 +189,7 @@ export default function OverviewOccupancy({ hostelId }) {
                             </div>
                             <button
                               className="btn btn-sm"
-                              style={{ background: '#ef4444', color: 'white', border: 'none', padding: '0.3rem 0.6rem', fontSize: '0.7rem' }}
+                              style={{ background: '#F06565', color: 'white', border: 'none', padding: '0.3rem 0.6rem', fontSize: '0.7rem' }}
                               onClick={(e) => { e.stopPropagation(); handleEject(occ, room); }}
                               disabled={ejecting === occ.uid}
                             >
@@ -205,12 +205,12 @@ export default function OverviewOccupancy({ hostelId }) {
                     onClick={(e) => openHistoryDrawer(e, room)}
                     style={{
                       width: '100%', marginTop: '12px', padding: '8px',
-                      background: 'rgba(55,138,221,0.1)', border: '1px solid rgba(55,138,221,0.3)',
-                      borderRadius: '6px', color: '#378ADD', fontSize: '0.8rem',
+                      background: 'rgba(79,163,247,0.1)', border: '1px solid rgba(79,163,247,0.3)',
+                      borderRadius: '6px', color: '#4FA3F7', fontSize: '0.8rem',
                       cursor: 'pointer', fontWeight: 600
                     }}
                   >
-                    🔍 View Full Room History
+                    View Full Room History
                   </button>
                 </div>
               )}
@@ -240,7 +240,7 @@ export default function OverviewOccupancy({ hostelId }) {
             ) : (
               <>
                 {fullRoomHistory.length === 0 ? (
-                  <div style={{ color: '#10b981', textAlign: 'center', padding: '2rem' }}>
+                  <div style={{ color: '#22D3A0', textAlign: 'center', padding: '2rem' }}>
                     ✓ No complaints on record. This room has a clean history.
                   </div>
                 ) : (
@@ -250,8 +250,8 @@ export default function OverviewOccupancy({ hostelId }) {
                         fontSize: '0.85rem', color: 'var(--text-muted)',
                         fontStyle: 'italic', marginBottom: '1rem',
                         padding: '12px', borderRadius: '8px',
-                        background: 'rgba(55,138,221,0.08)',
-                        border: '1px solid rgba(55,138,221,0.2)'
+                        background: 'rgba(79,163,247,0.08)',
+                        border: '1px solid rgba(79,163,247,0.2)'
                       }}>
                         "{roomSummary.aiSummary}"
                       </div>
@@ -286,7 +286,7 @@ export default function OverviewOccupancy({ hostelId }) {
                           )}
                           <div style={{
                             width: '16px', height: '16px', borderRadius: '50%', flexShrink: 0, marginTop: '2px',
-                            background: c.status === 'resolved' ? '#10b981' : c.priority === 'high' ? '#ef4444' : '#f59e0b'
+                            background: c.status === 'resolved' ? '#22D3A0' : c.priority === 'high' ? '#F06565' : '#F5A623'
                           }} />
                           <div style={{ flex: 1 }}>
                             <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)' }}>{c.title}</div>
@@ -294,7 +294,7 @@ export default function OverviewOccupancy({ hostelId }) {
                               {c.category} • {c.priority} priority<br/>
                               Filed by: {c.studentName || c.studentUid} on {c.createdAt?.toDate?.().toLocaleDateString('en-IN')}<br/>
                               {c.status === 'resolved' && c.resolvedAt && (
-                                <span style={{ color: '#10b981' }}>Fixed in {Math.round((c.resolvedAt.toDate() - c.createdAt.toDate()) / 3600000)}h</span>
+                                <span style={{ color: '#22D3A0' }}>Fixed in {Math.round((c.resolvedAt.toDate() - c.createdAt.toDate()) / 3600000)}h</span>
                               )}
                             </div>
                             <div style={{ marginTop: '6px', fontSize: '0.8rem', color: 'var(--text-primary)' }}>

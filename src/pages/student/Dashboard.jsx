@@ -106,23 +106,23 @@ export default function StudentDashboard() {
   const unreadCount = announcements.filter(a => !a.readBy.includes(user.uid)).length;
   // Score percentage for circle gradient (0 to 100)
   const score = roomData?.score || 0;
-  let scoreColor = score <= 40 ? '#ef4444' : score <= 70 ? '#f59e0b' : '#10b981';
-  if (score === 0) scoreColor = '#94a3b8';
+  let scoreColor = score <= 40 ? 'var(--red)' : score <= 70 ? 'var(--amber)' : 'var(--green)';
+  if (score === 0) scoreColor = 'var(--text-secondary)';
 
   return (
     <div className="page">
       <Navbar />
       <div className="dashboard">
         <div className="dashboard-header">
-          <h1>👋 Hello, {userDoc?.name?.split(' ')[0]}!</h1>
+          <h1>Hello, {userDoc?.name?.split(' ')[0]}!</h1>
           <p className="text-muted">Welcome to your hostel portal.</p>
         </div>
 
         {/* Custom Tabs Navigation */}
         <div style={{ borderBottom: '1px solid var(--border)', display: 'flex', gap: '2rem', marginBottom: '2rem', overflowX: 'auto', whiteSpace: 'nowrap' }}>
           {[
-            { id: 'overview', label: '🏠 Overview' },
-            { id: 'stats', label: '📊 My Stats' }
+            { id: 'overview', label: 'Overview' },
+            { id: 'stats', label: 'My Stats' }
           ].map(t => (
             <div 
               key={t.id} 
@@ -149,10 +149,10 @@ export default function StudentDashboard() {
                 <h3 className="font-bold">Room Assignment</h3>
                 <button 
                   className="btn btn-sm" 
-                  style={{ background: '#ef4444', color: 'white', border: 'none', padding: '0.4rem 0.8rem' }}
+                  style={{ background: 'var(--red)', color: '#000', border: 'none', padding: '0.4rem 0.8rem' }}
                   onClick={() => navigate(`/complaint/new?roomId=${userDoc.roomId}`)}
                 >
-                  ⚠️ Report Issue
+                  Report Issue
                 </button>
               </div>
               <div className="stats-grid" style={{ marginBottom: 0 }}>
@@ -170,14 +170,14 @@ export default function StudentDashboard() {
                 </div>
                 <div className="stat-card" style={{ padding: '1rem', border: '1px solid var(--primary)' }}>
                   <div className="stat-label" style={{ color: 'var(--primary)' }}>Room</div>
-                  <div className="stat-value text-sm">🚪 {userDoc.roomNumber}</div>
+                  <div className="stat-value text-sm">{userDoc.roomNumber}</div>
                 </div>
               </div>
             </div>
 
             <div className="card">
               <div className="flex align-items-center mb-2" style={{ justifyContent: 'space-between' }}>
-                <h3 className="font-bold">📢 Announcements</h3>
+                <h3 className="font-bold">Announcements</h3>
                 {unreadCount > 0 && <span className="badge badge-primary">{unreadCount} Unread</span>}
               </div>
               
@@ -192,8 +192,8 @@ export default function StudentDashboard() {
                         key={a.id} 
                         className="p-3" 
                         style={{ 
-                          background: isUnread ? 'rgba(99,102,241,0.08)' : 'rgba(255,255,255,0.02)', 
-                          border: isUnread ? '1px solid rgba(99,102,241,0.3)' : '1px solid var(--border)',
+                          background: isUnread ? 'rgba(124,110,250,0.08)' : 'rgba(255,255,255,0.02)', 
+                          border: isUnread ? '1px solid rgba(124,110,250,0.3)' : '1px solid var(--border)',
                           borderRadius: '8px',
                           cursor: isUnread ? 'pointer' : 'default',
                           transition: 'background 0.2s'
@@ -289,8 +289,8 @@ export default function StudentDashboard() {
                       <div style={{
                         width: '16px', height: '16px', borderRadius: '50%',
                         flexShrink: 0, marginTop: '2px',
-                        background: c.status === 'resolved' ? '#10b981'
-                          : c.priority === 'high' ? '#ef4444' : '#f59e0b'
+                        background: c.status === 'resolved' ? 'var(--green)'
+                          : c.priority === 'high' ? 'var(--red)' : 'var(--amber)'
                       }} />
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: '0.85rem', fontWeight: 600,
@@ -304,7 +304,7 @@ export default function StudentDashboard() {
                             day: 'numeric', month: 'short', year: 'numeric'
                           })}
                           {c.status === 'resolved' && c.resolvedAt && (
-                            <span style={{ color: '#10b981' }}>
+                            <span style={{ color: 'var(--green)' }}>
                               {' '}• Fixed in {Math.round(
                                 (c.resolvedAt.toDate() - c.createdAt.toDate()) / 3600000
                               )}h
@@ -336,7 +336,7 @@ export default function StudentDashboard() {
                   download={`Room_${userDoc.roomNumber}_QR.png`} 
                   className="btn btn-primary w-full"
                 >
-                  📥 Download & Print QR
+                  Download & Print QR
                 </a>
               </div>
             )}

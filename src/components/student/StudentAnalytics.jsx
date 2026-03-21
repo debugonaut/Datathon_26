@@ -11,9 +11,9 @@ import { db } from '../../firebase/config';
 import { collection, query, where, getDocs, doc, updateDoc, Timestamp, increment } from 'firebase/firestore';
 
 const TT = { background: '#1a1f2e', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', color: '#e2e8f0', fontSize: '0.75rem' };
-const CHART_COLORS = ['#378ADD', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
-const PRI_C = { high: '#ef4444', medium: '#f59e0b', low: '#10b981' };
-const ST_C = { todo: '#ef4444', in_progress: '#f59e0b', resolved: '#10b981' };
+const CHART_COLORS = ['#4FA3F7', '#22D3A0', '#F5A623', '#F06565', '#7C6EFA'];
+const PRI_C = { high: '#F06565', medium: '#F5A623', low: '#22D3A0' };
+const ST_C = { todo: '#F06565', in_progress: '#F5A623', resolved: '#22D3A0' };
 const ST_L = { todo: 'To Do', in_progress: 'In Progress', resolved: 'Resolved' };
 
 function timeAgo(date) {
@@ -98,8 +98,8 @@ export default function StudentAnalytics({ roomScore }) {
   const overdue = data.filter(isOverdue);
   const hostelAvg = 24;
 
-  const sc = score >= 71 ? '#10b981' : score >= 41 ? '#f59e0b' : '#ef4444';
-  const resComp = avg != null && hostelAvg != null ? [{ name: 'Mine', hours: avg, fill: '#378ADD' }, { name: 'Hostel', hours: hostelAvg, fill: '#8b5cf6' }] : [];
+  const sc = score >= 71 ? '#22D3A0' : score >= 41 ? '#F5A623' : '#F06565';
+  const resComp = avg != null && hostelAvg != null ? [{ name: 'Mine', hours: avg, fill: '#4FA3F7' }, { name: 'Hostel', hours: hostelAvg, fill: '#7C6EFA' }] : [];
 
   const card = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '10px', padding: '0.75rem' };
   const label = { fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '2px' };
@@ -121,11 +121,11 @@ export default function StudentAnalytics({ roomScore }) {
       {/* Row 1: KPI cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
         {[
-          { l: 'Total Filed', v: data.length, c: '#378ADD' },
-          { l: 'Open', v: open.length, c: '#ef4444' },
-          { l: 'Resolved', v: resolved.length, c: '#10b981' },
-          { l: 'Overdue', v: overdue.length, c: overdue.length > 0 ? '#ef4444' : '#10b981' },
-          { l: 'Avg Res.', v: avg != null ? `${avg}h` : '—', c: '#f59e0b' },
+          { l: 'Total Filed', v: data.length, c: '#4FA3F7' },
+          { l: 'Open', v: open.length, c: '#F06565' },
+          { l: 'Resolved', v: resolved.length, c: '#22D3A0' },
+          { l: 'Overdue', v: overdue.length, c: overdue.length > 0 ? '#F06565' : '#22D3A0' },
+          { l: 'Avg Res.', v: avg != null ? `${avg}h` : '—', c: '#F5A623' },
         ].map(k => (
           <div key={k.l} style={card}>
             <div style={label}>{k.l}</div>
@@ -212,11 +212,11 @@ export default function StudentAnalytics({ roomScore }) {
 
           {/* Overdue alerts */}
           {overdue.length > 0 && (
-            <div style={{ ...card, background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)' }}>
-              <div style={label}>⚠️ Overdue Complaints</div>
+            <div style={{ ...card, background: 'rgba(240,101,101,0.06)', border: '1px solid rgba(240,101,101,0.2)' }}>
+              <div style={label}>Overdue Complaints</div>
               {overdue.slice(0, 3).map(c => (
                 <div key={c.id} style={{ fontSize: '0.75rem', color: 'var(--text-primary)', padding: '4px 0', borderBottom: '1px solid var(--border)' }}>
-                  <strong style={{ color: '#ef4444' }}>{c.title}</strong> — {c.category} · {timeAgo(c.createdAt)} ago
+                  <strong style={{ color: '#F06565' }}>{c.title}</strong> — {c.category} · {timeAgo(c.createdAt)} ago
                 </div>
               ))}
             </div>
@@ -243,8 +243,8 @@ export default function StudentAnalytics({ roomScore }) {
                 <button key={s} onClick={() => setFilterStatus(s)} style={{
                   padding: '4px 8px', borderRadius: '20px', fontSize: '0.70rem',
                   border: filterStatus === s ? '1px solid #378ADD' : '1px solid var(--border)',
-                  background: filterStatus === s ? 'rgba(55,138,221,0.15)' : 'transparent',
-                  color: filterStatus === s ? '#378ADD' : 'var(--text-muted)', cursor: 'pointer'
+                  background: filterStatus === s ? 'rgba(79,163,247,0.15)' : 'transparent',
+                  color: filterStatus === s ? '#4FA3F7' : 'var(--text-muted)', cursor: 'pointer'
                 }}>
                   {s === 'all' ? 'All' : s === 'todo' ? 'To Do'
                     : s === 'in_progress' ? 'In Progress' : 'Resolved'}
@@ -255,8 +255,8 @@ export default function StudentAnalytics({ roomScore }) {
                 <button key={c} onClick={() => setFilterCategory(c)} style={{
                   padding: '4px 8px', borderRadius: '20px', fontSize: '0.70rem',
                   border: filterCategory === c ? '1px solid #10b981' : '1px solid var(--border)',
-                  background: filterCategory === c ? 'rgba(16,185,129,0.15)' : 'transparent',
-                  color: filterCategory === c ? '#10b981' : 'var(--text-muted)', cursor: 'pointer'
+                  background: filterCategory === c ? 'rgba(34,211,160,0.15)' : 'transparent',
+                  color: filterCategory === c ? '#22D3A0' : 'var(--text-muted)', cursor: 'pointer'
                 }}>
                   {c === 'all' ? 'All' : c}
                 </button>
@@ -266,8 +266,8 @@ export default function StudentAnalytics({ roomScore }) {
                 <button key={p} onClick={() => setFilterPriority(p)} style={{
                   padding: '4px 8px', borderRadius: '20px', fontSize: '0.70rem',
                   border: filterPriority === p ? '1px solid #f59e0b' : '1px solid var(--border)',
-                  background: filterPriority === p ? 'rgba(245,158,11,0.15)' : 'transparent',
-                  color: filterPriority === p ? '#f59e0b' : 'var(--text-muted)', cursor: 'pointer'
+                  background: filterPriority === p ? 'rgba(245,166,35,0.15)' : 'transparent',
+                  color: filterPriority === p ? '#F5A623' : 'var(--text-muted)', cursor: 'pointer'
                 }}>
                   {p === 'all' ? 'All' : p.charAt(0).toUpperCase() + p.slice(1)}
                 </button>
@@ -277,8 +277,8 @@ export default function StudentAnalytics({ roomScore }) {
                   onClick={() => { setSearchQuery(''); setFilterStatus('all');
                     setFilterCategory('all'); setFilterPriority('all'); }}
                   style={{ padding: '4px 8px', borderRadius: '20px', fontSize: '0.70rem',
-                    border: '1px solid rgba(239,68,68,0.3)',
-                    background: 'transparent', color: '#ef4444', cursor: 'pointer' }}
+                    border: '1px solid rgba(240,101,101,0.3)',
+                    background: 'transparent', color: '#F06565', cursor: 'pointer' }}
                 >Clear</button>
               )}
             </div>
@@ -296,7 +296,7 @@ export default function StudentAnalytics({ roomScore }) {
                 onClick={() => { setSearchQuery(''); setFilterStatus('all');
                   setFilterCategory('all'); setFilterPriority('all'); }}
                 style={{ display: 'block', margin: '8px auto 0', background: 'none',
-                  border: 'none', color: '#378ADD', cursor: 'pointer', fontSize: '0.85rem' }}
+                  border: 'none', color: '#4FA3F7', cursor: 'pointer', fontSize: '0.85rem' }}
               >Clear all filters</button>
             </div>
           )}
@@ -310,7 +310,7 @@ export default function StudentAnalytics({ roomScore }) {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                     <span style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-primary)' }}>{c.title}</span>
                     <span style={{ fontSize: '0.7rem', padding: '1px 8px', borderRadius: '8px', background: `${PRI_C[c.priority]}22`, color: PRI_C[c.priority], fontWeight: 600 }}>{c.priority}</span>
-                    {isOverdue(c) && <span style={{ fontSize: '0.7rem', padding: '1px 8px', borderRadius: '8px', background: 'rgba(239,68,68,0.15)', color: '#ef4444', fontWeight: 600 }}>OVERDUE</span>}
+                    {isOverdue(c) && <span style={{ fontSize: '0.7rem', padding: '1px 8px', borderRadius: '8px', background: 'rgba(240,101,101,0.15)', color: '#F06565', fontWeight: 600 }}>OVERDUE</span>}
                   </div>
                   
 
@@ -323,15 +323,15 @@ export default function StudentAnalytics({ roomScore }) {
 
                     {/* Acknowledgment & Expected Fix */}
                     {c.acknowledgedAt ? (
-                      <span style={{ color: '#10b981', fontSize: '0.78rem' }}>✓ Warden has seen this</span>
+                      <span style={{ color: '#22D3A0', fontSize: '0.78rem' }}>✓ Warden has seen this</span>
                     ) : (
                       <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>Pending acknowledgement</span>
                     )}
 
                     {c.estimatedResolutionAt && c.status !== 'resolved' && (
                       <div style={{ marginTop: '2px', fontSize: '0.78rem',
-                        color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        🕐 Expected fix: {new Date(typeof c.estimatedResolutionAt?.toDate === 'function' ? c.estimatedResolutionAt.toDate() : c.estimatedResolutionAt)
+                        color: '#F5A623', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        Expected fix: {new Date(typeof c.estimatedResolutionAt?.toDate === 'function' ? c.estimatedResolutionAt.toDate() : c.estimatedResolutionAt)
                           .toLocaleString('en-IN', {
                             weekday: 'short', day: 'numeric', month: 'short',
                             hour: '2-digit', minute: '2-digit'
@@ -345,8 +345,8 @@ export default function StudentAnalytics({ roomScore }) {
                         onClick={() => { setSelectedComplaint(c); setShowWithdrawModal(true); }}
                         style={{
                           marginTop: '4px', padding: '4px 12px', background: 'transparent',
-                          border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px',
-                          color: '#ef4444', fontSize: '0.75rem', cursor: 'pointer', width: 'fit-content'
+                          border: '1px solid rgba(240,101,101,0.3)', borderRadius: '6px',
+                          color: '#F06565', fontSize: '0.75rem', cursor: 'pointer', width: 'fit-content'
                         }}
                       >
                         Withdraw complaint
@@ -357,8 +357,8 @@ export default function StudentAnalytics({ roomScore }) {
                       <button
                         onClick={() => { setSelectedComplaint(c); setShowReopenModal(true); }}
                         style={{ marginTop: '4px', padding: '4px 12px', background: 'transparent',
-                          border: '1px solid rgba(245,158,11,0.3)', borderRadius: '6px',
-                          color: '#f59e0b', fontSize: '0.75rem', cursor: 'pointer', width: 'fit-content' }}
+                          border: '1px solid rgba(245,166,35,0.3)', borderRadius: '6px',
+                          color: '#F5A623', fontSize: '0.75rem', cursor: 'pointer', width: 'fit-content' }}
                       >
                         Issue not fixed? Re-open
                       </button>
@@ -425,8 +425,8 @@ export default function StudentAnalytics({ roomScore }) {
                   setShowWithdrawModal(false); setWithdrawReason('');
                 }}
                 style={{ padding: '6px 16px', borderRadius: '8px',
-                  background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)',
-                  color: '#ef4444', cursor: 'pointer', fontWeight: 600 }}
+                  background: 'rgba(240,101,101,0.15)', border: '1px solid rgba(240,101,101,0.4)',
+                  color: '#F06565', cursor: 'pointer', fontWeight: 600 }}
               >Confirm Withdraw</button>
             </div>
           </div>
@@ -448,7 +448,7 @@ export default function StudentAnalytics({ roomScore }) {
             <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '12px' }}>
               Please describe what is still wrong so the warden can follow up.
               {(selectedComplaint.reopenCount || 0) === 1 && (
-                <span style={{ color: '#f59e0b', display: 'block', marginTop: '4px' }}>
+                <span style={{ color: '#F5A623', display: 'block', marginTop: '4px' }}>
                   Note: this complaint can only be re-opened once more after this.
                 </span>
               )}
@@ -488,8 +488,8 @@ export default function StudentAnalytics({ roomScore }) {
                   setShowReopenModal(false); setReopenReason('');
                 }}
                 style={{ padding: '6px 16px', borderRadius: '8px',
-                  background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.4)',
-                  color: '#f59e0b', cursor: 'pointer', fontWeight: 600,
+                  background: 'rgba(245,166,35,0.15)', border: '1px solid rgba(245,166,35,0.4)',
+                  color: '#F5A623', cursor: 'pointer', fontWeight: 600,
                   opacity: reopenReason.trim() ? 1 : 0.5 }}
               >Re-open</button>
             </div>

@@ -16,7 +16,7 @@ export default function ComplaintConfirmation() {
       <div className="center-page animation-fade-in" style={{ paddingTop: '4rem' }}>
         <div className="auth-card" style={{ maxWidth: '400px', width: '100%', textAlign: 'center' }}>
           
-          <div style={{ width: 64, height: 64, background: 'rgba(16, 185, 129, 0.2)', color: '#10b981', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', margin: '0 auto 1rem' }}>
+          <div style={{ width: 64, height: 64, background: 'rgba(34, 211, 160, 0.15)', color: 'var(--green)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', margin: '0 auto 1rem' }}>
             ✓
           </div>
           

@@ -141,7 +141,9 @@ export default function RoomRegister() {
 
           {!resolvedRoom ? (
             <>
-              <div style={{ fontSize: '2.5rem', textAlign: 'center', marginBottom: '0.5rem' }}>🚪</div>
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ margin: '0 auto 1rem', display: 'block' }}>
+                <path d="M20 20V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v16M2 20h20M14 12v.01" />
+              </svg>
               <h2 className="auth-title">Join Your Room</h2>
               <p className="auth-subtitle mb-3">Scan the QR code on your door, or enter the 6-character room code.</p>
 
@@ -161,7 +163,8 @@ export default function RoomRegister() {
                 </div>
               ) : (
                 <button className="btn btn-outline btn-full mb-3" onClick={() => setCameraActive(true)}>
-                  📷 Scan Room QR Code
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px', verticalAlign: 'middle' }}><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                  Scan Room QR Code
                 </button>
               )}
 
@@ -189,8 +192,8 @@ export default function RoomRegister() {
             <div className="text-center">
               <div style={{
                 width: 64, height: 64, margin: '0 auto 1rem', borderRadius: '50%',
-                background: occupancyCheck?.isFull ? 'rgba(239,68,68,0.2)' : 'rgba(16,185,129,0.2)',
-                color: occupancyCheck?.isFull ? '#ef4444' : '#10b981',
+                background: occupancyCheck?.isFull ? 'rgba(240,101,101,0.1)' : 'rgba(34,211,160,0.1)',
+                color: occupancyCheck?.isFull ? 'var(--red)' : 'var(--green)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem'
               }}>
                 {occupancyCheck?.isFull ? '✕' : '✓'}
@@ -218,12 +221,12 @@ export default function RoomRegister() {
                     <div style={{
                       height: '100%', borderRadius: 4,
                       width: `${occPercent}%`,
-                      background: occupancyCheck.isFull ? '#ef4444' : occPercent > 75 ? '#f59e0b' : '#10b981',
+                      background: occupancyCheck.isFull ? 'var(--red)' : occPercent > 75 ? 'var(--amber)' : 'var(--green)',
                       transition: 'width 0.3s'
                     }} />
                   </div>
                   {occupancyCheck.isFull && (
-                    <div className="text-xs mt-1" style={{ color: '#ef4444' }}>
+                    <div className="text-xs mt-1" style={{ color: 'var(--red)' }}>
                       This room is full. Please contact your warden.
                     </div>
                   )}
