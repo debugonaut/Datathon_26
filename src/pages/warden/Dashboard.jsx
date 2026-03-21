@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 import { useAuth } from '../../context/AuthContext';
+import { logoutUser } from '../../firebase/auth';
+import ThemeToggle from '../../components/ThemeToggle';
 import { getWardenHostel, getBlocks, getBuildings, getFloors, getRooms } from '../../firebase/firestore';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase/config';
@@ -97,126 +99,178 @@ export default function WardenDashboard() {
   ];
 
   return (
-    <div className="page">
-      <Navbar />
-      <div className="dashboard">
-        <div className="dashboard-header">
-          <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:12 }}>
-            <div>
-              <h1 className="dashboard-title">{hostel?.name}</h1>
-              <p className="dashboard-subtitle">{hostel?.collegeName} · {userDoc?.name}</p>
-            </div>
-            <button className="btn btn-outline btn-sm" onClick={()=>navigate('/warden/setup')}>Edit hostel</button>
+  <div className="app-shell">
+    {/* Sidebar */}
+    <aside className="app-sidebar">
+      <Link to="/" className="sidebar-brand">
+        <div className="sidebar-brand-icon">
+          <span className="material-icons-round" style={{fontSize:18}}>apartment</span>
+        </div>
+        <span className="sidebar-brand-name">Fix My Hostel</span>
+      </Link>
+
+      <nav className="sidebar-nav">
+        <span className="sidebar-section-label">Main</span>
+        {[
+          ['overview',      'dashboard',      'Overview'],
+          ['complaints',    'task_alt',       'Complaints'],
+          ['analytics',     'bar_chart',      'Analytics'],
+          ['3dview',        'view_in_ar',     '3D Visualizer'],
+          ['qrcodes',       'qr_code_2',      'QR Codes'],
+          ['announcements', 'campaign',       'Announcements'],
+        ].map(([id, icon, label]) => (
+          <div key={id}
+            className={`sidebar-item ${activeTab === id ? 'active' : ''}`}
+            onClick={() => setActiveTab(id)}
+          >
+            <span className="material-icons-round">{icon}</span>
+            {label}
           </div>
-          <div className="tabs">
-            {[['overview','Overview'],['complaints','Complaints'],['analytics','Analytics'],['3dview','3D Visualizer'],['qrcodes','QR Codes'],['announcements','Announcements']].map(([id,label])=>(
-              <div key={id} className={`tab ${activeTab===id?'active':''}`} onClick={()=>setActiveTab(id)}>{label}</div>
-            ))}
+        ))}
+      </nav>
+
+      <div className="sidebar-footer">
+        <div className="sidebar-user" onClick={() => navigate('/warden/setup')}>
+          <div className="sidebar-avatar">
+            {userDoc?.name?.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}
+          </div>
+          <div>
+            <div className="sidebar-user-name">{userDoc?.name}</div>
+            <div className="sidebar-user-role">Warden</div>
           </div>
         </div>
+      </div>
+    </aside>
 
-        <div className="dashboard-body animation-fade-in">
-          {/* Cluster alert */}
-          {activeTab==='complaints' && clusterComplaints(complaints).length > 0 && (
-            <div className="alert-warning mb-4" style={{ display:'flex', alignItems:'center', gap:8 }}>
-              <span style={{ width:6, height:6, borderRadius:'50%', background:'var(--amber)', flexShrink:0 }} />
-              {clusterComplaints(complaints).length} complaint cluster detected — {clusterComplaints(complaints)[0].category} on Floor {clusterComplaints(complaints)[0].floor}
+    {/* Main */}
+    <div className="app-main">
+      {/* Header */}
+      <div className="app-header">
+        <div>
+          <div className="header-title">{hostel?.name}</div>
+          <div style={{fontSize:12, color:'var(--text-3)', marginTop:1}}>{hostel?.collegeName}</div>
+        </div>
+        <div className="header-actions">
+          <ThemeToggle />
+          <button className="btn btn-secondary btn-sm" onClick={() => navigate('/warden/setup')}>
+            <span className="material-icons-round" style={{fontSize:15}}>edit</span>
+            Edit hostel
+          </button>
+          <button className="btn btn-ghost btn-sm" onClick={async () => { await logoutUser(); navigate('/'); }}>
+            <span className="material-icons-round" style={{fontSize:15}}>logout</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div style={{background:'var(--bg-card)', borderBottom:'1px solid var(--border)', padding:'0 24px'}}>
+        <div className="tabs">
+          {[['overview','Overview'],['complaints','Complaints'],['analytics','Analytics'],['3dview','3D Visualizer'],['qrcodes','QR Codes'],['announcements','Announcements']].map(([id,label])=>(
+            <div key={id} className={`tab ${activeTab===id?'active':''}`} onClick={()=>setActiveTab(id)}>{label}</div>
+          ))}
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="app-content animation-fade-in">
+
+        {/* Alerts */}
+        {activeTab==='complaints' && clusterComplaints(complaints).length > 0 && (
+          <div className="alert alert-warning mb-4">
+            <span className="material-icons-round" style={{fontSize:16,flexShrink:0}}>warning</span>
+            <span>{clusterComplaints(complaints).length} complaint cluster — {clusterComplaints(complaints)[0].category} on Floor {clusterComplaints(complaints)[0].floor}</span>
+          </div>
+        )}
+        {activeTab==='complaints' && complaints.some(c=>getSLAStatus(c)?.breached) && (
+          <div className="alert alert-error mb-4">
+            <span className="material-icons-round" style={{fontSize:16,flexShrink:0}}>schedule</span>
+            <span>SLA breached: {complaints.filter(c=>getSLAStatus(c)?.breached).length} overdue complaint(s)</span>
+          </div>
+        )}
+
+        {activeTab==='overview' && (
+          <>
+            {/* KPI stats */}
+            <div className="stats-grid" style={{gridTemplateColumns:'repeat(5,minmax(0,1fr))'}}>
+              {[
+                {label:'Total',    value:complaints.length,                                    icon:'inbox',      color:'var(--primary)'},
+                {label:'Open',     value:complaints.filter(c=>c.status==='todo').length,        icon:'radio_button_unchecked', color:'var(--red)'},
+                {label:'Progress', value:complaints.filter(c=>c.status==='in_progress').length, icon:'autorenew',  color:'var(--amber)'},
+                {label:'Resolved', value:complaints.filter(c=>c.status==='resolved').length,    icon:'check_circle',color:'var(--green)'},
+                {label:'Rooms',    value:stats.rooms,                                           icon:'meeting_room',color:'var(--blue)'},
+              ].map(s=>(
+                <div key={s.label} className="stat-card" style={{'--accent-color':s.color}}>
+                  <div className="stat-icon" style={{background:`${s.color}18`, color:s.color}}>
+                    <span className="material-icons-round" style={{fontSize:18}}>{s.icon}</span>
+                  </div>
+                  <div className="stat-label">{s.label}</div>
+                  <div className="stat-value">{s.value}</div>
+                </div>
+              ))}
             </div>
-          )}
 
-          {/* SLA breach alert */}
-          {activeTab==='complaints' && complaints.some(c=>getSLAStatus(c)?.breached) && (
-            <div className="alert-error mb-4" style={{ display:'flex', alignItems:'center', gap:8 }}>
-              <span style={{ width:6, height:6, borderRadius:'50%', background:'var(--red)', flexShrink:0 }} />
-              SLA breached: {complaints.filter(c=>getSLAStatus(c)?.breached).length} complaint(s) overdue
-            </div>
-          )}
-
-          {activeTab==='overview' && (
-            <div className="animation-fade-in">
-              {/* Stats */}
-              <div className="stats-grid" style={{ gridTemplateColumns:'repeat(4,minmax(0,1fr))' }}>
-                {[
-                  { label:'Blocks', value:stats.blocks, accent:'var(--violet)' },
-                  { label:'Buildings', value:stats.buildings, accent:'var(--blue)' },
-                  { label:'Floors', value:stats.floors, accent:'var(--amber)' },
-                  { label:'Rooms', value:stats.rooms, accent:'var(--green)' },
-                ].map(s=>(
-                  <div key={s.label} className="stat-card" style={{ borderTop:`2px solid ${s.accent}` }}>
-                    <div className="stat-label">{s.label}</div>
-                    <div className="stat-value">{s.value}</div>
+            {/* Two column */}
+            <div style={{display:'grid',gridTemplateColumns:'1fr 300px',gap:16,marginBottom:24}}>
+              <div className="card-flat">
+                <div className="label" style={{marginBottom:12}}>Warden details</div>
+                {[['Name',userDoc?.name],['Email',userDoc?.email],['Hostel',hostel?.name],['College',hostel?.collegeName]].map(([k,v])=>(
+                  <div key={k} style={{display:'flex',justifyContent:'space-between',padding:'8px 0',borderBottom:'1px solid var(--border)',fontSize:13.5}}>
+                    <span style={{color:'var(--text-3)',fontWeight:500}}>{k}</span>
+                    <span style={{color:'var(--text)',fontFamily:k==='Email'?'var(--font-mono)':''}}>{v}</span>
                   </div>
                 ))}
               </div>
-
-              {/* Two column */}
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 320px', gap:16 }}>
-                <div className="card-static" style={{ borderTop:'2px solid var(--violet)' }}>
-                  <span className="label">Warden details</span>
-                  {[['Name',userDoc?.name],['Email',userDoc?.email]].map(([k,v])=>(
-                    <div key={k} style={{ display:'flex', justifyContent:'space-between', padding:'8px 0', borderBottom:'1px solid var(--border)', fontSize:13 }}>
-                      <span style={{ color:'var(--text-secondary)' }}>{k}</span>
-                      <span style={{ color:'var(--text)', fontFamily: k==='Email'?'var(--font-mono)':'' }}>{v}</span>
-                    </div>
-                  ))}
-                </div>
-                <div className="card-static" style={{ borderTop:'2px solid var(--amber)' }}>
-                  <span className="label">Complaint summary</span>
-                  {[
-                    ['Open', complaints.filter(c=>c.status==='todo').length, 'var(--red)'],
-                    ['In progress', complaints.filter(c=>c.status==='in_progress').length, 'var(--amber)'],
-                    ['Resolved', complaints.filter(c=>c.status==='resolved').length, 'var(--green)'],
-                  ].map(([k,v,color])=>(
-                    <div key={k} style={{ display:'flex', justifyContent:'space-between', padding:'8px 0', borderBottom:'1px solid var(--border)', fontSize:13 }}>
-                      <span style={{ color:'var(--text-secondary)' }}>{k}</span>
-                      <span style={{ fontFamily:'var(--font-mono)', fontSize:18, color, lineHeight:1 }}>{v}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div style={{ marginTop:24 }}>
-                <OverviewOccupancy hostelId={hostel.id} />
-              </div>
-            </div>
-          )}
-
-          {activeTab==='announcements' && <WardenAnnouncements hostelId={hostel.id} />}
-          {activeTab==='analytics' && <WardenAnalytics hostelId={hostel.id} />}
-          {activeTab==='3dview' && <Hostel3DView hostelId={hostel.id} />}
-          {activeTab==='qrcodes' && <WardenQRDirectory hostelId={hostel.id} />}
-
-          {activeTab==='complaints' && (
-            <div className="animation-fade-in">
-              {/* Control bar */}
-              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16, flexWrap:'wrap', gap:10 }}>
-                <span className="label" style={{ margin:0 }}>Complaints board</span>
-                <div style={{ display:'flex', gap:8, alignItems:'center', flexWrap:'wrap' }}>
-                  {['','Plumbing','Electrical','Cleaning','Furniture','Other'].map(cat=>(
-                    <button key={cat||'all'} onClick={()=>setFilters(f=>({...f,category:cat}))}
-                      style={{ padding:'4px 12px', borderRadius:20, fontSize:12, cursor:'pointer', transition:'all 0.15s',
-                        background: filters.category===cat ? 'var(--violet)' : 'transparent',
-                        color: filters.category===cat ? '#fff' : 'var(--text-secondary)',
-                        border: filters.category===cat ? '1px solid var(--violet)' : '1px solid var(--border)'
-                      }}>{cat||'All'}</button>
-                  ))}
-                  <div style={{ display:'flex', border:'1px solid var(--border)', borderRadius:8, overflow:'hidden' }}>
-                    {[['kanban','Kanban'],['list','List']].map(([v,l])=>(
-                      <button key={v} onClick={()=>setViewMode(v)}
-                        style={{ padding:'5px 14px', fontSize:12, border:'none', cursor:'pointer', transition:'all 0.15s',
-                          background: viewMode===v ? 'var(--bg-raised)' : 'transparent',
-                          color: viewMode===v ? 'var(--text)' : 'var(--text-secondary)',
-                          fontFamily:'var(--font-body)', fontWeight: viewMode===v ? 600 : 400
-                        }}>{l}</button>
-                    ))}
+              <div className="card-flat">
+                <div className="label" style={{marginBottom:12}}>Complaint summary</div>
+                {[
+                  ['Open',complaints.filter(c=>c.status==='todo').length,'var(--red)'],
+                  ['In Progress',complaints.filter(c=>c.status==='in_progress').length,'var(--amber)'],
+                  ['Resolved',complaints.filter(c=>c.status==='resolved').length,'var(--green)'],
+                ].map(([k,v,color])=>(
+                  <div key={k} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'10px 0',borderBottom:'1px solid var(--border)'}}>
+                    <span style={{fontSize:13.5,color:'var(--text-2)'}}>{k}</span>
+                    <span style={{fontFamily:'var(--font-mono)',fontSize:22,fontWeight:500,color,lineHeight:1}}>{v}</span>
                   </div>
+                ))}
+              </div>
+            </div>
+
+            <OverviewOccupancy hostelId={hostel.id} />
+          </>
+        )}
+
+        {activeTab==='announcements' && <WardenAnnouncements hostelId={hostel.id} />}
+        {activeTab==='analytics' && <WardenAnalytics hostelId={hostel.id} />}
+        {activeTab==='3dview' && <Hostel3DView hostelId={hostel.id} />}
+        {activeTab==='qrcodes' && <WardenQRDirectory hostelId={hostel.id} />}
+
+        {activeTab==='complaints' && (
+          <div className="animation-fade-in">
+            {/* Control bar */}
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16,flexWrap:'wrap',gap:10}}>
+              <div style={{fontSize:13,fontWeight:600,color:'var(--text-2)',textTransform:'uppercase',letterSpacing:'0.06em'}}>Complaints</div>
+              <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
+                {['','Plumbing','Electrical','Cleaning','Furniture','Other'].map(cat=>(
+                  <button key={cat||'all'} onClick={()=>setFilters(f=>({...f,category:cat}))}
+                    className={filters.category===cat ? 'btn btn-primary btn-sm' : 'btn btn-secondary btn-sm'}>
+                    {cat||'All'}
+                  </button>
+                ))}
+                <div style={{display:'flex',border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',overflow:'hidden'}}>
+                  {[['kanban','view_kanban'],['list','format_list_bulleted']].map(([v,icon])=>(
+                    <button key={v} onClick={()=>setViewMode(v)}
+                      style={{padding:'7px 12px',border:'none',cursor:'pointer',background:viewMode===v?'var(--bg-hover)':'transparent',color:viewMode===v?'var(--text)':'var(--text-3)',transition:'all 0.15s',display:'flex',alignItems:'center'}}>
+                      <span className="material-icons-round" style={{fontSize:16}}>{icon}</span>
+                    </button>
+                  ))}
                 </div>
               </div>
-              {viewMode==='kanban' ? <ComplaintsKanban complaints={filteredComplaints} /> : <ComplaintsList complaints={filteredComplaints} />}
             </div>
-          )}
-        </div>
+            {viewMode==='kanban' ? <ComplaintsKanban complaints={filteredComplaints} /> : <ComplaintsList complaints={filteredComplaints} />}
+          </div>
+        )}
       </div>
     </div>
-  );
+  </div>
+);
 }

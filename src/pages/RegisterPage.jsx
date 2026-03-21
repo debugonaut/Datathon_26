@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { registerUser, signInWithGoogle, getUserDoc, checkWardenExists } from '../firebase/auth';
 import { useAuth } from '../context/AuthContext';
+import ThemeToggle from '../components/ThemeToggle';
 
 export default function RegisterPage() {
   const [params] = useSearchParams();
@@ -100,11 +101,16 @@ export default function RegisterPage() {
   return (
     <div className="auth-page">
       <div className="auth-topbar">
-        <Link to="/" className="auth-brand">
-          <span className="auth-brand-dot" />
-          <span className="auth-brand-name">MITAOE Hostel</span>
+        <Link to="/" style={{ display:'flex', alignItems:'center', gap:10, textDecoration:'none' }}>
+          <div className="sidebar-brand-icon">
+            <span className="material-icons-round" style={{fontSize:16}}>apartment</span>
+          </div>
+          <span className="sidebar-brand-name">Fix My Hostel</span>
         </Link>
-        <Link to="/" style={{ fontSize: 13, color: 'var(--text-secondary)', textDecoration: 'none' }}>Back to home</Link>
+        <div style={{ display:'flex', alignItems:'center', gap:16 }}>
+          <ThemeToggle />
+          <Link to="/" className="text-secondary text-sm" style={{textDecoration:'none', fontWeight:500}}>Back to home</Link>
+        </div>
       </div>
       <div className="auth-center">
         <div className="auth-card animation-fade-in">

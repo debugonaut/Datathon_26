@@ -4,6 +4,9 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import Navbar from '../../components/Navbar';
 import { useAuth } from '../../context/AuthContext';
+import { logoutUser } from '../../firebase/auth';
+import ThemeToggle from '../../components/ThemeToggle';
+import { Link } from 'react-router-dom';
 import { getAnnouncements, markAnnouncementRead } from '../../firebase/firestore';
 import { fetchRoomHistory, generateRoomSummary } from '../../firebase/roomHistory';
 import StudentAnalytics from '../../components/student/StudentAnalytics';
@@ -110,248 +113,179 @@ export default function StudentDashboard() {
   if (score === 0) scoreColor = 'var(--text-secondary)';
 
   return (
-    <div className="page">
-      <Navbar />
-      <div className="dashboard">
-        <div className="dashboard-header">
-          <h1>Hello, {userDoc?.name?.split(' ')[0]}!</h1>
-          <p className="text-secondary">Welcome to your hostel portal.</p>
+  <div className="app-shell">
+    {/* Sidebar */}
+    <aside className="app-sidebar">
+      <Link to="/" className="sidebar-brand">
+        <div className="sidebar-brand-icon">
+          <span className="material-icons-round" style={{fontSize:18}}>apartment</span>
         </div>
+        <span className="sidebar-brand-name">Fix My Hostel</span>
+      </Link>
 
-        {/* Custom Tabs Navigation */}
-        <div style={{ borderBottom: '1px solid var(--border)', display: 'flex', gap: '2rem', marginBottom: '2rem', overflowX: 'auto', whiteSpace: 'nowrap' }}>
-          {[
-            { id: 'overview', label: 'Overview' },
-            { id: 'stats', label: 'My Stats' }
-          ].map(t => (
-            <div 
-              key={t.id} 
-              onClick={() => setActiveTab(t.id)}
-              style={{
-                padding: '0.75rem 0', fontWeight: 600, cursor: 'pointer',
-                color: activeTab === t.id ? 'var(--violet)' : 'var(--text-muted)',
-                borderBottom: activeTab === t.id ? '3px solid var(--violet)' : '3px solid transparent',
-                transition: 'all 0.2s'
-              }}
-            >
-              {t.label}
-            </div>
+      <nav className="sidebar-nav">
+        <span className="sidebar-section-label">My Room</span>
+        {[
+          ['overview',   'home',          'Overview'],
+          ['complaints', 'task_alt',      'My Complaints'],
+          ['stats',      'bar_chart',     'Analytics'],
+        ].map(([id,icon,label])=>(
+          <div key={id} className={`sidebar-item ${activeTab===id?'active':''}`} onClick={()=>setActiveTab(id)}>
+            <span className="material-icons-round">{icon}</span>
+            {label}
+          </div>
+        ))}
+
+        <span className="sidebar-section-label">Actions</span>
+        <Link to="/complaint/new" className="sidebar-item">
+          <span className="material-icons-round">add_circle_outline</span>
+          File Complaint
+        </Link>
+      </nav>
+
+      <div className="sidebar-footer">
+        <div className="sidebar-user">
+          <div className="sidebar-avatar">
+            {userDoc?.name?.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}
+          </div>
+          <div>
+            <div className="sidebar-user-name">{userDoc?.name}</div>
+            <div className="sidebar-user-role">Room {userDoc?.roomNumber}</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    {/* Main */}
+    <div className="app-main">
+      <div className="app-header">
+        <div>
+          <div className="header-title">Room {userDoc?.roomNumber}</div>
+          <div style={{fontSize:12,color:'var(--text-3)',marginTop:1}}>{hierarchyNames.building} · Floor {hierarchyNames.floor}</div>
+        </div>
+        <div className="header-actions">
+          <ThemeToggle />
+          <Link to="/complaint/new" className="btn btn-primary btn-sm">
+            <span className="material-icons-round" style={{fontSize:15}}>add</span>
+            File Complaint
+          </Link>
+          <button className="btn btn-ghost btn-sm" onClick={async()=>{await logoutUser();navigate('/');}}>
+            <span className="material-icons-round" style={{fontSize:16}}>logout</span>
+          </button>
+        </div>
+      </div>
+
+      <div style={{background:'var(--bg-card)',borderBottom:'1px solid var(--border)',padding:'0 24px'}}>
+        <div className="tabs">
+          {[['overview','Overview'],['complaints','My Complaints'],['stats','Analytics']].map(([id,label])=>(
+            <div key={id} className={`tab ${activeTab===id?'active':''}`} onClick={()=>setActiveTab(id)}>{label}</div>
           ))}
         </div>
+      </div>
 
-        {activeTab === 'overview' && (
-          <div className="animation-fade-in" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 300px', gap: '2rem', alignItems: 'start' }}>
-          
-          {/* Main Info Area */}
-          <div>
-            <div className="card mb-3">
-              <div className="flex align-items-center mb-2" style={{ justifyContent: 'space-between' }}>
-                <h3 className="font-bold">Room Assignment</h3>
-                <button 
-                  className="btn btn-sm" 
-                  style={{ background: 'var(--red)', color: '#000', border: 'none', padding: '0.4rem 0.8rem' }}
-                  onClick={() => navigate(`/complaint/new?roomId=${userDoc.roomId}`)}
-                >
-                  Report Issue
-                </button>
-              </div>
-              <div className="stats-grid" style={{ marginBottom: 0 }}>
-                <div className="stat-card" style={{ padding: '1rem' }}>
-                  <div className="stat-label">Block</div>
-                  <div className="stat-value text-sm">{hierarchyNames.block}</div>
-                </div>
-                <div className="stat-card" style={{ padding: '1rem' }}>
-                  <div className="stat-label">Building</div>
-                  <div className="stat-value text-sm">{hierarchyNames.building}</div>
-                </div>
-                <div className="stat-card" style={{ padding: '1rem' }}>
-                  <div className="stat-label">Floor</div>
-                  <div className="stat-value text-sm">{hierarchyNames.floor}</div>
-                </div>
-                <div className="stat-card" style={{ padding: '1rem', border: '1px solid var(--violet)' }}>
-                  <div className="stat-label" style={{ color: 'var(--violet)' }}>Room</div>
-                  <div className="stat-value text-sm">{userDoc.roomNumber}</div>
-                </div>
-              </div>
-            </div>
+      <div className="app-content animation-fade-in">
+        {activeTab==='overview' && (
+          <div style={{display:'grid',gridTemplateColumns:'1fr 280px',gap:20}}>
+            <div style={{display:'flex',flexDirection:'column',gap:16}}>
 
-            <div className="card">
-              <div className="flex align-items-center mb-2" style={{ justifyContent: 'space-between' }}>
-                <h3 className="font-bold">Announcements</h3>
-                {unreadCount > 0 && <span className="badge badge-primary">{unreadCount} Unread</span>}
-              </div>
-              
-              {announcements.length === 0 ? (
-                <p className="text-secondary">No announcements from your warden yet.</p>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  {announcements.map(a => {
-                    const isUnread = !a.readBy.includes(user.uid);
-                    return (
-                      <div 
-                        key={a.id} 
-                        className="p-3" 
-                        style={{ 
-                          background: isUnread ? 'rgba(124,110,250,0.08)' : 'rgba(255,255,255,0.02)', 
-                          border: isUnread ? '1px solid rgba(124,110,250,0.3)' : '1px solid var(--border)',
-                          borderRadius: '8px',
-                          cursor: isUnread ? 'pointer' : 'default',
-                          transition: 'background 0.2s'
-                        }}
-                        onClick={() => isUnread && handleReadAnnouncement(a.id, a.readBy)}
-                      >
-                        <div className="flex gap-1" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                          <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{a.message}</p>
-                          {isUnread && <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--violet)', flexShrink: 0, marginTop: '5px' }} />}
-                        </div>
-                        <div className="text-secondary text-sm mt-1">{a.createdAt?.toDate().toLocaleDateString() || 'Just now'}</div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Sidebar */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            
-            {/* Score Circle */}
-            <div className="card text-center">
-              <h4 className="font-bold mb-2">Room Score</h4>
-              <div style={{ 
-                width: '120px', height: '120px', margin: '0 auto',
-                borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: `conic-gradient(${scoreColor} ${score}%, rgba(255,255,255,0.05) ${score}%)`,
-                position: 'relative'
-              }}>
-                <div style={{
-                  position: 'absolute', inset: '8px', background: 'var(--glass)', borderRadius: '50%',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column'
-                }}>
-                  <span style={{ fontSize: '1.8rem', fontWeight: 800, color: scoreColor }}>{score}</span>
-                  <span className="text-secondary text-sm">/ 100</span>
-                </div>
-              </div>
-              <p className="text-secondary text-sm mt-2">Maintain above 70 to keep a green rating.</p>
-            </div>
-
-            <div style={{ marginTop: '0px' }}>
-              <button
-                onClick={() => setShowFullHistory(p => !p)}
-                style={{
-                  width: '100%', padding: '10px 16px',
-                  background: 'rgba(255,255,255,0.03)',
-                  border: '1px solid var(--border)', borderRadius: '10px',
-                  color: 'var(--text-primary)', cursor: 'pointer',
-                  display: 'flex', justifyContent: 'space-between',
-                  alignItems: 'center', fontSize: '0.85rem', fontWeight: 600
-                }}
-              >
-                <span>Room History — All Tenants</span>
-                <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>
-                  {fullRoomHistory.length} complaints on record
-                  {showFullHistory ? ' ▲' : ' ▼'}
-                </span>
-              </button>
-
-              {showFullHistory && (
-                <div style={{
-                  marginTop: '8px', padding: '14px 16px',
-                  background: 'rgba(255,255,255,0.03)',
-                  border: '1px solid var(--border)', borderRadius: '10px',
-                  maxHeight: '400px', overflowY: 'auto'
-                }}>
-                  {roomSummary?.aiSummary && (
-                    <div style={{
-                      fontSize: '0.82rem', color: 'var(--text-muted)',
-                      fontStyle: 'italic', marginBottom: '14px',
-                      padding: '8px 12px', borderRadius: '8px',
-                      background: 'rgba(55,138,221,0.08)',
-                      border: '1px solid rgba(55,138,221,0.2)'
-                    }}>
-                      "{roomSummary.aiSummary}"
+              {/* Score */}
+              <div className="card" style={{'--accent-color': score>70?'var(--green)':score>40?'var(--amber)':'var(--red)'}}>
+                <div className="label">Room Health Score</div>
+                <div style={{display:'flex',alignItems:'center',gap:20,marginTop:12}}>
+                  <svg width="72" height="72" viewBox="0 0 100 100" style={{transform:'rotate(-90deg)',flexShrink:0}}>
+                    <circle cx="50" cy="50" r="42" fill="none" stroke="var(--border)" strokeWidth="10"/>
+                    <circle cx="50" cy="50" r="42" fill="none"
+                      stroke={score>70?'var(--green)':score>40?'var(--amber)':'var(--red)'}
+                      strokeWidth="10" strokeLinecap="round"
+                      strokeDasharray={`${score*2.638} 263.8`}
+                      style={{transition:'stroke-dasharray 0.6s ease'}}
+                    />
+                  </svg>
+                  <div>
+                    <div style={{fontFamily:'var(--font-mono)',fontSize:36,fontWeight:500,color:score>70?'var(--green)':score>40?'var(--amber)':'var(--red)',lineHeight:1}}>
+                      {score}<span style={{fontSize:16,color:'var(--text-3)'}}>/100</span>
                     </div>
-                  )}
+                    <p style={{fontSize:12.5,color:'var(--text-2)',marginTop:6,lineHeight:1.5}}>Maintain above 70 to keep a green rating.</p>
+                  </div>
+                </div>
+              </div>
 
-                  {fullRoomHistory.map((c, i) => (
-                    <div key={c.id} style={{
-                      display: 'flex', gap: '12px',
-                      paddingBottom: i < fullRoomHistory.length - 1 ? '14px' : '0',
-                      position: 'relative'
-                    }}>
-                      {i < fullRoomHistory.length - 1 && (
-                        <div style={{
-                          position: 'absolute', left: '7px', top: '18px',
-                          width: '2px', bottom: 0, background: 'var(--border)'
-                        }} />
+              {/* Announcements */}
+              <div className="card-flat">
+                <div className="label">Announcements</div>
+                {announcements.length===0
+                  ? <p style={{fontSize:13,color:'var(--text-3)',marginTop:8}}>No announcements yet.</p>
+                  : announcements.map(a=>(
+                    <div key={a.id} style={{padding:'12px 0',borderBottom:'1px solid var(--border)',display:'flex',gap:12,alignItems:'flex-start'}}>
+                      <span className="material-icons-round" style={{fontSize:16,color:'var(--primary)',flexShrink:0,marginTop:1}}>campaign</span>
+                      <div style={{flex:1}}>
+                        <p style={{fontSize:13,color:'var(--text-2)',lineHeight:1.5}}>{a.message}</p>
+                        <span style={{fontSize:11,color:'var(--text-3)',fontFamily:'var(--font-mono)'}}>
+                          {a.createdAt?.toDate?.().toLocaleDateString('en-IN')}
+                        </span>
+                      </div>
+                      {!a.readBy?.includes(user.uid) && (
+                        <button onClick={()=>handleReadAnnouncement(a.id,a.readBy)}
+                          style={{fontSize:11,color:'var(--primary)',background:'none',border:'none',cursor:'pointer',flexShrink:0}}>
+                          Mark read
+                        </button>
                       )}
-                      <div style={{
-                        width: '16px', height: '16px', borderRadius: '50%',
-                        flexShrink: 0, marginTop: '2px',
-                        background: c.status === 'resolved' ? 'var(--green)'
-                          : c.priority === 'high' ? 'var(--red)' : 'var(--amber)'
-                      }} />
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: '0.85rem', fontWeight: 600,
-                          color: 'var(--text-primary)' }}>
-                          {c.title}
-                        </div>
-                        <div style={{ fontSize: '0.75rem',
-                          color: 'var(--text-muted)', marginTop: '2px' }}>
-                          {c.category} • {c.priority} priority •{' '}
-                          {c.createdAt?.toDate?.().toLocaleDateString('en-IN', {
-                            day: 'numeric', month: 'short', year: 'numeric'
-                          })}
-                          {c.status === 'resolved' && c.resolvedAt && (
-                            <span style={{ color: 'var(--green)' }}>
-                              {' '}• Fixed in {Math.round(
-                                (c.resolvedAt.toDate() - c.createdAt.toDate()) / 3600000
-                              )}h
-                            </span>
-                          )}
-                          {c.studentUid !== user?.uid && (
-                            <span style={{ color: 'var(--text-muted)' }}>
-                              {' '}• Previous tenant
-                            </span>
-                          )}
-                        </div>
-                      </div>
                     </div>
-                  ))}
-                </div>
-              )}
+                  ))
+                }
+              </div>
             </div>
 
-            {/* QR Code */}
-            {roomData?.qrCodeUrl && (
-              <div className="card text-center flex flex-column align-items-center">
-                <h4 className="font-bold mb-2">My QR Room Key</h4>
-                <div style={{ background: '#fff', padding: '0.5rem', borderRadius: '8px', display: 'inline-block' }}>
-                  <img src={roomData.qrCodeUrl} alt="Room QR Code" style={{ width: '160px', height: '160px', display: 'block' }} />
+            {/* Right */}
+            <div style={{display:'flex',flexDirection:'column',gap:16}}>
+              {roomData?.qrCodeUrl && (
+                <div className="card-flat" style={{textAlign:'center'}}>
+                  <div className="label" style={{marginBottom:12}}>My Room QR</div>
+                  <div style={{background:'#fff',padding:8,borderRadius:8,display:'inline-block',boxShadow:'var(--shadow-sm)'}}>
+                    <img src={roomData.qrCodeUrl} alt="QR" style={{width:130,height:130,display:'block'}} />
+                  </div>
+                  <p style={{fontSize:11,color:'var(--text-3)',fontFamily:'var(--font-mono)',margin:'10px 0 12px',lineHeight:1.4}}>Stick this to your room door</p>
+                  <a href={roomData.qrCodeUrl} download={`Room_${userDoc.roomNumber}_QR.png`} className="btn btn-secondary btn-sm btn-full">
+                    <span className="material-icons-round" style={{fontSize:14}}>download</span>
+                    Download QR
+                  </a>
                 </div>
-                <p className="text-secondary text-sm mt-2 mb-3">Please download and stick this QR to your room door so complaints can be logged.</p>
-                <a 
-                  href={roomData.qrCodeUrl} 
-                  download={`Room_${userDoc.roomNumber}_QR.png`} 
-                  className="btn btn-primary w-full"
-                >
-                  Download & Print QR
-                </a>
+              )}
+
+              <div className="card-flat">
+                <button onClick={()=>setShowFullHistory(p=>!p)} style={{width:'100%',background:'none',border:'none',cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center',color:'var(--text)'}}>
+                  <span style={{fontSize:13,fontWeight:600}}>Room History</span>
+                  <span style={{fontSize:11,color:'var(--text-3)',fontFamily:'var(--font-mono)'}}>{fullRoomHistory.length} records {showFullHistory?'▲':'▼'}</span>
+                </button>
+                {showFullHistory && (
+                  <div style={{marginTop:12,borderTop:'1px solid var(--border)',paddingTop:12,maxHeight:320,overflowY:'auto'}}>
+                    {roomSummary?.aiSummary && (
+                      <div className="alert alert-info" style={{marginBottom:12,fontSize:12,fontStyle:'italic'}}>
+                        "{roomSummary.aiSummary}"
+                      </div>
+                    )}
+                    <div className="timeline">
+                      {fullRoomHistory.map((c,i)=>(
+                        <div key={c.id||i} className="timeline-item">
+                          <div className="timeline-dot" style={{background:c.status==='resolved'?'var(--green)':c.priority==='high'?'var(--red)':'var(--amber)'}} />
+                          <div style={{flex:1}}>
+                            <div style={{fontSize:13,fontWeight:500}}>{c.title}</div>
+                            <div style={{fontSize:11,color:'var(--text-3)',fontFamily:'var(--font-mono)',marginTop:2}}>{c.category} · {c.createdAt?.toDate?.().toLocaleDateString('en-IN')}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-
-          </div>
-
-        </div>
-        )}
-
-        {activeTab === 'stats' && (
-          <div className="animation-fade-in">
-            <StudentAnalytics roomScore={roomData?.score} />
+            </div>
           </div>
         )}
+
+        {activeTab==='complaints' && <StudentAnalytics roomScore={roomData?.score} />}
+        {activeTab==='stats' && <StudentAnalytics roomScore={roomData?.score} />}
       </div>
     </div>
-  );
+  </div>
+);
 }

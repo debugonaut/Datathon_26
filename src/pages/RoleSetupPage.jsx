@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { createUserDoc, checkWardenExists } from '../firebase/auth';
+import ThemeToggle from '../components/ThemeToggle';
 
 // This page is shown once to new Google sign-in users who don't have a role yet.
 export default function RoleSetupPage() {
@@ -64,10 +65,13 @@ export default function RoleSetupPage() {
   return (
     <div className="auth-page">
       <div className="auth-topbar">
-        <div className="auth-brand">
-          <span className="auth-brand-dot" />
-          <span className="auth-brand-name">MITAOE Hostel</span>
+        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+          <div className="sidebar-brand-icon">
+            <span className="material-icons-round" style={{fontSize:16}}>apartment</span>
+          </div>
+          <span className="sidebar-brand-name">Fix My Hostel</span>
         </div>
+        <ThemeToggle />
       </div>
       <div className="auth-center">
         <div className="auth-card animation-fade-in" style={{ maxWidth: 400, borderTop: '2px solid var(--violet)' }}>
