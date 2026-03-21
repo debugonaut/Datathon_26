@@ -92,13 +92,13 @@ export default function WardenAnnouncements({ hostelId }) {
             onChange={e => setMessage(e.target.value)}
             disabled={submitting}
             style={{
-              width: '100%', background: 'var(--bg-raised)', border: '1px solid var(--border-v2)',
+              width: '100%', background: 'var(--bg-raised)', border: '1px solid var(--border)',
               borderRadius: 'var(--radius-sm)', padding: '11px 14px', fontSize: 13,
               fontFamily: 'var(--font-body)', color: 'var(--text-primary)', outline: 'none',
               resize: 'vertical', minHeight: 100, transition: 'border-color 0.2s ease'
             }}
             onFocus={e => e.target.style.borderColor = 'rgba(124,110,250,0.4)'}
-            onBlur={e => e.target.style.borderColor = 'var(--border-v2)'}
+            onBlur={e => e.target.style.borderColor = 'var(--border)'}
           />
           <button type="submit" disabled={!message.trim() || submitting}
             style={{

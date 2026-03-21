@@ -84,7 +84,7 @@ const SortableComplaintCard = ({ complaint }) => {
         ...style,
         cursor: 'grab', 
         background: 'var(--bg-surface)', 
-        border: '1px solid var(--border-v2)',
+        border: '1px solid var(--border)',
         borderRadius: 'var(--radius-sm)',
         padding: '12px 14px',
         marginBottom: '8px',
@@ -94,7 +94,7 @@ const SortableComplaintCard = ({ complaint }) => {
       {...attributes} 
       {...listeners}
       onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-hover)'}
-      onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-v2)'}
+      onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
     >
       
       {/* Withdrawn Badge */}
@@ -103,7 +103,7 @@ const SortableComplaintCard = ({ complaint }) => {
           <span style={{
             fontSize: 12, padding: '2px 7px', borderRadius: 'var(--radius-chip)',
             background: 'rgba(255,255,255,0.04)', color: 'var(--text-ghost)',
-            border: '1px solid var(--border-v2)', fontFamily: 'var(--font-body)'
+            border: '1px solid var(--border)', fontFamily: 'var(--font-body)'
           }}>
             Withdrawn: "{complaint.withdrawnReason}"
           </span>
@@ -270,7 +270,7 @@ const SortableComplaintCard = ({ complaint }) => {
               }}
               style={{
                 width: '100%', padding: '4px 8px', borderRadius: '6px',
-                background: 'var(--surface)', border: '1px solid var(--border)',
+                background: 'var(--bg-surface)', border: '1px solid var(--border)',
                 color: 'var(--text-primary)', fontSize: '0.75rem'
               }}
             />
@@ -329,7 +329,7 @@ const SortableComplaintCard = ({ complaint }) => {
                   }
                 }}
                 style={{ flex: 1, padding: '5px 10px', borderRadius: '6px',
-                  background: 'var(--surface)', border: '1px solid var(--border)',
+                  background: 'var(--bg-surface)', border: '1px solid var(--border)',
                   color: 'var(--text-primary)', fontSize: '0.78rem' }}
               />
               <button

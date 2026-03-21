@@ -101,7 +101,7 @@ export default function StudentAnalytics({ roomScore }) {
   const sc = score >= 71 ? '#22D3A0' : score >= 41 ? '#F5A623' : '#F06565';
   const resComp = avg != null && hostelAvg != null ? [{ name: 'Mine', hours: avg, fill: '#4FA3F7' }, { name: 'Hostel', hours: hostelAvg, fill: '#7C6EFA' }] : [];
 
-  const card = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '10px', padding: '0.75rem' };
+  const card = { background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '10px', padding: '0.75rem' };
   const label = { fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '2px' };
 
   // Feature 10: Filtering
@@ -148,7 +148,7 @@ export default function StudentAnalytics({ roomScore }) {
               position: 'relative'
             }}>
               <div style={{
-                position: 'absolute', inset: '10px', background: 'var(--surface)', borderRadius: '50%',
+                position: 'absolute', inset: '10px', background: 'var(--bg-surface)', borderRadius: '50%',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column'
               }}>
                 <span style={{ fontSize: '2.5rem', fontWeight: 800, color: sc }}>{score}</span>
@@ -235,7 +235,7 @@ export default function StudentAnalytics({ roomScore }) {
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               style={{ width: '100%', padding: '8px 14px', marginBottom: '10px',
-                background: 'var(--surface)', border: '1px solid var(--border)',
+                background: 'var(--bg-surface)', border: '1px solid var(--border)',
                 borderRadius: '8px', color: 'var(--text-primary)', fontSize: '0.85rem' }}
             />
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -384,7 +384,7 @@ export default function StudentAnalytics({ roomScore }) {
           display: 'flex', alignItems: 'center', justifyContent: 'center'
         }}>
           <div style={{
-            background: 'var(--surface)', borderRadius: '12px',
+            background: 'var(--bg-surface)', borderRadius: '12px',
             border: '1px solid var(--border)', padding: '1.5rem',
             width: '100%', maxWidth: '400px'
           }}>
@@ -440,7 +440,7 @@ export default function StudentAnalytics({ roomScore }) {
           display: 'flex', alignItems: 'center', justifyContent: 'center'
         }}>
           <div style={{
-            background: 'var(--surface)', borderRadius: '12px',
+            background: 'var(--bg-surface)', borderRadius: '12px',
             border: '1px solid var(--border)', padding: '1.5rem',
             width: '100%', maxWidth: '400px'
           }}>

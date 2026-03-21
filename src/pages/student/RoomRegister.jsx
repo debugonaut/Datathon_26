@@ -136,7 +136,7 @@ export default function RoomRegister() {
   return (
     <div className="page">
       <Navbar />
-      <div className="center-page" style={{ paddingTop: '3rem', paddingBottom: '3rem' }}>
+      <div className="auth-center" style={{ paddingTop: '3rem', paddingBottom: '3rem' }}>
         <div className="auth-card animation-fade-in" style={{ maxWidth: 500, width: '100%' }}>
 
           {!resolvedRoom ? (
@@ -172,7 +172,7 @@ export default function RoomRegister() {
 
               <div className="flex gap-2">
                 <input
-                  className="form-input flex-1"
+                  className="input flex-1"
                   placeholder="e.g. A9B2C4"
                   value={manualCode}
                   onChange={e => setManualCode(e.target.value.toUpperCase())}
@@ -200,7 +200,7 @@ export default function RoomRegister() {
               </div>
 
               <h2 className="font-bold mb-1">Room Found</h2>
-              <p className="text-muted mb-3" style={{ lineHeight: 1.5 }}>
+              <p className="text-secondary mb-3" style={{ lineHeight: 1.5 }}>
                 <strong>Room {resolvedRoom.roomNumber}</strong><br />
                 <span style={{ fontSize: '0.9rem' }}>{hostelName}</span>
               </p>
@@ -210,7 +210,7 @@ export default function RoomRegister() {
               {/* Occupancy Bar */}
               {occupancyCheck && (
                 <div style={{
-                  background: 'var(--bg-secondary)', padding: '1rem', borderRadius: '8px',
+                  background: 'var(--bg-raised)', padding: '1rem', borderRadius: '8px',
                   marginBottom: '1.5rem', border: '1px solid var(--border)'
                 }}>
                   <div className="text-xs text-muted mb-1">Occupancy</div>

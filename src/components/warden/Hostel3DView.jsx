@@ -246,7 +246,7 @@ export default function Warden3DView({ hostelId }) {
   }, [rooms]);
 
   if (loading) return <div className="text-center p-4">Initializing 3D Environment...</div>;
-  if (rooms.length === 0) return <div className="text-muted text-center p-4">No rooms have been mapped yet.</div>;
+  if (rooms.length === 0) return <div className="text-secondary text-center p-4">No rooms have been mapped yet.</div>;
 
   return (
     <div className="animation-fade-in" style={{ height: '600px', width: '100%', position: 'relative', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--border)' }}>

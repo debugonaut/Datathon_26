@@ -17,7 +17,7 @@ import DemoLanding from './pages/DemoLanding';
 // ── Generic auth guard ────────────────────────────────────────────────────────
 const ProtectedRoute = ({ children, allowedRole }) => {
   const { user, userDoc, loading } = useAuth();
-  if (loading) return <div className="loading-screen"><div className="spinner" /><p className="text-muted mt-2">Verifying your access...</p></div>;
+  if (loading) return <div className="loading-screen"><div className="spinner" /><p className="text-secondary mt-2">Verifying your access...</p></div>;
   if (!user) return <Navigate to="/login" replace />;
   if (allowedRole && userDoc?.role !== allowedRole) return <Navigate to="/" replace />;
   return children;
@@ -26,7 +26,7 @@ const ProtectedRoute = ({ children, allowedRole }) => {
 // ── Student-specific guard enforcing profile + registration steps ─────────────
 const StudentGuard = ({ children, requireProfile, requireRegistered }) => {
   const { user, userDoc, loading } = useAuth();
-  if (loading) return <div className="loading-screen"><div className="spinner" /><p className="text-muted mt-2">Verifying your access...</p></div>;
+  if (loading) return <div className="loading-screen"><div className="spinner" /><p className="text-secondary mt-2">Verifying your access...</p></div>;
   if (!user) return <Navigate to="/login" replace />;
   if (userDoc?.role !== 'student') return <Navigate to="/" replace />;
 
@@ -62,7 +62,7 @@ const StudentGuard = ({ children, requireProfile, requireRegistered }) => {
 // ── Root redirect ─────────────────────────────────────────────────────────────
 const RoleRedirect = () => {
   const { user, userDoc, loading } = useAuth();
-  if (loading) return <div className="loading-screen"><div className="spinner" /><p className="text-muted mt-2">Verifying your access...</p></div>;
+  if (loading) return <div className="loading-screen"><div className="spinner" /><p className="text-secondary mt-2">Verifying your access...</p></div>;
   if (!user) return <LandingPage />;
   if (!userDoc?.role) return <Navigate to="/setup-role" replace />;
   if (userDoc.role === 'warden') {

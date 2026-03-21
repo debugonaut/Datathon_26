@@ -84,11 +84,11 @@ export default function RoomLanding() {
     return (
       <div className="page pb-8">
         <Navbar />
-        <div className="center-page animation-fade-in" style={{ paddingTop: '4rem' }}>
+        <div className="auth-center animation-fade-in" style={{ paddingTop: '4rem' }}>
           <div className="auth-card" style={{ maxWidth: 450, textAlign: 'center' }}>
-            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🚪🚫</div>
+            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🚫</div>
             <h2 className="mb-2">Access Denied</h2>
-            <p className="text-muted mb-4">{error}</p>
+            <p className="text-secondary mb-4">{error}</p>
             <button className="btn btn-primary btn-full" onClick={() => navigate('/student/dashboard')}>
               Go to my dashboard
             </button>

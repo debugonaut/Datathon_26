@@ -83,7 +83,7 @@ export default function JoinHostel() {
   return (
     <div className="page">
       <Navbar />
-      <div className="join-page center-page" style={{ paddingTop: '4rem', paddingBottom: '4rem' }}>
+      <div className="join-page auth-center" style={{ paddingTop: '4rem', paddingBottom: '4rem' }}>
         <div className="auth-card animation-fade-in" style={{ maxWidth: '500px', width: '100%' }}>
           
           {!resolvedRoom ? (
@@ -116,7 +116,7 @@ export default function JoinHostel() {
 
               <div className="flex gap-2">
                 <input 
-                  className="form-input flex-1" 
+                  className="input flex-1" 
                   placeholder="e.g. A9B2C4" 
                   value={manualCode}
                   onChange={e => setManualCode(e.target.value.toUpperCase())}
@@ -140,7 +140,7 @@ export default function JoinHostel() {
                  </svg>
                </div>
                <h2 className="font-bold mb-1">Confirm Room</h2>
-               <p className="text-muted mb-3" style={{ lineHeight: 1.5 }}>
+               <p className="text-secondary mb-3" style={{ lineHeight: 1.5 }}>
                  You're joining <strong>Room {resolvedRoom.roomData.roomNumber}</strong><br/>
                  <span style={{ fontSize: '0.9rem' }}>{resolvedRoom.hostelName}</span>
                </p>

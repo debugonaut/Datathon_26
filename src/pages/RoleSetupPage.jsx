@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Navbar from '../components/Navbar';
 import { useAuth } from '../context/AuthContext';
 import { createUserDoc, checkWardenExists } from '../firebase/auth';
 
@@ -60,68 +59,47 @@ export default function RoleSetupPage() {
     }
   };
 
+  const firstName = user?.displayName?.split(' ')[0] || user?.email?.split('@')[0];
+
   return (
-    <div className="page">
-      <Navbar />
-      <div className="center-page">
-        <div className="auth-card">
-          {/* Google avatar */}
+    <div className="auth-page">
+      <div className="auth-topbar">
+        <div className="auth-brand">
+          <span className="auth-brand-dot" />
+          <span className="auth-brand-name">MITAOE Hostel</span>
+        </div>
+      </div>
+      <div className="auth-center">
+        <div className="auth-card animation-fade-in" style={{ maxWidth: 400, borderTop: '2px solid var(--violet)' }}>
           {user?.photoURL && (
-            <img
-              src={user.photoURL}
-              alt="Profile"
-              style={{
-                width: 64, height: 64, borderRadius: '50%',
-                border: '3px solid var(--primary)',
-                marginBottom: '1.25rem', display: 'block',
-              }}
+            <img 
+              src={user.photoURL} 
+              alt="Profile avatar" 
+              style={{ width: 52, height: 52, borderRadius: '50%', border: '2px solid var(--violet)', display: 'block', margin: '0 auto 16px' }}
             />
           )}
-          <h1 className="auth-title">Welcome, {user?.displayName?.split(' ')[0]}!</h1>
-          <p className="auth-subtitle" style={{ marginBottom: '1.5rem' }}>
-            Signed in as <strong>{user?.email}</strong>.<br />
+          <h1 className="auth-title" style={{ fontFamily: 'var(--font-heading)', textAlign: 'center' }}>Welcome, {firstName}!</h1>
+          <p className="auth-subtitle" style={{ textAlign: 'center' }}>
+            Signed in as <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{user?.email}</span>.<br />
             How will you be using this platform?
           </p>
 
-          {error && <div className="form-error">{error}</div>}
+          {error && <div className="alert-error">{error}</div>}
 
-          <div className="role-toggle" style={{ marginBottom: '2rem' }}>
-            <button
-              type="button"
-              className={`role-btn ${role === 'student' ? 'active' : ''}`}
-              onClick={() => setRole('student')}
-            >
-              🎓 Student
-            </button>
-            <button
-              type="button"
-              className={`role-btn ${role === 'warden' ? 'active' : ''}`}
-              onClick={() => setRole('warden')}
-            >
-              🔑 Warden
-            </button>
+          <div className="role-toggle">
+            <button type="button" className={`role-btn ${role==='student'?'active':''}`} onClick={()=>setRole('student')}>Student</button>
+            <button type="button" className={`role-btn ${role==='warden'?'active':''}`} onClick={()=>setRole('warden')}>Warden</button>
           </div>
 
           {role === 'warden' && (
-            <div className="form-group text-left" style={{ marginBottom: '1.5rem', textAlign: 'left' }}>
-              <label className="form-label" style={{ display: 'block' }}>Hostel Admin Code</label>
-              <input 
-                className="form-input" 
-                type="password" 
-                placeholder="Enter code (if a warden already exists)" 
-                value={adminCode} 
-                onChange={(e) => setAdminCode(e.target.value)} 
-                style={{ width: '100%' }}
-              />
-              <p className="text-sm text-muted mt-1">If you are the first warden, leave this blank (auto-approved).</p>
+            <div style={{ background:'rgba(124,110,250,0.05)', border:'1px solid rgba(124,110,250,0.15)', borderRadius:'var(--radius-sm)', padding:'14px 16px', marginBottom:16 }}>
+              <label className="label">Admin Code</label>
+              <input className="input" type="password" placeholder="Enter code if a warden exists" value={adminCode} onChange={e=>setAdminCode(e.target.value)} />
+              <p style={{ fontSize:11, color:'var(--text-ghost)', fontFamily:'var(--font-mono)', marginTop:6 }}>Leave blank if you are the first warden.</p>
             </div>
           )}
 
-          <button
-            className="btn btn-primary btn-full"
-            onClick={handleConfirm}
-            disabled={loading}
-          >
+          <button className="btn btn-primary btn-full" onClick={handleConfirm} disabled={loading}>
             {loading ? 'Setting up…' : `Continue as ${role === 'warden' ? 'Warden' : 'Student'} →`}
           </button>
         </div>

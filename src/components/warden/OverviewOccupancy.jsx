@@ -108,7 +108,7 @@ export default function OverviewOccupancy({ hostelId }) {
       {/* Overall Stats */}
       <div className="card mb-3" style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
         <div style={{ flex: 1 }}>
-          <div className="text-muted text-sm mb-1">Overall Hostel Occupancy</div>
+          <div className="text-secondary text-sm mb-1">Overall Hostel Occupancy</div>
           <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>{totalFilled} / {totalBeds} beds</div>
         </div>
         <div style={{ width: 200 }}>
@@ -147,7 +147,7 @@ export default function OverviewOccupancy({ hostelId }) {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                 <div>
                   <div className="font-bold">Room {room.roomNumber}</div>
-                  <div className="text-muted text-xs">{room.buildingName} · Fl {room.floorNumber}</div>
+                  <div className="text-secondary text-xs">{room.buildingName} · Fl {room.floorNumber}</div>
                 </div>
                 <div className="badge" style={{
                   background: current >= max ? 'rgba(240,101,101,0.2)' : 'rgba(34,211,160,0.2)',
@@ -171,7 +171,7 @@ export default function OverviewOccupancy({ hostelId }) {
               {isExpanded && (
                 <div style={{ marginTop: '1rem', borderTop: '1px solid var(--border)', paddingTop: '0.75rem' }}>
                   {occupants.length === 0 ? (
-                    <p className="text-muted text-sm">No students registered yet.</p>
+                    <p className="text-secondary text-sm">No students registered yet.</p>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                       {occupants.map(occ => {
@@ -225,7 +225,7 @@ export default function OverviewOccupancy({ hostelId }) {
           display: 'flex', justifyContent: 'flex-end'
         }} onClick={() => setHistoryDrawerRoom(null)}>
           <div style={{
-            width: '400px', maxWidth: '100%', background: 'var(--bg-primary)',
+            width: '400px', maxWidth: '100%', background: 'var(--bg-base)',
             height: '100%', padding: '1.5rem', overflowY: 'auto',
             transform: 'translateX(0)', transition: 'transform 0.3s',
             boxShadow: '-4px 0 15px rgba(0,0,0,0.3)'

@@ -101,7 +101,7 @@ export default function WardenAnalytics({ hostelId }) {
 
   const heatColor = v => v === 0 ? 'rgba(255,255,255,0.03)' : v === 1 ? 'rgba(245,166,35,0.3)' : v === 2 ? 'rgba(245,166,35,0.6)' : 'rgba(240,101,101,0.8)';
 
-  const card = { background: 'var(--bg-surface)', border: '1px solid var(--border-v2)', borderRadius: '12px', padding: '20px 24px', transition: 'border-color 0.2s ease' };
+  const card = { background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px 24px', transition: 'border-color 0.2s ease' };
   const label = { fontSize: '10px', color: 'var(--text-ghost)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px', fontFamily: 'var(--font-body)' };
   const bigNum = (color) => ({ fontSize: '24px', fontWeight: 600, color, lineHeight: 1.1, fontFamily: 'var(--font-mono)' });
 

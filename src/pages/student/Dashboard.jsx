@@ -92,10 +92,10 @@ export default function StudentDashboard() {
     return (
       <div className="page">
         <Navbar />
-        <div className="center-page text-center">
+        <div className="auth-center text-center">
           <div className="card" style={{ maxWidth: 400 }}>
             <h2>No Hostel Assigned</h2>
-            <p className="text-muted mt-1 mb-2">You haven't joined a hostel room yet. Return to the homepage to search and join.</p>
+            <p className="text-secondary mt-1 mb-2">You haven't joined a hostel room yet. Return to the homepage to search and join.</p>
             <button className="btn btn-primary" onClick={() => navigate('/student/join')}>Join with Room QR</button>
           </div>
         </div>
@@ -115,7 +115,7 @@ export default function StudentDashboard() {
       <div className="dashboard">
         <div className="dashboard-header">
           <h1>Hello, {userDoc?.name?.split(' ')[0]}!</h1>
-          <p className="text-muted">Welcome to your hostel portal.</p>
+          <p className="text-secondary">Welcome to your hostel portal.</p>
         </div>
 
         {/* Custom Tabs Navigation */}
@@ -129,8 +129,8 @@ export default function StudentDashboard() {
               onClick={() => setActiveTab(t.id)}
               style={{
                 padding: '0.75rem 0', fontWeight: 600, cursor: 'pointer',
-                color: activeTab === t.id ? 'var(--primary)' : 'var(--text-muted)',
-                borderBottom: activeTab === t.id ? '3px solid var(--primary)' : '3px solid transparent',
+                color: activeTab === t.id ? 'var(--violet)' : 'var(--text-muted)',
+                borderBottom: activeTab === t.id ? '3px solid var(--violet)' : '3px solid transparent',
                 transition: 'all 0.2s'
               }}
             >
@@ -168,8 +168,8 @@ export default function StudentDashboard() {
                   <div className="stat-label">Floor</div>
                   <div className="stat-value text-sm">{hierarchyNames.floor}</div>
                 </div>
-                <div className="stat-card" style={{ padding: '1rem', border: '1px solid var(--primary)' }}>
-                  <div className="stat-label" style={{ color: 'var(--primary)' }}>Room</div>
+                <div className="stat-card" style={{ padding: '1rem', border: '1px solid var(--violet)' }}>
+                  <div className="stat-label" style={{ color: 'var(--violet)' }}>Room</div>
                   <div className="stat-value text-sm">{userDoc.roomNumber}</div>
                 </div>
               </div>
@@ -182,7 +182,7 @@ export default function StudentDashboard() {
               </div>
               
               {announcements.length === 0 ? (
-                <p className="text-muted">No announcements from your warden yet.</p>
+                <p className="text-secondary">No announcements from your warden yet.</p>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                   {announcements.map(a => {
@@ -202,9 +202,9 @@ export default function StudentDashboard() {
                       >
                         <div className="flex gap-1" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
                           <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{a.message}</p>
-                          {isUnread && <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--primary)', flexShrink: 0, marginTop: '5px' }} />}
+                          {isUnread && <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--violet)', flexShrink: 0, marginTop: '5px' }} />}
                         </div>
-                        <div className="text-muted text-sm mt-1">{a.createdAt?.toDate().toLocaleDateString() || 'Just now'}</div>
+                        <div className="text-secondary text-sm mt-1">{a.createdAt?.toDate().toLocaleDateString() || 'Just now'}</div>
                       </div>
                     );
                   })}
@@ -230,10 +230,10 @@ export default function StudentDashboard() {
                   display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column'
                 }}>
                   <span style={{ fontSize: '1.8rem', fontWeight: 800, color: scoreColor }}>{score}</span>
-                  <span className="text-sm text-muted">/ 100</span>
+                  <span className="text-secondary text-sm">/ 100</span>
                 </div>
               </div>
-              <p className="text-muted text-sm mt-2">Maintain above 70 to keep a green rating.</p>
+              <p className="text-secondary text-sm mt-2">Maintain above 70 to keep a green rating.</p>
             </div>
 
             <div style={{ marginTop: '0px' }}>
@@ -330,7 +330,7 @@ export default function StudentDashboard() {
                 <div style={{ background: '#fff', padding: '0.5rem', borderRadius: '8px', display: 'inline-block' }}>
                   <img src={roomData.qrCodeUrl} alt="Room QR Code" style={{ width: '160px', height: '160px', display: 'block' }} />
                 </div>
-                <p className="text-muted text-sm mt-2 mb-3">Please download and stick this QR to your room door so complaints can be logged.</p>
+                <p className="text-secondary text-sm mt-2 mb-3">Please download and stick this QR to your room door so complaints can be logged.</p>
                 <a 
                   href={roomData.qrCodeUrl} 
                   download={`Room_${userDoc.roomNumber}_QR.png`} 

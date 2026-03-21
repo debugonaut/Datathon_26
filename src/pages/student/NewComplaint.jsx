@@ -320,7 +320,7 @@ export default function NewComplaint() {
       <Navbar />
       <div style={{ maxWidth: 560, margin: '32px auto', padding: '0 16px' }}>
         <div style={{
-          background: 'var(--bg-surface)', border: '1px solid var(--border-v2)',
+          background: 'var(--bg-surface)', border: '1px solid var(--border)',
           borderRadius: 'var(--radius)', padding: '28px 32px',
           borderTop: '2px solid var(--violet)'
         }}>
@@ -331,7 +331,7 @@ export default function NewComplaint() {
               Report Issue
             </h1>
             <div style={{
-              background: 'var(--bg-raised)', border: '1px solid var(--border-v2)',
+              background: 'var(--bg-raised)', border: '1px solid var(--border)',
               borderRadius: 6, padding: '5px 12px', fontSize: 12,
               color: 'var(--text-ghost)', fontFamily: 'var(--font-mono)',
               display: 'flex', alignItems: 'center', gap: 6
@@ -386,7 +386,7 @@ export default function NewComplaint() {
                     style={{
                       background: category === c ? 'rgba(124,110,250,0.08)' : 'var(--bg-raised)',
                       color: category === c ? 'var(--violet)' : 'var(--text-ghost)',
-                      border: category === c ? '1px solid rgba(124,110,250,0.35)' : '1px solid var(--border-v2)',
+                      border: category === c ? '1px solid rgba(124,110,250,0.35)' : '1px solid var(--border)',
                       borderLeft: category === c ? '2px solid var(--violet)' : undefined,
                       borderRadius: 7, padding: '7px 14px', fontSize: 13,
                       fontFamily: 'var(--font-body)', cursor: 'pointer',
@@ -404,13 +404,13 @@ export default function NewComplaint() {
                 value={title} onChange={e => setTitle(e.target.value)} maxLength={100} required
                 placeholder="Short description (e.g. Broken ceiling fan)"
                 style={{
-                  width: '100%', background: 'var(--bg-raised)', border: '1px solid var(--border-v2)',
+                  width: '100%', background: 'var(--bg-raised)', border: '1px solid var(--border)',
                   borderRadius: 'var(--radius-sm)', padding: '11px 14px', fontSize: 13,
                   fontFamily: 'var(--font-body)', color: 'var(--text-primary)', outline: 'none',
                   transition: 'border-color 0.2s ease'
                 }}
                 onFocus={e => e.target.style.borderColor = 'rgba(124,110,250,0.4)'}
-                onBlur={e => e.target.style.borderColor = 'var(--border-v2)'}
+                onBlur={e => e.target.style.borderColor = 'var(--border)'}
               />
               <div style={{ fontSize: 12, color: 'var(--text-ghost)', textAlign: 'right', marginTop: 4, fontFamily: 'var(--font-mono)' }}>
                 {title.length}/100
@@ -428,7 +428,7 @@ export default function NewComplaint() {
                     style={{
                       padding: '5px 10px', fontSize: 12, borderRadius: 7, cursor: 'pointer',
                       background: selectedLang.label === lang.label ? 'rgba(124,110,250,0.08)' : 'var(--bg-raised)',
-                      border: selectedLang.label === lang.label ? '1px solid rgba(124,110,250,0.35)' : '1px solid var(--border-v2)',
+                      border: selectedLang.label === lang.label ? '1px solid rgba(124,110,250,0.35)' : '1px solid var(--border)',
                       color: selectedLang.label === lang.label ? 'var(--violet)' : 'var(--text-ghost)',
                       fontFamily: 'var(--font-body)', transition: 'all 0.2s ease'
                     }}
@@ -442,7 +442,7 @@ export default function NewComplaint() {
                   display: 'flex', alignItems: 'center', gap: 8,
                   padding: '8px 14px', borderRadius: 7, fontSize: 13,
                   background: 'transparent',
-                  border: isRecording ? '1px solid var(--red)' : '1px solid var(--border-v2)',
+                  border: isRecording ? '1px solid var(--red)' : '1px solid var(--border)',
                   color: isRecording ? 'var(--red)' : 'var(--text-secondary)',
                   cursor: 'pointer', fontFamily: 'var(--font-body)',
                   marginBottom: 10, transition: 'all 0.2s ease'
@@ -474,7 +474,7 @@ export default function NewComplaint() {
                   value={description} onChange={e => setDescription(e.target.value)} onBlur={handleDescriptionBlur}
                   rows={4} placeholder="Provide specific details about the issue..."
                   style={{
-                    width: '100%', background: 'var(--bg-raised)', border: '1px solid var(--border-v2)',
+                    width: '100%', background: 'var(--bg-raised)', border: '1px solid var(--border)',
                     borderRadius: 'var(--radius-sm)', padding: '11px 14px', fontSize: 13,
                     fontFamily: 'var(--font-body)', color: 'var(--text-primary)', outline: 'none',
                     minHeight: 100, resize: 'vertical', transition: 'border-color 0.2s ease'
@@ -512,7 +512,7 @@ export default function NewComplaint() {
                     return (
                       <div key={idx} style={{
                         position: 'relative', width: 64, height: 64, borderRadius: 8,
-                        background: 'var(--bg-raised)', border: '1px solid var(--border-v2)', overflow: 'hidden'
+                        background: 'var(--bg-raised)', border: '1px solid var(--border)', overflow: 'hidden'
                       }}>
                         {isImg ? (
                           <img src={URL.createObjectURL(f)} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -548,7 +548,7 @@ export default function NewComplaint() {
                         fontFamily: 'var(--font-body)', cursor: 'pointer',
                         transition: 'all 0.2s ease',
                         background: isActive ? `${colors[p]}15` : 'var(--bg-raised)',
-                        border: isActive ? `1px solid ${colors[p]}40` : '1px solid var(--border-v2)',
+                        border: isActive ? `1px solid ${colors[p]}40` : '1px solid var(--border)',
                         color: isActive ? colors[p] : 'var(--text-ghost)'
                       }}
                     >{p.charAt(0).toUpperCase() + p.slice(1)}</button>

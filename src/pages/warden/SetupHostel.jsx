@@ -229,14 +229,14 @@ export default function SetupHostel() {
   const renderTreeView = () => (
     <div className="card" style={{ height: 'fit-content' }}>
       <h3 className="font-bold mb-2">Live Hierarchy</h3>
-      {blocks.length === 0 && <p className="text-muted text-sm">No blocks added yet.</p>}
+      {blocks.length === 0 && <p className="text-secondary text-sm">No blocks added yet.</p>}
       
       <div style={{ marginLeft: '0.5rem', borderLeft: '2px solid var(--border)', paddingLeft: '1rem' }}>
         {blocks.map(b => (
           <div key={b.id} className="mb-2">
-            <div className="font-bold text-sm" style={{ color: 'var(--primary)' }}>❖ {b.name}</div>
+            <div className="font-bold text-sm" style={{ color: 'var(--violet)' }}>❖ {b.name}</div>
             <div style={{ marginLeft: '1rem', borderLeft: '1px solid var(--border)', paddingLeft: '1rem', marginTop: '0.5rem' }}>
-              {b.buildings.length === 0 && <span className="text-muted text-sm">No buildings.</span>}
+              {b.buildings.length === 0 && <span className="text-secondary text-sm">No buildings.</span>}
               {b.buildings.map(bld => (
                 <div key={bld.id} className="mb-2">
                   <div className="font-bold text-sm" style={{ color: 'var(--accent)' }}>⌂ {bld.name} ({bld.totalFloors} floors)</div>
@@ -244,7 +244,7 @@ export default function SetupHostel() {
                     {bld.floors.map(fl => {
                       const roomCount = parseRoomRange(fl.roomRange).length;
                       return (
-                        <div key={fl.id} className="text-sm text-muted">
+                        <div key={fl.id} className="text-secondary text-sm">
                           ↳ Fl {fl.floorNumber}: {roomCount} rooms
                         </div>
                       )
@@ -290,13 +290,13 @@ export default function SetupHostel() {
             {step === 1 && (
               <div className="animation-fade-in">
                 <h2 className="font-bold mb-2">Hostel Information</h2>
-                <div className="form-group">
-                  <label className="form-label">Hostel Name</label>
-                  <input className="form-input" value={hostelName} onChange={e => setHostelName(e.target.value)} placeholder="e.g. Boys Hostel A" />
+                <div style={{ marginBottom: 16 }}>
+                  <label className="label">Hostel Name</label>
+                  <input className="input" value={hostelName} onChange={e => setHostelName(e.target.value)} placeholder="e.g. Boys Hostel A" />
                 </div>
-                <div className="form-group">
-                  <label className="form-label">College</label>
-                  <input className="form-input" value={collegeName} disabled />
+                <div style={{ marginBottom: 16 }}>
+                  <label className="label">College</label>
+                  <input className="input" value={collegeName} disabled />
                 </div>
                 <button className="btn btn-primary" disabled={!hostelName.trim()} onClick={() => setStep(2)}>Next →</button>
               </div>
@@ -309,20 +309,20 @@ export default function SetupHostel() {
                   <div 
                     onClick={() => { setSetupMode('quick'); setBlocks([]); }}
                     className={`card card-sm text-center flex-1 ${setupMode === 'quick' ? 'border-primary' : ''}`}
-                    style={{ cursor: 'pointer', border: setupMode === 'quick' ? '2px solid var(--primary)' : '1px solid var(--border)' }}
+                    style={{ cursor: 'pointer', border: setupMode === 'quick' ? '2px solid var(--violet)' : '1px solid var(--border)' }}
                   >
                     <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>⚡</div>
                     <div className="font-bold">Quick Setup</div>
-                    <div className="text-muted text-sm mt-1">For simple hostels (1 single building). Auto-generates the structure.</div>
+                    <div className="text-secondary text-sm mt-1">For simple hostels (1 single building). Auto-generates the structure.</div>
                   </div>
                   <div 
                     onClick={() => { setSetupMode('advanced'); setBlocks([]); }}
                     className={`card card-sm text-center flex-1 ${setupMode === 'advanced' ? 'border-primary' : ''}`}
                     style={{ cursor: 'pointer', border: setupMode === 'advanced' ? '2px solid var(--border-hover)' : '1px solid var(--border)' }}
                   >
-                    <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🏢</div>
+                    <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}></div>
                     <div className="font-bold">Advanced Setup</div>
-                    <div className="text-muted text-sm mt-1">For complex campuses with multiple blocks, wings, and buildings.</div>
+                    <div className="text-secondary text-sm mt-1">For complex campuses with multiple blocks, wings, and buildings.</div>
                   </div>
                 </div>
 
@@ -330,28 +330,28 @@ export default function SetupHostel() {
                 {setupMode === 'quick' && (
                   <div className="animation-fade-in" style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '8px' }}>
                     <h3 className="font-bold mb-2 text-primary">⚡ Quick Flow</h3>
-                    <div className="form-group">
-                      <label className="form-label">Total Floors in Building</label>
-                      <input type="number" min="1" className="form-input" value={qsFloors} onChange={e => setQsFloors(parseInt(e.target.value) || 1)} />
+                    <div style={{ marginBottom: 16 }}>
+                      <label className="label">Total Floors in Building</label>
+                      <input type="number" min="1" className="input" value={qsFloors} onChange={e => setQsFloors(parseInt(e.target.value) || 1)} />
                     </div>
                     <div className="flex gap-2 mb-3">
-                      <div className="form-group flex-1">
-                        <label className="form-label">Rooms Per Floor</label>
-                        <input type="number" min="1" className="form-input" value={qsRoomsPerFloor} onChange={e => setQsRoomsPerFloor(parseInt(e.target.value) || 1)} />
+                      <div className="flex-1">
+                        <label className="label">Rooms Per Floor</label>
+                        <input type="number" min="1" className="input" value={qsRoomsPerFloor} onChange={e => setQsRoomsPerFloor(parseInt(e.target.value) || 1)} />
                       </div>
-                      <div className="form-group flex-1">
-                        <label className="form-label">Starting Room #</label>
-                        <input type="number" min="1" className="form-input" value={qsStartingRoom} onChange={e => setQsStartingRoom(parseInt(e.target.value) || 101)} />
+                      <div className="flex-1">
+                        <label className="label">Starting Room #</label>
+                        <input type="number" min="1" className="input" value={qsStartingRoom} onChange={e => setQsStartingRoom(parseInt(e.target.value) || 101)} />
                       </div>
                     </div>
                     <div className="flex gap-2 mb-3">
-                      <div className="form-group flex-1">
-                        <label className="form-label">Max Occupants Per Room</label>
-                        <input type="number" min="1" max="6" className="form-input" value={maxOccupants} onChange={e => setMaxOccupants(Math.max(1, Math.min(6, parseInt(e.target.value) || 2)))} />
-                        <p className="text-sm text-muted mt-1">Beds per room (1–6). Default is 2.</p>
+                      <div className="flex-1">
+                        <label className="label">Max Occupants Per Room</label>
+                        <input type="number" min="1" max="6" className="input" value={maxOccupants} onChange={e => setMaxOccupants(Math.max(1, Math.min(6, parseInt(e.target.value) || 2)))} />
+                        <p className="text-secondary text-sm mt-1">Beds per room (1–6). Default is 2.</p>
                       </div>
                     </div>
-                    <div className="text-muted text-sm mb-3">Example: 5 floors, 4 rooms per floor starting at 101 will generate 101-104 on Floor 1, 201-204 on Floor 2, etc.</div>
+                    <div className="text-secondary text-sm mb-3">Example: 5 floors, 4 rooms per floor starting at 101 will generate 101-104 on Floor 1, 201-204 on Floor 2, etc.</div>
                     
                     <div className="flex gap-1 mt-3">
                       <button className="btn btn-ghost" onClick={() => setStep(1)}>← Back</button>
@@ -365,18 +365,18 @@ export default function SetupHostel() {
                 {setupMode === 'advanced' && (
                   <div className="animation-fade-in" style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '8px' }}>
                     <h3 className="font-bold mb-1">Blocks & Buildings</h3>
-                    <p className="text-muted text-sm mb-2">Create blocks (e.g. "North Block"), and add buildings inside them.</p>
+                    <p className="text-secondary text-sm mb-2">Create blocks (e.g. "North Block"), and add buildings inside them.</p>
 
                     <div className="add-row mb-3">
-                      <input className="form-input" value={newBlockName} onChange={e => setNewBlockName(e.target.value)} placeholder="New Block Name (e.g. North Wing)" onKeyDown={e => e.key === 'Enter' && handleCreateBlock(e)}/>
+                      <input className="input" value={newBlockName} onChange={e => setNewBlockName(e.target.value)} placeholder="New Block Name (e.g. North Wing)" onKeyDown={e => e.key === 'Enter' && handleCreateBlock(e)}/>
                       <button className="btn btn-outline" onClick={handleCreateBlock}>Add Block</button>
                     </div>
 
                     <div className="blocks-list">
                       {blocks.map(b => (
-                        <div key={b.id} className="block-item mb-2" style={{ background: 'var(--surface)' }}>
+                        <div key={b.id} className="block-item mb-2" style={{ background: 'var(--bg-surface)' }}>
                           <div className="block-header" style={{ cursor: 'pointer' }} onClick={() => setActiveBlockId(activeBlockId === b.id ? null : b.id)}>
-                            <span style={{ color: 'var(--primary)' }}>❖ {b.name}</span>
+                            <span style={{ color: 'var(--violet)' }}>❖ {b.name}</span>
                             <button className="btn btn-ghost btn-sm" onClick={(e) => { e.stopPropagation(); setActiveBlockId(activeBlockId === b.id ? null : b.id); }}>
                               {activeBlockId === b.id ? 'Close' : '+ Add Building'}
                             </button>
@@ -385,20 +385,20 @@ export default function SetupHostel() {
                           {activeBlockId === b.id && (
                             <div className="block-body" style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderTop: 'none' }}>
                               <div className="flex gap-1">
-                                <input className="form-input" placeholder="Building Name" value={newBldName} onChange={e => setNewBldName(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleCreateBuilding(e, b.id)} style={{ flex: 2 }} />
-                                <input type="number" min="1" className="form-input" placeholder="Floors" value={newBldFloors} onChange={e => setNewBldFloors(parseInt(e.target.value) || 1)} onKeyDown={e => e.key === 'Enter' && handleCreateBuilding(e, b.id)} style={{ flex: 1 }} />
+                                <input className="input" placeholder="Building Name" value={newBldName} onChange={e => setNewBldName(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleCreateBuilding(e, b.id)} style={{ flex: 2 }} />
+                                <input type="number" min="1" className="input" placeholder="Floors" value={newBldFloors} onChange={e => setNewBldFloors(parseInt(e.target.value) || 1)} onKeyDown={e => e.key === 'Enter' && handleCreateBuilding(e, b.id)} style={{ flex: 1 }} />
                                 <button className="btn btn-primary" onClick={(e) => handleCreateBuilding(e, b.id)}>Add</button>
                               </div>
                             </div>
                           )}
 
                           <div style={{ padding: '0 1rem 1rem' }}>
-                            {b.buildings.length === 0 && activeBlockId !== b.id && <div className="text-muted text-sm mt-1" style={{ padding: '0 1rem' }}>No buildings added yet.</div>}
+                            {b.buildings.length === 0 && activeBlockId !== b.id && <div className="text-secondary text-sm mt-1" style={{ padding: '0 1rem' }}>No buildings added yet.</div>}
                             {b.buildings.map(bld => (
                               <div key={bld.id} className="info-row mt-1" style={{ padding: '0.5rem 1rem' }}>
                                 <div>
                                   <div className="font-bold text-sm">⌂ {bld.name}</div>
-                                  <div className="text-muted text-sm">{bld.totalFloors} Floors</div>
+                                  <div className="text-secondary text-sm">{bld.totalFloors} Floors</div>
                                 </div>
                               </div>
                             ))}
@@ -424,12 +424,12 @@ export default function SetupHostel() {
             {step === 3 && (
               <div className="animation-fade-in">
                 <h2 className="font-bold mb-1">Add Rooms & Finalize</h2>
-                <p className="text-muted text-sm mb-3">For each floor, specify the rooms (e.g. range "101-120" or comma-separated "101, 102").</p>
+                <p className="text-secondary text-sm mb-3">For each floor, specify the rooms (e.g. range "101-120" or comma-separated "101, 102").</p>
 
                 <div style={{ maxHeight: '50vh', overflowY: 'auto', paddingRight: '0.5rem' }}>
                   {blocks.map(b => (
                     <div key={b.id} className="mb-3">
-                      <h4 className="font-bold mb-1" style={{ color: 'var(--primary)' }}>❖ {b.name}</h4>
+                      <h4 className="font-bold mb-1" style={{ color: 'var(--violet)' }}>❖ {b.name}</h4>
                       {b.buildings.map(bld => (
                         <div key={bld.id} style={{ marginLeft: '1rem', borderLeft: '2px solid var(--border)', paddingLeft: '1rem' }} className="mb-2">
                           <h5 className="font-bold text-sm mb-1" style={{ color: 'var(--accent)' }}>⌂ {bld.name}</h5>
@@ -437,7 +437,7 @@ export default function SetupHostel() {
                             <div key={fl.id} className="flex gap-1 mb-1 align-items-center">
                               <span className="text-sm font-bold w-full" style={{ maxWidth: '80px' }}>Floor {fl.floorNumber}:</span>
                               <input 
-                                className="form-input" 
+                                className="input" 
                                 placeholder="101-120 or 101, 102" 
                                 value={fl.roomRange}
                                 onChange={(e) => updateFloorRoomRange(b.id, bld.id, fl.id, e.target.value)}
@@ -456,7 +456,7 @@ export default function SetupHostel() {
                 <div className="flex gap-1 mt-3">
                   <button className="btn btn-ghost" onClick={() => setStep(setupMode === 'quick' ? 2 : 2)}>← Back</button>
                   <button className="btn btn-primary flex-1" onClick={handleFinalSubmit} disabled={loading}>
-                    {loading ? 'Generating... (This may take a minute)' : '✅ Finalize & Generate QR Codes'}
+                    {loading ? 'Generating... (This may take a minute)' : 'Finalize & Generate QR Codes'}
                   </button>
                 </div>
               </div>

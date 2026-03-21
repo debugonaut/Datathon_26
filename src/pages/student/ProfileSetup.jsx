@@ -146,7 +146,7 @@ export default function ProfileSetup() {
   return (
     <div className="page">
       <Navbar />
-      <div className="center-page" style={{ paddingTop: '3rem', paddingBottom: '3rem' }}>
+      <div className="auth-center" style={{ paddingTop: '3rem', paddingBottom: '3rem' }}>
         <div className="auth-card animation-fade-in" style={{ maxWidth: 480 }}>
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ margin: '0 auto 1rem', display: 'block' }}>
             <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
@@ -159,10 +159,10 @@ export default function ProfileSetup() {
 
           <form onSubmit={handleSubmit}>
             {/* Full Name */}
-            <div className="form-group">
-              <label className="form-label">Full Name</label>
+            <div style={{ marginBottom: 16 }}>
+              <label className="label">Full Name</label>
               <input
-                className="form-input"
+                className="input"
                 type="text"
                 value={name}
                 onChange={e => setName(e.target.value)}
@@ -172,15 +172,15 @@ export default function ProfileSetup() {
             </div>
 
             {/* PRN */}
-            <div className="form-group">
-              <label className="form-label">
+            <div style={{ marginBottom: 16 }}>
+              <label className="label">
                 PRN (Permanent Registration Number)
-                <span className="text-muted text-sm" style={{ marginLeft: '0.5rem' }}>
+                <span className="text-secondary text-sm" style={{ marginLeft: '0.5rem' }}>
                   {prn.length}/12 digits
                 </span>
               </label>
               <input
-                className="form-input"
+                className="input"
                 type="text"
                 inputMode="numeric"
                 maxLength={12}
@@ -196,23 +196,23 @@ export default function ProfileSetup() {
             </div>
 
             {/* Email (locked) */}
-            <div className="form-group">
-              <label className="form-label">College Email</label>
+            <div style={{ marginBottom: 16 }}>
+              <label className="label">College Email</label>
               <input
-                className="form-input"
+                className="input"
                 type="email"
                 value={user?.email || ''}
                 disabled
                 style={{ opacity: 0.6, cursor: 'not-allowed' }}
               />
-              <p className="text-sm text-muted mt-1">Verified via Google OAuth. Cannot be changed.</p>
+              <p className="text-secondary text-sm mt-1">Verified via Google OAuth. Cannot be changed.</p>
             </div>
 
             {/* Branch */}
-            <div className="form-group">
-              <label className="form-label">Branch</label>
+            <div style={{ marginBottom: 16 }}>
+              <label className="label">Branch</label>
               <select
-                className="form-input"
+                className="input"
                 value={branch}
                 onChange={e => setBranch(e.target.value)}
                 required
@@ -223,8 +223,8 @@ export default function ProfileSetup() {
             </div>
 
             {/* Year */}
-            <div className="form-group">
-              <label className="form-label mb-1">Year</label>
+            <div style={{ marginBottom: 16 }}>
+              <label className="label mb-1">Year</label>
               <div className="flex gap-1">
                 {['1st', '2nd', '3rd', '4th'].map(y => (
                   <button

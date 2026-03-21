@@ -97,7 +97,7 @@ export default function ComplaintsList({ complaints }) {
       {selected && (
         <div className="card animation-fade-in" style={{ 
           width: '380px', height: '100%', overflowY: 'auto', 
-          borderLeft: '1px solid var(--border)', background: 'var(--bg-secondary)',
+          borderLeft: '1px solid var(--border)', background: 'var(--bg-raised)',
           display: 'flex', flexDirection: 'column'
         }}>
           <div className="flex justify-content-between align-items-center mb-3">
@@ -113,7 +113,7 @@ export default function ComplaintsList({ complaints }) {
           <div className="mb-3">
             <div className="text-xs text-muted mb-1">Status Action</div>
             <select 
-              className="form-input" 
+              className="input" 
               value={selected.status}
               onChange={(e) => {
                 updateComplaintStatus(selected, e.target.value);
@@ -141,8 +141,8 @@ export default function ComplaintsList({ complaints }) {
             <div className="text-xs text-muted mb-1">Description</div>
             <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '8px', fontSize: '0.95rem', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
               {showingOriginal[selected.id]
-                ? (selected.descriptionOriginal || selected.description || <span className="text-muted">No description provided.</span>)
-                : (selected.descriptionTranslated || selected.description || <span className="text-muted">No description provided.</span>)
+                ? (selected.descriptionOriginal || selected.description || <span className="text-secondary">No description provided.</span>)
+                : (selected.descriptionTranslated || selected.description || <span className="text-secondary">No description provided.</span>)
               }
             </div>
             {selected.descriptionOriginal && selected.descriptionTranslated && selected.descriptionOriginal !== selected.descriptionTranslated && (

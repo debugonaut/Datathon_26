@@ -48,9 +48,9 @@ export default function DemoLanding() {
   };
 
   return (
-    <div className="page center-page" style={{ minHeight: '100vh', background: 'var(--bg-primary)' }}>
+    <div className="page auth-center" style={{ minHeight: '100vh', background: 'var(--bg-base)' }}>
       <div className="text-center mb-4">
-        <h1 style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--primary)', marginBottom: '0.5rem' }}>
+        <h1 style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--violet)', marginBottom: '0.5rem' }}>
           Fix My Hostel
         </h1>
         <p style={{ color: 'var(--text-muted)', fontSize: '1.2rem', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
@@ -63,8 +63,8 @@ export default function DemoLanding() {
           Experience the full platform instantly. Click a role below to bypass authentication and enter the populated demo environment.
         </p>
 
-        <p className="text-center mb-4" style={{ fontSize: '0.8rem', color: 'var(--text-muted)', background: 'var(--bg-secondary)', borderRadius: '8px', padding: '0.6rem 1rem' }}>
-          💡 Each role opens in a <strong>new tab</strong> — open both to see real-time sync side by side
+        <p className="text-center mb-4" style={{ fontSize: '0.8rem', color: 'var(--text-muted)', background: 'var(--bg-raised)', borderRadius: '8px', padding: '0.6rem 1rem' }}>
+          Each role opens in a <strong>new tab</strong> — open both to see real-time sync side by side
         </p>
 
         {error && (
@@ -82,7 +82,7 @@ export default function DemoLanding() {
           >
             {loadingRole === 'student'
               ? <div className="spinner" style={{ width: 20, height: 20, borderWidth: 2 }} />
-              : '🎓 Enter as Student'}
+              : 'Enter as Student'}
           </button>
 
           <button
@@ -93,7 +93,7 @@ export default function DemoLanding() {
           >
             {loadingRole === 'warden'
               ? <div className="spinner" style={{ width: 20, height: 20, borderWidth: 2 }} />
-              : '🛡️ Enter as Warden'}
+              : 'Enter as Warden'}
           </button>
         </div>
 

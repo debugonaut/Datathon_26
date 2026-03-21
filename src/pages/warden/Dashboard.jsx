@@ -97,177 +97,125 @@ export default function WardenDashboard() {
   ];
 
   return (
-    <div style={{ background: 'var(--bg-base)', minHeight: '100vh' }}>
+    <div className="page">
       <Navbar />
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 24px' }}>
-
-        {/* Dashboard Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
-          <div>
-            <h1 style={{ fontFamily: 'var(--font-heading)', fontWeight: 600, fontSize: 20, letterSpacing: '-0.02em', margin: 0, color: 'var(--text-primary)' }}>{hostel?.name}</h1>
-            <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0', fontSize: 13 }}>{hostel?.collegeName} · Warden: {userDoc?.name}</p>
+      <div className="dashboard">
+        <div className="dashboard-header">
+          <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:12 }}>
+            <div>
+              <h1 className="dashboard-title">{hostel?.name}</h1>
+              <p className="dashboard-subtitle">{hostel?.collegeName} · {userDoc?.name}</p>
+            </div>
+            <button className="btn btn-outline btn-sm" onClick={()=>navigate('/warden/setup')}>Edit hostel</button>
           </div>
-          <button onClick={() => navigate('/warden/setup')}
-            style={{
-              background: 'transparent', border: '1px solid var(--border-v2)',
-              borderRadius: 7, padding: '7px 14px', fontSize: 13,
-              color: 'var(--text-secondary)', cursor: 'pointer', fontFamily: 'var(--font-body)',
-              transition: 'border-color 0.2s ease'
-            }}
-            onMouseEnter={e => e.target.style.borderColor = 'var(--border-hover)'}
-            onMouseLeave={e => e.target.style.borderColor = 'var(--border-v2)'}
-          >Edit Hostel</button>
+          <div className="tabs">
+            {[['overview','Overview'],['complaints','Complaints'],['analytics','Analytics'],['3dview','3D Visualizer'],['qrcodes','QR Codes'],['announcements','Announcements']].map(([id,label])=>(
+              <div key={id} className={`tab ${activeTab===id?'active':''}`} onClick={()=>setActiveTab(id)}>{label}</div>
+            ))}
+          </div>
         </div>
 
-        {/* Tab Bar */}
-        <div style={{
-          background: 'var(--bg-surface)', borderBottom: '1px solid var(--border-v2)',
-          display: 'flex', gap: 0, marginBottom: 24, overflowX: 'auto', scrollbarWidth: 'none',
-          borderRadius: '8px 8px 0 0'
-        }}>
-          {TABS.map(t => (
-            <div
-              key={t.id}
-              onClick={() => setActiveTab(t.id)}
-              style={{
-                padding: '12px 20px', fontWeight: 500, cursor: 'pointer',
-                fontSize: 13, fontFamily: 'var(--font-body)', whiteSpace: 'nowrap',
-                color: activeTab === t.id ? 'var(--text-primary)' : 'var(--text-secondary)',
-                borderBottom: activeTab === t.id ? '2px solid var(--violet)' : '2px solid transparent',
-                transition: 'all 0.2s ease'
-              }}
-            >
-              {t.label}
+        <div className="dashboard-body animation-fade-in">
+          {/* Cluster alert */}
+          {activeTab==='complaints' && clusterComplaints(complaints).length > 0 && (
+            <div className="alert-warning mb-4" style={{ display:'flex', alignItems:'center', gap:8 }}>
+              <span style={{ width:6, height:6, borderRadius:'50%', background:'var(--amber)', flexShrink:0 }} />
+              {clusterComplaints(complaints).length} complaint cluster detected — {clusterComplaints(complaints)[0].category} on Floor {clusterComplaints(complaints)[0].floor}
             </div>
-          ))}
-        </div>
+          )}
 
-        {/* ── Overview Tab ─────────────────────────────────── */}
-        {activeTab === 'overview' && (
-          <div>
-            {/* Stats Strip */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 12, marginBottom: 20 }}>
-              {[
-                { label: 'Total', value: complaints.length, accent: 'var(--violet)' },
-                { label: 'Open', value: complaints.filter(c => c.status === 'todo').length, accent: 'var(--red)' },
-                { label: 'In Progress', value: complaints.filter(c => c.status === 'in_progress').length, accent: 'var(--amber)' },
-                { label: 'Resolved', value: complaints.filter(c => c.status === 'resolved').length, accent: 'var(--green)' },
-                { label: 'Rooms', value: stats.rooms, accent: 'var(--blue)' },
-              ].map(s => (
-                <div key={s.label} className="data-card" style={{ borderTop: `2px solid ${s.accent}` }}>
-                  <div className="section-label">{s.label}</div>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 24, fontWeight: 600, color: 'var(--text-primary)' }}>{s.value}</div>
-                </div>
-              ))}
+          {/* SLA breach alert */}
+          {activeTab==='complaints' && complaints.some(c=>getSLAStatus(c)?.breached) && (
+            <div className="alert-error mb-4" style={{ display:'flex', alignItems:'center', gap:8 }}>
+              <span style={{ width:6, height:6, borderRadius:'50%', background:'var(--red)', flexShrink:0 }} />
+              SLA breached: {complaints.filter(c=>getSLAStatus(c)?.breached).length} complaint(s) overdue
             </div>
+          )}
 
-            {/* Two Column Layout */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 16 }}>
-              {/* Left — Warden Details + Occupancy */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <div className="data-card" style={{ borderTop: '2px solid var(--violet)' }}>
-                  <div className="section-label" style={{ marginBottom: 12 }}>Warden Details</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    {[
-                      { label: 'Name', value: userDoc?.name },
-                      { label: 'Email', value: userDoc?.email },
-                      { label: 'Hostel', value: hostel?.name },
-                      { label: 'College', value: hostel?.collegeName },
-                    ].map(item => (
-                      <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{item.label}</span>
-                        <span style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'var(--font-body)' }}>{item.value}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <OverviewOccupancy hostelId={hostel.id} />
-              </div>
-
-              {/* Right — Complaint Summary */}
-              <div className="data-card" style={{ borderTop: '2px solid var(--amber)', height: 'fit-content' }}>
-                <div className="section-label" style={{ marginBottom: 16 }}>Complaint Summary</div>
+          {activeTab==='overview' && (
+            <div className="animation-fade-in">
+              {/* Stats */}
+              <div className="stats-grid" style={{ gridTemplateColumns:'repeat(4,minmax(0,1fr))' }}>
                 {[
-                  { label: 'Open', value: complaints.filter(c => c.status === 'todo').length, color: 'var(--red)' },
-                  { label: 'In Progress', value: complaints.filter(c => c.status === 'in_progress').length, color: 'var(--amber)' },
-                  { label: 'Resolved', value: complaints.filter(c => c.status === 'resolved').length, color: 'var(--green)' },
-                ].map(row => (
-                  <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                    <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{row.label}</span>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 20, fontWeight: 600, color: row.color }}>{row.value}</span>
+                  { label:'Blocks', value:stats.blocks, accent:'var(--violet)' },
+                  { label:'Buildings', value:stats.buildings, accent:'var(--blue)' },
+                  { label:'Floors', value:stats.floors, accent:'var(--amber)' },
+                  { label:'Rooms', value:stats.rooms, accent:'var(--green)' },
+                ].map(s=>(
+                  <div key={s.label} className="stat-card" style={{ borderTop:`2px solid ${s.accent}` }}>
+                    <div className="stat-label">{s.label}</div>
+                    <div className="stat-value">{s.value}</div>
                   </div>
                 ))}
               </div>
+
+              {/* Two column */}
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 320px', gap:16 }}>
+                <div className="card-static" style={{ borderTop:'2px solid var(--violet)' }}>
+                  <span className="label">Warden details</span>
+                  {[['Name',userDoc?.name],['Email',userDoc?.email]].map(([k,v])=>(
+                    <div key={k} style={{ display:'flex', justifyContent:'space-between', padding:'8px 0', borderBottom:'1px solid var(--border)', fontSize:13 }}>
+                      <span style={{ color:'var(--text-secondary)' }}>{k}</span>
+                      <span style={{ color:'var(--text)', fontFamily: k==='Email'?'var(--font-mono)':'' }}>{v}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="card-static" style={{ borderTop:'2px solid var(--amber)' }}>
+                  <span className="label">Complaint summary</span>
+                  {[
+                    ['Open', complaints.filter(c=>c.status==='todo').length, 'var(--red)'],
+                    ['In progress', complaints.filter(c=>c.status==='in_progress').length, 'var(--amber)'],
+                    ['Resolved', complaints.filter(c=>c.status==='resolved').length, 'var(--green)'],
+                  ].map(([k,v,color])=>(
+                    <div key={k} style={{ display:'flex', justifyContent:'space-between', padding:'8px 0', borderBottom:'1px solid var(--border)', fontSize:13 }}>
+                      <span style={{ color:'var(--text-secondary)' }}>{k}</span>
+                      <span style={{ fontFamily:'var(--font-mono)', fontSize:18, color, lineHeight:1 }}>{v}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ marginTop:24 }}>
+                <OverviewOccupancy hostelId={hostel.id} />
+              </div>
             </div>
-          </div>
-        )}
-        
-      {activeTab === 'announcements' && <WardenAnnouncements hostelId={hostel.id} />}
-      {activeTab === 'analytics' && <WardenAnalytics hostelId={hostel.id} />}
-      {activeTab === '3dview' && <Hostel3DView hostelId={hostel.id} />}
-      {activeTab === 'qrcodes' && <WardenQRDirectory hostelId={hostel.id} />}
+          )}
 
-      {activeTab === 'complaints' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minHeight: 600 }}>
-          
-          {/* Control Bar */}
-          <div className="data-card" style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'space-between', alignItems: 'center' }}>
-            
-            <div style={{ display: 'flex', gap: 6 }}>
-              {['kanban', 'list'].map(mode => (
-                <button key={mode}
-                  onClick={() => setViewMode(mode)}
-                  style={{
-                    padding: '6px 14px', borderRadius: 20, fontSize: 12,
-                    background: viewMode === mode ? 'var(--violet)' : 'var(--bg-raised)',
-                    color: viewMode === mode ? '#fff' : 'var(--text-secondary)',
-                    border: 'none', cursor: 'pointer', fontFamily: 'var(--font-body)',
-                    transition: 'all 0.2s ease'
-                  }}
-                >{mode === 'kanban' ? 'Kanban' : 'List'}</button>
-              ))}
+          {activeTab==='announcements' && <WardenAnnouncements hostelId={hostel.id} />}
+          {activeTab==='analytics' && <WardenAnalytics hostelId={hostel.id} />}
+          {activeTab==='3dview' && <Hostel3DView hostelId={hostel.id} />}
+          {activeTab==='qrcodes' && <WardenQRDirectory hostelId={hostel.id} />}
+
+          {activeTab==='complaints' && (
+            <div className="animation-fade-in">
+              {/* Control bar */}
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16, flexWrap:'wrap', gap:10 }}>
+                <span className="label" style={{ margin:0 }}>Complaints board</span>
+                <div style={{ display:'flex', gap:8, alignItems:'center', flexWrap:'wrap' }}>
+                  {['','Plumbing','Electrical','Cleaning','Furniture','Other'].map(cat=>(
+                    <button key={cat||'all'} onClick={()=>setFilters(f=>({...f,category:cat}))}
+                      style={{ padding:'4px 12px', borderRadius:20, fontSize:12, cursor:'pointer', transition:'all 0.15s',
+                        background: filters.category===cat ? 'var(--violet)' : 'transparent',
+                        color: filters.category===cat ? '#fff' : 'var(--text-secondary)',
+                        border: filters.category===cat ? '1px solid var(--violet)' : '1px solid var(--border)'
+                      }}>{cat||'All'}</button>
+                  ))}
+                  <div style={{ display:'flex', border:'1px solid var(--border)', borderRadius:8, overflow:'hidden' }}>
+                    {[['kanban','Kanban'],['list','List']].map(([v,l])=>(
+                      <button key={v} onClick={()=>setViewMode(v)}
+                        style={{ padding:'5px 14px', fontSize:12, border:'none', cursor:'pointer', transition:'all 0.15s',
+                          background: viewMode===v ? 'var(--bg-raised)' : 'transparent',
+                          color: viewMode===v ? 'var(--text)' : 'var(--text-secondary)',
+                          fontFamily:'var(--font-body)', fontWeight: viewMode===v ? 600 : 400
+                        }}>{l}</button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              {viewMode==='kanban' ? <ComplaintsKanban complaints={filteredComplaints} /> : <ComplaintsList complaints={filteredComplaints} />}
             </div>
-
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              {[
-                { key: 'building', label: 'All Buildings', options: [...new Set(complaints.map(c => c.buildingName))] },
-                { key: 'category', label: 'All Categories', options: ['Plumbing', 'Electrical', 'Cleaning', 'Furniture', 'Other'] },
-                { key: 'priority', label: 'All Priorities', options: ['high', 'medium', 'low'] },
-              ].map(sel => (
-                <select key={sel.key}
-                  value={filters[sel.key]}
-                  onChange={e => setFilters({...filters, [sel.key]: e.target.value})}
-                  style={{
-                    background: 'var(--bg-raised)', border: '1px solid var(--border-v2)',
-                    borderRadius: 7, padding: '7px 12px', color: 'var(--text-primary)',
-                    fontSize: 13, outline: 'none', fontFamily: 'var(--font-body)'
-                  }}
-                >
-                  <option value="">{sel.label}</option>
-                  {sel.options.map(o => <option key={o} value={o}>{o}</option>)}
-                </select>
-              ))}
-              {Object.values(filters).some(v => v !== '') && (
-                <button onClick={() => setFilters({ building: '', category: '', priority: '', status: '' })}
-                  style={{
-                    background: 'transparent', border: '1px solid var(--border-v2)',
-                    borderRadius: 7, padding: '6px 12px', fontSize: 12,
-                    color: 'var(--text-ghost)', cursor: 'pointer'
-                  }}>Clear</button>
-              )}
-            </div>
-          </div>
-
-          <div style={{ flex: 1, minHeight: 0 }}>
-            {viewMode === 'kanban' 
-              ? <ComplaintsKanban complaints={filteredComplaints} /> 
-              : <ComplaintsList complaints={filteredComplaints} />
-            }
-          </div>
-
+          )}
         </div>
-      )}
-
       </div>
     </div>
   );

@@ -78,12 +78,12 @@ export default function WardenQRDirectory({ hostelId }) {
         
         {rooms.map(r => (
           <div key={r.id} style={{
-            background: 'var(--bg-surface)', border: '1px solid var(--border-v2)',
+            background: 'var(--bg-surface)', border: '1px solid var(--border)',
             borderRadius: 10, padding: 14, textAlign: 'center',
             cursor: 'pointer', transition: 'all 0.2s ease'
           }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border-hover)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-v2)'; e.currentTarget.style.transform = 'none'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.transform = 'none'; }}
           >
             <div style={{ background: '#fff', padding: 4, borderRadius: 6, display: 'inline-block', marginBottom: 8 }}>
               <img src={r.qrCodeUrl} alt={`QR Code for Room ${r.roomNumber}`} style={{ width: 90, height: 90, display: 'block' }} />
