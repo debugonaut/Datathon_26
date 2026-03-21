@@ -77,7 +77,9 @@ function RoomBox({ room, position }) {
               Score: <strong style={{ color: windowColor }}>{room.score}</strong>
               <div style={{ width: 12, height: 12, borderRadius: '50%', background: windowColor }}></div>
             </div>
-            <div style={{ color: 'var(--text-muted)' }}>Status: {room.studentUid ? 'Occupied' : 'Vacant'}</div>
+            <div style={{ color: 'var(--text-muted)' }}>
+              Status: {(room.currentOccupants > 0 || (room.occupants && room.occupants.length > 0)) ? 'Occupied' : 'Vacant'}
+            </div>
             {room.topComplaint && (
               <div style={{ color: windowColor, marginTop: '2px', fontWeight: 'bold' }}>
                 ↳ {room.topComplaint}
