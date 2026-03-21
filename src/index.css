@@ -675,7 +675,7 @@ option { background: var(--bg-card); }
 .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .animation-fade-in { animation: fadeIn 0.2s ease; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.85)} }
 
 /* ── Print ──────────────────────────────────────────────────── */
 @media print { .hide-on-print { display: none !important; } .app-sidebar { display: none; } .app-main { margin-left: 0; } }

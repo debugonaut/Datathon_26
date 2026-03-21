@@ -129,110 +129,123 @@ export default function StudentAnalytics({ roomScore, view = 'complaints' }) {
   });
 
   if (view === 'analytics') {
+    // Student KPIs
+    const studentKpis = [
+      { label: 'Total filed',   value: data.length,    accent: '#6C63FF', spark: [1,2,1,3,2,4,data.length] },
+      { label: 'Open',          value: open.length,    accent: '#EF4444', spark: [0,1,1,2,1,2,open.length] },
+      { label: 'Resolved',      value: resolved.length,accent: '#10B981', spark: [0,0,1,1,2,2,resolved.length] },
+      { label: 'Overdue',       value: overdue.length, accent: '#F59E0B', spark: [0,0,0,1,0,1,overdue.length] },
+      { label: 'Avg fix time',  value: avg!=null?`${avg}h`:'—', accent: '#3B82F6', spark: [8,6,7,5,6,4,avg||0] },
+    ];
+
+    const displayScore = Math.max(0, Math.min(100, score));
+    const scoreColor = displayScore>=70?'var(--green)':displayScore>=40?'var(--amber)':'var(--red)';
+    const scoreLabel = displayScore>=80?'Excellent':displayScore>=60?'Good':displayScore>=40?'Fair':displayScore>=20?'Poor':'Critical';
+
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '0.25rem 0' }}>
-        {/* Row 1: KPI cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
-          {[
-            { l: 'Total Filed', v: data.length, c: '#4FA3F7' },
-            { l: 'Open', v: open.length, c: '#F06565' },
-            { l: 'Resolved', v: resolved.length, c: '#22D3A0' },
-            { l: 'Overdue', v: overdue.length, c: overdue.length > 0 ? '#F06565' : '#22D3A0' },
-            { l: 'Avg Res.', v: avg != null ? `${avg}h` : '—', c: '#F5A623' },
-          ].map(k => (
-            <div key={k.l} style={card}>
-              <div style={label}>{k.l}</div>
-              <div style={{ fontSize: '1.4rem', fontWeight: 700, color: k.c, lineHeight: 1.1 }}>{k.v}</div>
+      <div style={{display:'flex',flexDirection:'column',gap:20,paddingBottom:24}}>
+
+        {/* KPI strip */}
+        <div style={{display:'grid',gridTemplateColumns:'repeat(5,minmax(0,1fr))',gap:12}}>
+          {studentKpis.map((k,i)=>(
+            <div key={i} style={{background:'var(--bg-card)',border:'1px solid var(--border)',borderRadius:14,padding:'14px 16px',position:'relative',overflow:'hidden',transition:'box-shadow 0.2s'}}
+              onMouseOver={e=>e.currentTarget.style.boxShadow='0 4px 16px rgba(0,0,0,0.2)'}
+              onMouseOut={e=>e.currentTarget.style.boxShadow='none'}
+            >
+              <div style={{height:3,background:k.accent,position:'absolute',top:0,left:0,right:0,borderRadius:'14px 14px 0 0'}}/>
+              <div style={{fontSize:10,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.09em',color:'var(--text-3)',marginBottom:6,marginTop:4}}>{k.label}</div>
+              <div style={{fontFamily:'var(--font-mono)',fontSize:28,fontWeight:500,color:'var(--text)',lineHeight:1}}>{k.value}</div>
             </div>
           ))}
         </div>
 
-        {/* Row 2: 2-column dashboard */}
-        <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: '8px', minHeight: 0 }}>
-          {/* Left: Room score gauge */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <div style={{ ...card, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-              <div style={label}>Room Score</div>
-              <div style={{
-                width: '140px', height: '140px', margin: '1rem auto',
-                borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: `conic-gradient(${sc} ${score}%, rgba(255,255,255,0.05) ${score}%)`,
-                position: 'relative'
-              }}>
-                <div style={{
-                  position: 'absolute', inset: '10px', background: 'var(--bg-surface)', borderRadius: '50%',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column'
-                }}>
-                  <span style={{ fontSize: '2.5rem', fontWeight: 800, color: sc }}>{score}</span>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>/ 100</span>
-                </div>
-              </div>
-              <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', textAlign: 'center' }}>
-                {score >= 71 ? 'Good shape' : score >= 41 ? 'Needs attention' : 'Critical'}
+        {/* Charts + Score */}
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 200px',gap:16}}>
+
+          {/* Score history */}
+          <div style={{background:'var(--bg-card)',border:'1px solid var(--border)',borderRadius:14,overflow:'hidden'}}>
+            <div style={{height:2,background:scoreColor}}/>
+            <div style={{padding:'14px 16px 0'}}>
+              <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:12}}>
+                <div style={{width:6,height:6,borderRadius:'50%',background:scoreColor}}/>
+                <span style={{fontSize:12.5,fontWeight:600,color:'var(--text)'}}>Room score — 30 days</span>
               </div>
             </div>
-
-            {/* Category donut */}
-            <div style={card}>
-              <div style={label}>By Category</div>
-              <ResponsiveContainer width="100%" height={220}>
-                <PieChart>
-                  <Pie data={cats} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={2} dataKey="value">
-                    {cats.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
-                  </Pie>
-                  <Tooltip contentStyle={TT} />
-                  <Legend iconType="circle" iconSize={6} wrapperStyle={{ fontSize: '0.6rem' }} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* Resolution comparison */}
-            {resComp.length > 0 && (
-              <div style={card}>
-                <div style={label}>My vs Hostel Avg</div>
-                <ResponsiveContainer width="100%" height={160}>
-                  <RadialBarChart cx="50%" cy="50%" innerRadius="30%" outerRadius="90%" data={resComp} startAngle={90} endAngle={-270}>
-                    <RadialBar dataKey="hours" cornerRadius={4}>{resComp.map((e, i) => <Cell key={i} fill={e.fill} />)}</RadialBar>
-                    <Legend iconType="circle" iconSize={6} wrapperStyle={{ fontSize: '0.6rem' }} />
-                    <Tooltip contentStyle={TT} formatter={v => [`${v}h`, 'Avg']} />
-                  </RadialBarChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-          </div>
-
-          {/* Center: Score trend chart */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <div style={card}>
-              <div style={label}>Room Score — 30 Days</div>
-              <ResponsiveContainer width="100%" height={300}>
-                <AreaChart data={hist}>
+            <div style={{padding:'0 16px 16px'}}>
+              <ResponsiveContainer width="100%" height={160}>
+                <AreaChart data={hist} margin={{top:4,right:4,bottom:0,left:-20}}>
                   <defs>
-                    <linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                    <linearGradient id="sGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={scoreColor} stopOpacity={0.35}/>
+                      <stop offset="95%" stopColor={scoreColor} stopOpacity={0}/>
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                  <XAxis dataKey="date" tick={{ fontSize: 8, fill: 'var(--text-muted)' }} interval={6} />
-                  <YAxis domain={[0, 100]} tick={{ fontSize: 9, fill: 'var(--text-muted)' }} width={20} />
-                  <Tooltip contentStyle={TT} />
-                  <Area type="monotone" dataKey="score" stroke="#10b981" fill="url(#sg)" strokeWidth={2} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false}/>
+                  <XAxis dataKey="date" tick={{fill:'#475569',fontSize:9}} axisLine={false} tickLine={false} interval={6}/>
+                  <YAxis domain={[0,100]} tick={{fill:'#475569',fontSize:9}} axisLine={false} tickLine={false}/>
+                  <Tooltip contentStyle={{background:'var(--bg-card)',border:'1px solid var(--border)',borderRadius:8,color:'var(--text)',fontSize:11}} cursor={{stroke:'rgba(255,255,255,0.06)'}}/>
+                  <Area type="monotone" dataKey="score" stroke={scoreColor} strokeWidth={2.5} fill="url(#sGrad)" dot={false} activeDot={{r:4}}/>
                 </AreaChart>
               </ResponsiveContainer>
             </div>
+          </div>
 
-            {/* Overdue alerts */}
-            {overdue.length > 0 && (
-              <div style={{ ...card, background: 'rgba(240,101,101,0.06)', border: '1px solid rgba(240,101,101,0.2)' }}>
-                <div style={label}>Overdue Complaints</div>
-                {overdue.slice(0, 3).map(c => (
-                  <div key={c.id} style={{ fontSize: '0.75rem', color: 'var(--text-primary)', padding: '4px 0', borderBottom: '1px solid var(--border)' }}>
-                    <strong style={{ color: '#F06565' }}>{c.title}</strong> — {c.category} · {timeAgo(c.createdAt)} ago
-                  </div>
-                ))}
+          {/* Category breakdown */}
+          <div style={{background:'var(--bg-card)',border:'1px solid var(--border)',borderRadius:14,overflow:'hidden'}}>
+            <div style={{height:2,background:'#3B82F6'}}/>
+            <div style={{padding:'14px 16px 0'}}>
+              <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:12}}>
+                <div style={{width:6,height:6,borderRadius:'50%',background:'#3B82F6'}}/>
+                <span style={{fontSize:12.5,fontWeight:600,color:'var(--text)'}}>By category</span>
               </div>
-            )}
+            </div>
+            <div style={{padding:'0 16px 16px',display:'flex',alignItems:'center',gap:12}}>
+              {cats.length>0 ? (
+                <>
+                  <div style={{position:'relative',width:130,height:130,flexShrink:0}}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie data={cats} cx="50%" cy="50%" innerRadius="52%" outerRadius="74%" paddingAngle={2} dataKey="value">
+                          {cats.map((_,i)=><Cell key={i} fill={CHART_COLORS[i%CHART_COLORS.length]}/>)}
+                        </Pie>
+                        <Tooltip contentStyle={{background:'var(--bg-card)',border:'1px solid var(--border)',borderRadius:8,color:'var(--text)',fontSize:11}}/>
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',pointerEvents:'none'}}>
+                      <div style={{fontFamily:'var(--font-mono)',fontSize:20,fontWeight:500,color:'var(--text)'}}>{data.length}</div>
+                      <div style={{fontSize:9,color:'var(--text-3)',textTransform:'uppercase',letterSpacing:'0.06em'}}>total</div>
+                    </div>
+                  </div>
+                  <div style={{display:'flex',flexDirection:'column',gap:6,flex:1}}>
+                    {cats.map((c,i)=>(
+                      <div key={i} style={{display:'flex',alignItems:'center',gap:6}}>
+                        <div style={{width:7,height:7,borderRadius:2,background:CHART_COLORS[i%CHART_COLORS.length],flexShrink:0}}/>
+                        <span style={{fontSize:11,color:'var(--text-2)',flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{c.name}</span>
+                        <span style={{fontFamily:'var(--font-mono)',fontSize:10,color:'var(--text-3)'}}>{c.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : <div style={{fontSize:13,color:'var(--text-3)',padding:'20px 0'}}>No data yet</div>}
+            </div>
+          </div>
+
+          {/* Score circle */}
+          <div style={{background:'var(--bg-card)',border:'1px solid var(--border)',borderRadius:14,padding:'16px',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:10,overflow:'hidden',position:'relative'}}>
+            <div style={{height:3,background:scoreColor,position:'absolute',top:0,left:0,right:0,borderRadius:'14px 14px 0 0'}}/>
+            <div style={{fontSize:10,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.09em',color:'var(--text-3)',marginTop:6}}>Room health</div>
+            <svg width="100" height="100" viewBox="0 0 100 100" style={{transform:'rotate(-90deg)'}}>
+              <circle cx="50" cy="50" r="42" fill="none" stroke="var(--bg-input)" strokeWidth="10"/>
+              <circle cx="50" cy="50" r="42" fill="none" stroke={scoreColor} strokeWidth="10" strokeLinecap="round"
+                strokeDasharray={`${displayScore*2.638} ${(100-displayScore)*2.638}`}
+                style={{transition:'stroke-dasharray 0.6s ease'}}
+              />
+            </svg>
+            <div style={{marginTop:-80,fontFamily:'var(--font-mono)',fontSize:28,fontWeight:500,color:scoreColor,lineHeight:1,textAlign:'center'}}>
+              {displayScore}
+            </div>
+            <div style={{marginTop:48,fontSize:12,fontWeight:600,color:scoreColor}}>{scoreLabel}</div>
+            <div style={{fontSize:10,color:'var(--text-3)',textAlign:'center',lineHeight:1.4}}>out of 100</div>
           </div>
         </div>
       </div>
