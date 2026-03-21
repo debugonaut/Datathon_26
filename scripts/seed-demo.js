@@ -76,7 +76,7 @@ async function run() {
     if (sData.isProfileComplete && sData.isRegistered && sData.roomId && wData.isProfileComplete && wData.hostelId && sData.blockName) {
       // Verify hierarchy is correctly nested before skipping
       const roomCheck = await getDoc(doc(db, 'hostels', hostelId, 'blocks', blockId, 'buildings', buildingId, 'floors', 'demo-floor-2', 'rooms', 'demo-room-204'));
-      if (roomCheck.exists()) {
+      if (roomCheck.exists() && false) { // Forced re-seed
         console.log('✅ Demo data fully populated with correct hierarchy. Exiting early.');
         process.exit(0);
       }
@@ -145,6 +145,7 @@ async function run() {
       const roomId = `demo-room-${roomNum}`;
       const is204 = roomNum === 204;
       
+      const qrLink = `https://datathon-26.vercel.app/complaint/new?roomId=${roomId}`;
       const rData = {
         roomNumber: String(roomNum),
         floorId,
@@ -154,7 +155,8 @@ async function run() {
         maxOccupants: 2,
         currentOccupants: is204 ? 1 : 0,
         occupants: is204 ? [{ uid: studentUid, name: 'Demo Student' }] : [],
-        score: is204 ? 55 : 100
+        score: is204 ? 55 : 100,
+        qrCodeUrl: `https://chart.googleapis.com/chart?cht=qr&chs=300x300&chl=${encodeURIComponent(qrLink)}`
       };
 
       const roomRef = doc(db, 'hostels', hostelId, 'blocks', blockId, 'buildings', buildingId, 'floors', floorId, 'rooms', roomId);
