@@ -76,7 +76,7 @@ async function run() {
     if (sData.isProfileComplete && sData.isRegistered && sData.roomId && wData.isProfileComplete && wData.hostelId && sData.blockName) {
       // Verify hierarchy is correctly nested before skipping
       const roomCheck = await getDoc(doc(db, 'hostels', hostelId, 'blocks', blockId, 'buildings', buildingId, 'floors', 'demo-floor-2', 'rooms', 'demo-room-204'));
-      if (roomCheck.exists() && false) { // Forced re-seed
+      if (roomCheck.exists()) {
         console.log('✅ Demo data fully populated with correct hierarchy. Exiting early.');
         process.exit(0);
       }
@@ -156,7 +156,7 @@ async function run() {
         currentOccupants: is204 ? 1 : 0,
         occupants: is204 ? [{ uid: studentUid, name: 'Demo Student' }] : [],
         score: is204 ? 55 : 100,
-        qrCodeUrl: `https://chart.googleapis.com/chart?cht=qr&chs=300x300&chl=${encodeURIComponent(qrLink)}`
+        qrCodeUrl: `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrLink)}`
       };
 
       const roomRef = doc(db, 'hostels', hostelId, 'blocks', blockId, 'buildings', buildingId, 'floors', floorId, 'rooms', roomId);
