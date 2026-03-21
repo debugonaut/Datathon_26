@@ -8,6 +8,7 @@ import JoinHostel from './pages/student/JoinHostel';
 import StudentDashboard from './pages/student/Dashboard';
 import SetupHostel from './pages/warden/SetupHostel';
 import WardenDashboard from './pages/warden/Dashboard';
+import AnalyticsDashboard from './components/dashboard/AnalyticsDashboard';
 
 const ProtectedRoute = ({ children, allowedRole }) => {
   const { user, userDoc, loading } = useAuth();
@@ -35,6 +36,12 @@ const AppRoutes = () => (
     <Route path="/login" element={<LoginPage />} />
     <Route path="/register" element={<RegisterPage />} />
     <Route path="/setup-role" element={<RoleSetupPage />} />
+    {/* Standalone analytics demo route to bypass Auth */}
+    <Route path="/analytics" element={
+      <div className="page" style={{ padding: '2rem' }}>
+        <AnalyticsDashboard />
+      </div>
+    } />
     <Route path="/student/join" element={
       <ProtectedRoute allowedRole="student"><JoinHostel /></ProtectedRoute>
     } />

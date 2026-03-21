@@ -2,30 +2,42 @@
 
 /* ─── Tokens ────────────────────────────────────────────────── */
 :root {
-  --primary:       #6366f1;
-  --primary-hover: #4f46e5;
-  --accent:        #f59e0b;
-  --danger:        #ef4444;
-  --success:       #10b981;
-  --bg:            #0f172a;
-  --surface:       #1e293b;
-  --surface-2:     #263248;
-  --border:        rgba(255,255,255,0.08);
-  --text:          #f1f5f9;
-  --text-muted:    #94a3b8;
-  --radius:        14px;
-  --radius-sm:     8px;
-  --shadow:        0 8px 32px rgba(0,0,0,0.45);
-  --glass:         rgba(30,41,59,0.7);
+  /* Core UI Colors */
+  --bg:             #0D0F14;
+  --surface:        #13161E;
+  --surface-raised: #1C2030;
+  --border:         #252A38;
+  
+  /* Accents */
+  --accent-primary: #7C6EFA;
+  --accent-green:   #22D3A0;
+  --accent-amber:   #F5A623;
+  --accent-red:     #F06565;
+  --accent-blue:    #4FA3F7;
+  
+  /* Text */
+  --text-primary:   #EDF0FA;
+  --text-secondary: #7A82A0;
+  --text-muted:     #454D65;
+  
+  /* Typography */
+  --font-primary: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-heading: 'Plus Jakarta Sans', sans-serif;
+  
+  /* Geometry */
+  --radius-lg: 16px;
+  --radius-md: 6px;
+  --radius-sm: 4px;
 }
 
 /* ─── Reset + Base ──────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; }
+html { scroll-behavior: smooth; font-family: var(--font-primary); }
 body {
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-primary);
   background: var(--bg);
-  color: var(--text);
+  color: var(--text-primary);
   min-height: 100vh;
   line-height: 1.6;
 }
