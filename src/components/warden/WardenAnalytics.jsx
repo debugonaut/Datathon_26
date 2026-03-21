@@ -7,14 +7,11 @@ import {
   ResponsiveContainer
 } from 'recharts';
 
-const CHART_COLORS = ['#378ADD', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+const CHART_COLORS = ['#7C6EFA', '#22D3A0', '#F5A623', '#F06565', '#4FA3F7', '#2DD4BF'];
 
 const TT = {
-  background: '#1a1f2e',
-  border: '1px solid rgba(255,255,255,0.08)',
-  borderRadius: '8px',
-  color: '#e2e8f0',
-  fontSize: '0.75rem'
+  contentStyle: { background: '#1C2030', border: '1px solid #2E3448', borderRadius: '8px', color: '#EDF0FA', fontSize: '11px', fontFamily: "'JetBrains Mono'" },
+  cursor: { stroke: '#2E3448' }
 };
 
 // ── Dummy data ──────────────────────────────────────────────────────────────
@@ -47,7 +44,7 @@ function volByDay(c) {
 function catBreak(c) { const m = {}; c.forEach(x => m[x.category] = (m[x.category] || 0) + 1); return Object.entries(m).map(([n, v]) => ({ name: n, value: v })); }
 function priBreak(c) {
   const m = { low: 0, medium: 0, high: 0 }; c.forEach(x => m[x.priority]++);
-  return [{ name: 'Low', value: m.low, fill: '#10b981' }, { name: 'Med', value: m.medium, fill: '#f59e0b' }, { name: 'High', value: m.high, fill: '#ef4444' }];
+  return [{ name: 'Low', value: m.low, fill: '#22D3A0' }, { name: 'Med', value: m.medium, fill: '#F5A623' }, { name: 'High', value: m.high, fill: '#F06565' }];
 }
 function avgRes(c) {
   const r = c.filter(x => x.resolvedAt && x.createdAt);
@@ -78,9 +75,9 @@ function heatmap(c) {
 }
 function funnel(c) {
   return [
-    { stage: 'Filed', count: c.length, fill: '#378ADD' },
-    { stage: 'In Progress', count: c.filter(x => x.status === 'in_progress' || x.status === 'resolved').length, fill: '#f59e0b' },
-    { stage: 'Resolved', count: c.filter(x => x.status === 'resolved').length, fill: '#10b981' },
+    { stage: 'Filed', count: c.length, fill: '#7C6EFA' },
+    { stage: 'In Progress', count: c.filter(x => x.status === 'in_progress' || x.status === 'resolved').length, fill: '#F5A623' },
+    { stage: 'Resolved', count: c.filter(x => x.status === 'resolved').length, fill: '#22D3A0' },
   ];
 }
 
@@ -102,32 +99,32 @@ export default function WardenAnalytics({ hostelId }) {
   const engagement = Math.round((new Set(data.map(c => c.roomId)).size / 20) * 100);
   const weekKeys = heat.length > 0 ? Object.keys(heat[0]).filter(k => k !== 'floor') : [];
 
-  const heatColor = v => v === 0 ? 'rgba(255,255,255,0.04)' : v === 1 ? 'rgba(245,158,11,0.3)' : v === 2 ? 'rgba(245,158,11,0.6)' : 'rgba(239,68,68,0.8)';
+  const heatColor = v => v === 0 ? 'rgba(255,255,255,0.03)' : v === 1 ? 'rgba(245,166,35,0.3)' : v === 2 ? 'rgba(245,166,35,0.6)' : 'rgba(240,101,101,0.8)';
 
-  const card = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '10px', padding: '0.75rem' };
-  const label = { fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '2px' };
-  const bigNum = (color) => ({ fontSize: '1.4rem', fontWeight: 700, color, lineHeight: 1.1 });
+  const card = { background: 'var(--bg-surface)', border: '1px solid var(--border-v2)', borderRadius: '12px', padding: '20px 24px', transition: 'border-color 0.2s ease' };
+  const label = { fontSize: '10px', color: 'var(--text-ghost)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px', fontFamily: 'var(--font-body)' };
+  const bigNum = (color) => ({ fontSize: '24px', fontWeight: 600, color, lineHeight: 1.1, fontFamily: 'var(--font-mono)' });
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '0.25rem 0' }}>
 
       {/* Sample data banner */}
-      <div style={{ background: 'rgba(55,138,221,0.08)', border: '1px solid rgba(55,138,221,0.25)', borderRadius: '8px', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', color: 'var(--text-primary)' }}>
-        <span>ℹ️</span>
-        <span><strong>Sample Data</strong> — analytics will populate with real complaints.</span>
+      <div style={{ background: 'rgba(245,166,35,0.05)', border: '1px solid rgba(245,166,35,0.15)', borderRadius: 'var(--radius-sm)', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: 'var(--text-primary)', marginBottom: 8 }}>
+        <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--amber)', flexShrink: 0 }} />
+        <span><strong>Sample data</strong> — analytics will populate with real complaints.</span>
       </div>
 
       {/* Row 1: KPI cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '8px' }}>
         {[
-          { l: 'Total', v: data.length, c: '#378ADD' },
-          { l: 'Open', v: open, c: '#ef4444' },
-          { l: 'Resolved', v: resolved, c: '#10b981' },
-          { l: 'Rate', v: `${rate}%`, c: '#10b981' },
-          { l: 'Avg Res.', v: avg ? `${avg}h` : '—', c: '#f59e0b' },
-          { l: 'Engagement', v: `${engagement}%`, c: '#8b5cf6' },
+          { l: 'Total', v: data.length, c: 'var(--violet)' },
+          { l: 'Open', v: open, c: 'var(--red)' },
+          { l: 'Resolved', v: resolved, c: 'var(--green)' },
+          { l: 'Rate', v: `${rate}%`, c: 'var(--green)' },
+          { l: 'Avg Res.', v: avg ? `${avg}h` : '—', c: 'var(--amber)' },
+          { l: 'Engagement', v: `${engagement}%`, c: 'var(--violet)' },
         ].map(k => (
-          <div key={k.l} style={card}>
+          <div key={k.l} style={{...card, borderTop: `2px solid ${k.c}`}}>
             <div style={label}>{k.l}</div>
             <div style={bigNum(k.c)}>{k.v}</div>
           </div>
@@ -147,7 +144,7 @@ export default function WardenAnalytics({ hostelId }) {
                 <Pie data={cats} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={2} dataKey="value">
                   {cats.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
                 </Pie>
-                <Tooltip contentStyle={TT} />
+                <Tooltip {...TT} />
                 <Legend iconType="circle" iconSize={6} wrapperStyle={{ fontSize: '0.62rem' }} />
               </PieChart>
             </ResponsiveContainer>
@@ -160,7 +157,7 @@ export default function WardenAnalytics({ hostelId }) {
                 <Pie data={pris} cx="50%" cy="50%" outerRadius={80} paddingAngle={2} dataKey="value">
                   {pris.map((e, i) => <Cell key={i} fill={e.fill} />)}
                 </Pie>
-                <Tooltip contentStyle={TT} />
+                <Tooltip {...TT} />
                 <Legend iconType="circle" iconSize={6} wrapperStyle={{ fontSize: '0.62rem' }} />
               </PieChart>
             </ResponsiveContainer>
@@ -172,7 +169,7 @@ export default function WardenAnalytics({ hostelId }) {
               <BarChart data={fun} layout="vertical">
                 <XAxis type="number" hide />
                 <YAxis type="category" dataKey="stage" tick={{ fontSize: 9, fill: 'var(--text-muted)' }} width={60} />
-                <Tooltip contentStyle={TT} />
+                <Tooltip {...TT} />
                 <Bar dataKey="count" radius={[0, 4, 4, 0]}>
                   {fun.map((e, i) => <Cell key={i} fill={e.fill} />)}
                 </Bar>
@@ -190,15 +187,15 @@ export default function WardenAnalytics({ hostelId }) {
               <AreaChart data={vol}>
                 <defs>
                   <linearGradient id="vg" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#378ADD" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#378ADD" stopOpacity={0} />
+                    <stop offset="5%" stopColor="#7C6EFA" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#7C6EFA" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis dataKey="date" tick={{ fontSize: 8, fill: 'var(--text-muted)' }} interval={5} />
-                <YAxis tick={{ fontSize: 9, fill: 'var(--text-muted)' }} allowDecimals={false} width={20} />
-                <Tooltip contentStyle={TT} />
-                <Area type="monotone" dataKey="count" stroke="#378ADD" fill="url(#vg)" strokeWidth={2} name="Complaints" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#1C2030" />
+                <XAxis dataKey="date" tick={{ fontSize: 8, fill: '#454D65' }} interval={5} />
+                <YAxis tick={{ fontSize: 9, fill: '#454D65' }} allowDecimals={false} width={20} />
+                <Tooltip {...TT} />
+                <Area type="monotone" dataKey="count" stroke="#7C6EFA" fill="url(#vg)" strokeWidth={2.5} dot={false} activeDot={{ r: 4, fill: '#7C6EFA' }} name="Complaints" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -207,12 +204,12 @@ export default function WardenAnalytics({ hostelId }) {
             <div style={label}>Peak Hours (24h)</div>
             <ResponsiveContainer width="100%" height={150}>
               <BarChart data={peaks}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis dataKey="hour" tick={{ fontSize: 7, fill: 'var(--text-muted)' }} interval={2} />
-                <YAxis tick={{ fontSize: 8, fill: 'var(--text-muted)' }} allowDecimals={false} width={16} />
-                <Tooltip contentStyle={TT} />
-                <Bar dataKey="count" radius={[2, 2, 0, 0]}>
-                  {peaks.map((e, i) => <Cell key={i} fill={e.count === Math.max(...peaks.map(h => h.count)) ? '#ef4444' : '#378ADD'} />)}
+                <CartesianGrid strokeDasharray="3 3" stroke="#1C2030" />
+                <XAxis dataKey="hour" tick={{ fontSize: 7, fill: '#454D65' }} interval={2} />
+                <YAxis tick={{ fontSize: 8, fill: '#454D65' }} allowDecimals={false} width={16} />
+                <Tooltip {...TT} />
+                <Bar dataKey="count" radius={[6, 6, 0, 0]}>
+                  {peaks.map((e, i) => <Cell key={i} fill={e.count === Math.max(...peaks.map(h => h.count)) ? '#F06565' : e.count > 1 ? '#F5A623' : '#22D3A0'} />)}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
@@ -229,13 +226,13 @@ export default function WardenAnalytics({ hostelId }) {
                   return { date: day.date, filed: f, resolved: r };
                 });
               })()}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis dataKey="date" tick={{ fontSize: 8, fill: 'var(--text-muted)' }} interval={5} />
-                <YAxis tick={{ fontSize: 8, fill: 'var(--text-muted)' }} allowDecimals={false} width={20} />
-                <Tooltip contentStyle={TT} />
-                <Legend iconSize={6} wrapperStyle={{ fontSize: '0.62rem' }} />
-                <Line type="monotone" dataKey="filed" stroke="#ef4444" strokeWidth={2} dot={false} name="Filed" />
-                <Line type="monotone" dataKey="resolved" stroke="#10b981" strokeWidth={2} dot={false} name="Resolved" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#1C2030" />
+                <XAxis dataKey="date" tick={{ fontSize: 8, fill: '#454D65' }} interval={5} />
+                <YAxis tick={{ fontSize: 8, fill: '#454D65' }} allowDecimals={false} width={20} />
+                <Tooltip {...TT} />
+                <Legend iconSize={6} wrapperStyle={{ fontSize: '12px', fontFamily: "'Plus Jakarta Sans'" }} />
+                <Line type="monotone" dataKey="filed" stroke="#F06565" strokeWidth={2.5} dot={false} name="Filed" />
+                <Line type="monotone" dataKey="resolved" stroke="#22D3A0" strokeWidth={2.5} dot={false} name="Resolved" />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -253,13 +250,13 @@ export default function WardenAnalytics({ hostelId }) {
                 prog: data.filter(c => c.category === cat && c.status === 'in_progress').length,
                 done: data.filter(c => c.category === cat && c.status === 'resolved').length,
               }))}>
-                <PolarGrid stroke="var(--border)" />
-                <PolarAngleAxis dataKey="category" tick={{ fontSize: 8, fill: 'var(--text-muted)' }} />
-                <Radar name="Open" dataKey="open" stroke="#ef4444" fill="#ef4444" fillOpacity={0.15} />
-                <Radar name="In Prog" dataKey="prog" stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.15} />
-                <Radar name="Done" dataKey="done" stroke="#10b981" fill="#10b981" fillOpacity={0.15} />
-                <Legend iconSize={6} wrapperStyle={{ fontSize: '0.6rem' }} />
-                <Tooltip contentStyle={TT} />
+                <PolarGrid stroke="#1C2030" />
+                <PolarAngleAxis dataKey="category" tick={{ fontSize: 8, fill: '#454D65' }} />
+                <Radar name="Open" dataKey="open" stroke="#F06565" fill="#F06565" fillOpacity={0.15} />
+                <Radar name="In Prog" dataKey="prog" stroke="#F5A623" fill="#F5A623" fillOpacity={0.15} />
+                <Radar name="Done" dataKey="done" stroke="#22D3A0" fill="#22D3A0" fillOpacity={0.15} />
+                <Legend iconSize={6} wrapperStyle={{ fontSize: '12px', fontFamily: "'Plus Jakarta Sans'" }} />
+                <Tooltip {...TT} />
               </RadarChart>
             </ResponsiveContainer>
           </div>
@@ -270,7 +267,7 @@ export default function WardenAnalytics({ hostelId }) {
               <BarChart data={resCat} layout="vertical">
                 <XAxis type="number" tick={{ fontSize: 8, fill: 'var(--text-muted)' }} />
                 <YAxis type="category" dataKey="category" tick={{ fontSize: 8, fill: 'var(--text-muted)' }} width={55} />
-                <Tooltip contentStyle={TT} />
+                <Tooltip {...TT} />
                 <Bar dataKey="avgHours" radius={[0, 3, 3, 0]}>
                   {resCat.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
                 </Bar>
