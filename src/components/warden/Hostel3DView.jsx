@@ -9,11 +9,11 @@ function RoomBox({ room, position }) {
   const [hovered, setHovered] = useState(false);
   
   // Determine window color based on score
-  let windowColor = '#1e3a8a'; // Unmapped -> Dark Blue
+  let windowColor = '#4FA3F7'; // Unmapped -> Blue
   if (room.score > 0) {
-    if (room.score <= 40) windowColor = '#ef4444'; // Red
-    else if (room.score <= 70) windowColor = '#f59e0b'; // Yellow
-    else windowColor = '#10b981'; // Green
+    if (room.score <= 40) windowColor = '#F06565'; // Red
+    else if (room.score <= 70) windowColor = '#F5A623'; // Amber
+    else windowColor = '#22D3A0'; // Green
   }
 
     const meshRef = useRef();
@@ -65,28 +65,29 @@ function RoomBox({ room, position }) {
       {hovered && (
         <Html position={[0, 1.5, 0]} center zIndexRange={[100, 0]} style={{ pointerEvents: 'none' }}>
           <div style={{
-            background: 'var(--glass)', backdropFilter: 'blur(8px)', border: '1px solid var(--border)',
-            padding: '8px 12px', borderRadius: '8px', color: 'white', whiteSpace: 'nowrap',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.5)', fontSize: '0.8rem', pointerEvents: 'none'
+            background: '#1C2030', border: '1px solid #2E3448',
+            padding: '10px 14px', borderRadius: '8px', color: '#EDF0FA', whiteSpace: 'nowrap',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.5)', fontSize: '13px', pointerEvents: 'none',
+            minWidth: 160
           }}>
-            <div style={{ fontWeight: 'bold', marginBottom: '4px', borderBottom: '1px solid var(--border)', paddingBottom: '2px', display: 'flex', justifyContent: 'space-between' }}>
+            <div style={{ fontFamily: "'Sora', sans-serif", fontWeight: 500, fontSize: 13, marginBottom: 4, borderBottom: '1px solid #2E3448', paddingBottom: 4, display: 'flex', justifyContent: 'space-between' }}>
               <span>Room {room.roomNumber}</span>
-              <span className="text-muted" style={{ fontWeight: 'normal', fontSize: '0.75rem' }}>Code: {room.id.slice(-6).toUpperCase()}</span>
+              <span style={{ color: '#454D65', fontWeight: 'normal', fontSize: 12, fontFamily: "'JetBrains Mono', monospace" }}>{room.id.slice(-6).toUpperCase()}</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: "'JetBrains Mono', monospace" }}>
               Score: <strong style={{ color: windowColor }}>{room.score}</strong>
-              <div style={{ width: 12, height: 12, borderRadius: '50%', background: windowColor }}></div>
+              <div style={{ width: 10, height: 10, borderRadius: '50%', background: windowColor }} />
             </div>
-            <div style={{ color: 'var(--text-muted)' }}>
+            <div style={{ color: '#7A82A0', fontSize: 12 }}>
               Status: {(room.currentOccupants > 0 || (room.occupants && room.occupants.length > 0)) ? 'Occupied' : 'Vacant'}
             </div>
             {room.topComplaint && (
-              <div style={{ color: windowColor, marginTop: '2px', fontWeight: 'bold' }}>
-                ↳ {room.topComplaint}
+              <div style={{ color: windowColor, marginTop: 2, fontWeight: 'bold', fontSize: 12 }}>
+                {room.topComplaint}
               </div>
             )}
-            <div style={{ color: 'var(--text-muted)', fontSize: '0.7rem', marginTop: '4px' }}>
-              {room.blockName} • {room.buildingName} • Fl {room.floorNumber}
+            <div style={{ color: '#454D65', fontSize: 12, marginTop: 4, fontFamily: "'JetBrains Mono', monospace" }}>
+              {room.blockName} / {room.buildingName} / Fl {room.floorNumber}
             </div>
           </div>
         </Html>
@@ -310,32 +311,32 @@ export default function Warden3DView({ hostelId }) {
 
       {/* UI Overlay Legend */}
       <div style={{
-        position: 'absolute', bottom: '1rem', left: '50%', transform: 'translateX(-50%)',
-        background: 'var(--glass)', backdropFilter: 'blur(12px)', border: '1px solid var(--border)',
-        padding: '0.75rem 1.5rem', borderRadius: '999px', display: 'flex', gap: '1.5rem',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.5)'
+        position: 'absolute', bottom: 24, left: 24,
+        background: 'rgba(19,22,30,0.9)', border: '1px solid #2E3448',
+        borderRadius: 10, padding: '12px 16px',
+        display: 'flex', flexDirection: 'column', gap: 8
       }}>
-        <div className="flex align-items-center gap-1">
-          <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#1e3a8a' }}></div>
-          <span className="text-sm font-bold">Unmapped (0)</span>
-        </div>
-        <div className="flex align-items-center gap-1">
-          <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#10b981' }}></div>
-          <span className="text-sm font-bold">Good (71-100)</span>
-        </div>
-        <div className="flex align-items-center gap-1">
-          <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#f59e0b' }}></div>
-          <span className="text-sm font-bold">Warning (41-70)</span>
-        </div>
-        <div className="flex align-items-center gap-1">
-          <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#ef4444' }}></div>
-          <span className="text-sm font-bold">Critical (1-40)</span>
-        </div>
+        {[
+          { color: '#22D3A0', label: 'Good (71-100)' },
+          { color: '#F5A623', label: 'Warning (41-70)' },
+          { color: '#F06565', label: 'Critical (1-40)' },
+          { color: '#4FA3F7', label: 'Unmapped (0)' }
+        ].map(item => (
+          <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ width: 10, height: 10, borderRadius: 2, background: item.color, flexShrink: 0 }} />
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: '#454D65' }}>{item.label}</span>
+          </div>
+        ))}
       </div>
       
       {/* Instructions */}
-      <div style={{ position: 'absolute', top: '1rem', left: '1rem', color: 'var(--text-muted)', fontSize: '0.8rem', pointerEvents: 'none' }}>
-        Left-click drag to rotate • Scroll to zoom • Right-click drag to pan
+      <div style={{
+        position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)',
+        background: 'var(--bg-raised)', borderRadius: 'var(--radius-sm)',
+        padding: '8px 16px', fontSize: 12, color: 'var(--text-ghost)',
+        fontFamily: "'JetBrains Mono', monospace", whiteSpace: 'nowrap'
+      }}>
+        Left-drag → rotate · Scroll → zoom · Right-drag → pan
       </div>
     </div>
   );

@@ -83,74 +83,81 @@ const SortableComplaintCard = ({ complaint }) => {
       style={{
         ...style,
         cursor: 'grab', 
-        background: 'var(--bg-secondary)', 
-        border: '1px solid var(--border)'
+        background: 'var(--bg-surface)', 
+        border: '1px solid var(--border-v2)',
+        borderRadius: 'var(--radius-sm)',
+        padding: '12px 14px',
+        marginBottom: '8px',
+        opacity: complaint.status === 'resolved' ? 0.55 : (isDragging ? 0.4 : 1),
+        transition: 'border-color 0.2s ease'
       }} 
       {...attributes} 
-      {...listeners} 
-      className="card p-2 mb-2"
+      {...listeners}
+      onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-hover)'}
+      onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-v2)'}
     >
       
       {/* Withdrawn Badge */}
       {complaint.withdrawnAt && (
-        <div style={{ marginBottom: '8px' }}>
+        <div style={{ marginBottom: 8 }}>
           <span style={{
-            fontSize: '0.7rem', padding: '2px 8px', borderRadius: '10px',
-            background: 'rgba(255,255,255,0.06)', color: 'var(--text-muted)',
-            border: '1px solid var(--border)'
+            fontSize: 12, padding: '2px 7px', borderRadius: 'var(--radius-chip)',
+            background: 'rgba(255,255,255,0.04)', color: 'var(--text-ghost)',
+            border: '1px solid var(--border-v2)', fontFamily: 'var(--font-body)'
           }}>
-            Withdrawn by student: "{complaint.withdrawnReason}"
+            Withdrawn: "{complaint.withdrawnReason}"
           </span>
         </div>
       )}
 
       {/* Reopened Banner */}
       {complaint.reopenedAt && complaint.status !== 'resolved' && (
-        <div style={{ marginBottom: '8px', padding: '4px 10px',
-          background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)',
-          borderRadius: '6px', fontSize: '0.72rem', color: '#f59e0b' }}>
-          ↩ Re-opened: "{complaint.reopenReason}"
+        <div style={{ marginBottom: 8, padding: '4px 10px',
+          background: 'rgba(245,166,35,0.08)', border: '1px solid rgba(245,166,35,0.2)',
+          borderRadius: 'var(--radius-chip)', fontSize: 12, color: 'var(--amber)' }}>
+          Re-opened: "{complaint.reopenReason}"
         </div>
       )}
 
-      <div className="flex align-items-center justify-content-between mb-2">
-        <div style={{ fontWeight: 'bold' }}>Room {complaint.roomNumber}</div>
-        <div className="text-xs text-muted">{timeAgo(complaint.createdAt)}</div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+        <div style={{ fontWeight: 600, fontFamily: 'var(--font-heading)', fontSize: 13 }}>Room {complaint.roomNumber}</div>
+        <div style={{ fontSize: 12, color: 'var(--text-ghost)', fontFamily: 'var(--font-mono)' }}>{timeAgo(complaint.createdAt)}</div>
       </div>
       
-      <div className="mb-2" style={{ fontWeight: 600, fontSize: '0.9rem', lineHeight: 1.2 }}>{complaint.title}</div>
+      <div style={{ fontWeight: 600, fontSize: 14, lineHeight: 1.3, marginBottom: 8, color: 'var(--text-primary)', position: 'relative', paddingRight: 12 }}>
+        {complaint.title}
+        <span style={{ position: 'absolute', top: 2, right: 0, width: 6, height: 6, borderRadius: '50%', background: complaint.priority === 'high' ? 'var(--red)' : complaint.priority === 'medium' ? 'var(--amber)' : 'var(--green)' }} />
+      </div>
       
-      {/* Translation toggle (if available) */}
+      {/* Translation toggle */}
       {complaint.descriptionOriginal && complaint.descriptionTranslated && complaint.descriptionOriginal !== complaint.descriptionTranslated && (
-        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>
+        <div style={{ fontSize: 12, color: 'var(--text-ghost)', marginBottom: 4 }}>
           <span
-            style={{ cursor: 'pointer', textDecoration: 'underline' }}
+            style={{ cursor: 'pointer', color: 'var(--violet)' }}
             onPointerDown={(e) => { e.stopPropagation(); setShowingOriginal(p => !p); }}
           >
-            {showingOriginal ? 'Show English' : `Originally in ${complaint.detectedLanguage || 'Original Language'}`}
+            {showingOriginal ? 'Show English' : `Show ${complaint.detectedLanguage || 'Original'}`}
           </span>
         </div>
       )}
-      <div className="text-sm mb-2 text-muted" style={{ lineHeight: 1.4, wordBreak: 'break-word' }}>
+      <div style={{ fontSize: 13, marginBottom: 8, color: 'var(--text-secondary)', lineHeight: 1.4, wordBreak: 'break-word' }}>
         {showingOriginal ? complaint.descriptionOriginal : (complaint.descriptionTranslated || complaint.description)}
       </div>
 
-      <div className="flex gap-1 flex-wrap mb-2">
-        <span className="badge" style={{ background: 'rgba(255,255,255,0.1)' }}>{complaint.category}</span>
-        <span className="badge" style={{ 
-          background: complaint.priority === 'low' ? 'rgba(16,185,129,0.2)' : complaint.priority === 'medium' ? 'rgba(245,158,11,0.2)' : 'rgba(239,68,68,0.2)',
-          color: complaint.priority === 'low' ? '#10b981' : complaint.priority === 'medium' ? '#f59e0b' : '#ef4444'
-        }}>
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+        <span style={{ fontSize: 12, padding: '2px 7px', borderRadius: 'var(--radius-chip)', background: 'rgba(124,110,250,0.08)', color: 'var(--violet)', border: '1px solid rgba(124,110,250,0.2)', fontFamily: 'var(--font-body)' }}>{complaint.category}</span>
+        <span className={`priority-chip priority-${complaint.priority || 'low'}`}>
           {complaint.priority?.toUpperCase() || 'UNKNOWN'}
         </span>
       </div>
 
-      <div className="flex align-items-center justify-content-between text-xs text-muted mb-2">
-        <div>👤 {complaint.studentName}</div>
+      <div style={{ display: 'flex', alignItems: 'center', fontSize: 12, color: 'var(--text-ghost)', marginBottom: 8 }}>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: 4 }}><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        {complaint.studentName}
       </div>
 
       {complaint.mediaUrls?.length > 0 && (
-        <div style={{ display: 'flex', gap: '6px', marginBottom: '8px', flexWrap: 'wrap' }} onPointerDown={(e) => e.stopPropagation()}>
+        <div style={{ display: 'flex', gap: 6, marginBottom: 8, flexWrap: 'wrap' }} onPointerDown={(e) => e.stopPropagation()}>
           {complaint.mediaUrls.map((url, idx) => {
             const type = complaint.mediaTypes?.[idx] || 'document';
             return (
@@ -158,12 +165,13 @@ const SortableComplaintCard = ({ complaint }) => {
                 key={idx} href={url} target="_blank" rel="noreferrer" 
                 style={{ 
                   display: 'inline-flex', alignItems: 'center', padding: '3px 8px', 
-                  background: 'rgba(55,138,221,0.15)', borderRadius: '6px',
-                  fontSize: '0.72rem', color: '#378ADD', textDecoration: 'none',
-                  border: '1px solid rgba(55,138,221,0.3)', fontWeight: 600
+                  background: 'rgba(124,110,250,0.08)', borderRadius: 'var(--radius-chip)',
+                  fontSize: 12, color: 'var(--violet)', textDecoration: 'none',
+                  border: '1px solid rgba(124,110,250,0.2)', fontWeight: 500,
+                  fontFamily: 'var(--font-mono)'
                 }}
               >
-                {type === 'image' ? '🖼️ View Image' : type === 'video' ? '🎥 View Video' : type === 'audio' ? '🔊 Play Audio' : '📎 View File'}
+                {type === 'image' ? 'IMG' : type === 'video' ? 'VID' : type === 'audio' ? 'AUD' : 'FILE'}
               </a>
             );
           })}
@@ -443,8 +451,14 @@ export default function ComplaintsKanban({ complaints }) {
       >
         <div style={{ display: 'flex', gap: '1rem', flex: 1, overflowX: 'auto', paddingBottom: '1rem', minHeight: 0 }}>
           {columnsData.map(col => (
-            <div key={col.id} className="card flex-1" style={{ minWidth: 320, display: 'flex', flexDirection: 'column', background: 'rgba(255,255,255,0.02)' }}>
-              <h3 className="font-bold mb-3">{col.title} ({col.items.length})</h3>
+            <div key={col.id} style={{
+              flex: 1, minWidth: 320, display: 'flex', flexDirection: 'column',
+              background: 'var(--bg-raised)', borderRadius: 'var(--radius)', padding: 12
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                <span style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-ghost)', fontFamily: 'var(--font-body)', fontWeight: 500 }}>{col.title}</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-secondary)', background: 'var(--bg-surface)', borderRadius: 4, padding: '1px 6px' }}>{col.items.length}</span>
+              </div>
               <SortableContext items={col.items.map(i => i.id)} strategy={verticalListSortingStrategy}>
                 <div 
                   id={col.id} 
@@ -454,7 +468,7 @@ export default function ComplaintsKanban({ complaints }) {
                     <SortableComplaintCard key={c.id} complaint={c} />
                   ))}
                   {col.items.length === 0 && (
-                    <div style={{ height: '100%', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+                    <div style={{ height: '100%', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-ghost)', fontSize: 13 }}>
                       Drop here
                     </div>
                   )}

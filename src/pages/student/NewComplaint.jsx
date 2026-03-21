@@ -316,217 +316,217 @@ export default function NewComplaint() {
   if (!userDoc?.roomId) return null;
 
   return (
-    <div className="page" style={{ paddingBottom: '4rem' }}>
+    <div style={{ background: 'var(--bg-base)', minHeight: '100vh' }}>
       <Navbar />
-      <div className="center-page animation-fade-in" style={{ alignItems: 'flex-start', paddingTop: '2rem' }}>
-        <div className="auth-card" style={{ maxWidth: '600px', width: '100%' }}>
+      <div style={{ maxWidth: 560, margin: '32px auto', padding: '0 16px' }}>
+        <div style={{
+          background: 'var(--bg-surface)', border: '1px solid var(--border-v2)',
+          borderRadius: 'var(--radius)', padding: '28px 32px',
+          borderTop: '2px solid var(--violet)'
+        }}>
 
-          <div className="flex align-items-center justify-content-between mb-3 border-bottom pb-2">
-            <h1 className="auth-title m-0">Report Issue</h1>
-            <div style={{ background: 'rgba(255,255,255,0.1)', padding: '4px 12px', borderRadius: '999px', fontSize: '0.85rem' }}>
-              Locked: <strong>Room {userDoc.roomNumber}</strong>
+          {/* ── Header ────────────────────────────────────────── */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+            <h1 style={{ fontFamily: 'var(--font-heading)', fontWeight: 600, fontSize: 22, color: 'var(--text-primary)', letterSpacing: '-0.02em', margin: 0 }}>
+              Report Issue
+            </h1>
+            <div style={{
+              background: 'var(--bg-raised)', border: '1px solid var(--border-v2)',
+              borderRadius: 6, padding: '5px 12px', fontSize: 12,
+              color: 'var(--text-ghost)', fontFamily: 'var(--font-mono)',
+              display: 'flex', alignItems: 'center', gap: 6
+            }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+              Room {userDoc?.roomNumber}
             </div>
           </div>
 
-          {error && <div className="form-error">{error}</div>}
+          {/* ── Error ─────────────────────────────────────────── */}
+          {error && (
+            <div style={{
+              background: 'rgba(240,101,101,0.1)', border: '1px solid rgba(240,101,101,0.3)',
+              borderRadius: 'var(--radius-sm)', padding: '10px 14px',
+              color: 'var(--red)', fontSize: 12, marginBottom: 12
+            }}>{error}</div>
+          )}
 
-          {/* AI Banner */}
+          {/* ── AI Banners ────────────────────────────────────── */}
           {isAnalyzing && (
             <div style={{
-              padding: '10px 14px', borderRadius: '8px', marginBottom: '12px',
-              background: 'rgba(55,138,221,0.1)', border: '1px solid rgba(55,138,221,0.3)',
-              fontSize: '0.82rem', color: '#378ADD',
-              display: 'flex', alignItems: 'center', gap: '8px'
+              padding: '10px 14px', borderRadius: 'var(--radius-sm)', marginBottom: 16,
+              background: 'rgba(124,110,250,0.08)', border: '1px solid rgba(124,110,250,0.2)',
+              fontSize: 12, color: 'var(--text-secondary)',
+              display: 'flex', alignItems: 'center', gap: 8
             }}>
-              <span>⚡</span> AI is analyzing your complaint...
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" strokeWidth="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+              AI is analyzing your complaint...
             </div>
           )}
           {aiSuggestion && !isAnalyzing && (
             <div style={{
-              padding: '10px 14px', borderRadius: '8px', marginBottom: '12px',
-              background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)',
-              fontSize: '0.82rem', color: '#10b981',
+              padding: '10px 14px', borderRadius: 'var(--radius-sm)', marginBottom: 16,
+              background: 'rgba(124,110,250,0.08)', border: '1px solid rgba(124,110,250,0.2)',
+              fontSize: 12, color: 'var(--text-secondary)',
               display: 'flex', alignItems: 'center', justifyContent: 'space-between'
             }}>
-              <span>✓ AI filled the form — review and edit anything before submitting</span>
+              <span>AI suggested: <strong style={{ color: 'var(--violet)' }}>{aiSuggestion.title}</strong></span>
               <button type="button" onClick={() => setAiSuggestion(null)}
-                style={{ background: 'none', border: 'none',
-                  color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1rem' }}>✕</button>
+                style={{ background: 'none', border: 'none', color: 'var(--text-ghost)', cursor: 'pointer', fontSize: 14 }}>x</button>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <form onSubmit={handleSubmit}>
 
-            {/* Category */}
-            <div>
-              <label className="form-label">Category</label>
-              <div className="flex gap-2 flex-wrap">
+            {/* ── Category ──────────────────────────────────── */}
+            <div style={{ marginBottom: 20 }}>
+              <div className="section-label">Category</div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {CATEGORIES.map(c => (
-                  <button
-                    type="button"
-                    key={c}
-                    className={`btn btn-sm ${category === c ? 'btn-primary' : 'btn-outline'}`}
-                    onClick={() => setCategory(c)}
-                    style={{ borderRadius: '999px', padding: '0.4rem 1rem' }}
-                  >
-                    {c}
-                  </button>
+                  <button type="button" key={c} onClick={() => setCategory(c)}
+                    style={{
+                      background: category === c ? 'rgba(124,110,250,0.08)' : 'var(--bg-raised)',
+                      color: category === c ? 'var(--violet)' : 'var(--text-ghost)',
+                      border: category === c ? '1px solid rgba(124,110,250,0.35)' : '1px solid var(--border-v2)',
+                      borderLeft: category === c ? '2px solid var(--violet)' : undefined,
+                      borderRadius: 7, padding: '7px 14px', fontSize: 13,
+                      fontFamily: 'var(--font-body)', cursor: 'pointer',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >{c}</button>
                 ))}
               </div>
             </div>
 
-            {/* Title */}
-            <div>
-              <label className="form-label">Title</label>
+            {/* ── Title ─────────────────────────────────────── */}
+            <div style={{ marginBottom: 20 }}>
+              <div className="section-label">Title</div>
               <input
-                className="form-input"
+                value={title} onChange={e => setTitle(e.target.value)} maxLength={100} required
                 placeholder="Short description (e.g. Broken ceiling fan)"
-                value={title}
-                onChange={e => setTitle(e.target.value)}
-                maxLength={60}
-                required
+                style={{
+                  width: '100%', background: 'var(--bg-raised)', border: '1px solid var(--border-v2)',
+                  borderRadius: 'var(--radius-sm)', padding: '11px 14px', fontSize: 13,
+                  fontFamily: 'var(--font-body)', color: 'var(--text-primary)', outline: 'none',
+                  transition: 'border-color 0.2s ease'
+                }}
+                onFocus={e => e.target.style.borderColor = 'rgba(124,110,250,0.4)'}
+                onBlur={e => e.target.style.borderColor = 'var(--border-v2)'}
               />
+              <div style={{ fontSize: 12, color: 'var(--text-ghost)', textAlign: 'right', marginTop: 4, fontFamily: 'var(--font-mono)' }}>
+                {title.length}/100
+              </div>
             </div>
 
-            {/* Description & Voice */}
-            <div>
-              <label className="form-label mb-1">Details</label>
+            {/* ── Description ───────────────────────────────── */}
+            <div style={{ marginBottom: 20 }}>
+              <div className="section-label">Description</div>
 
-              {/* Voice section rewrite */}
-              <div style={{ marginBottom: '12px' }}>
-                {/* Language selector pills */}
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '10px' }}>
-                  {LANGUAGES.map(lang => (
-                    <button
-                      key={lang.label}
-                      type="button"
-                      onClick={() => setSelectedLang(lang)}
-                      style={{
-                        padding: '4px 12px', borderRadius: '20px', fontSize: '0.78rem',
-                        border: selectedLang.label === lang.label
-                          ? '1px solid #10b981' : '1px solid var(--border)',
-                        background: selectedLang.label === lang.label
-                          ? 'rgba(16,185,129,0.15)' : 'transparent',
-                        color: selectedLang.label === lang.label ? '#10b981' : 'var(--text-muted)',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      {lang.label}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Mic button */}
-                <button
-                  type="button"
-                  onClick={handleMicClick}
-                  disabled={isTranscribing}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '8px',
-                    padding: '6px 16px', borderRadius: '20px',
-                    border: '1px solid var(--border)',
-                    background: isRecording ? 'rgba(239,68,68,0.15)' : 'transparent',
-                    color: isRecording ? '#ef4444' : 'var(--text-muted)',
-                    cursor: 'pointer', fontSize: '0.85rem',
-                    animation: isRecording ? 'pulse 1.2s infinite' : 'none'
-                  }}
-                >
-                  {isTranscribing ? '⏳ Transcribing...'
-                    : isTranslating ? '🌐 Translating...'
-                    : isRecording ? '⏹ Stop Recording'
-                    : '🎤 Use Voice'}
-                </button>
-
-                {/* Firefox voice status */}
-                {!hasNativeSpeech && voiceBlob && (
-                  <div style={{ marginTop: '8px', fontSize: '0.78rem',
-                    color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span style={{ color: '#10b981' }}>✓ Voice recorded</span>
-                    — please type a brief description above
-                  </div>
-                )}
-                {!hasNativeSpeech && !voiceBlob && (
-                  <div style={{ marginTop: '6px', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                    Firefox: voice will be saved as audio attachment
-                  </div>
-                )}
-
-                {/* Translation toggle — shown when both versions exist and differ */}
-                {descriptionOriginal && descriptionTranslated && descriptionOriginal !== descriptionTranslated && (
-                  <div style={{
-                    marginTop: '10px', padding: '10px 12px', borderRadius: '8px',
-                    border: '1px solid var(--border)', fontSize: '0.8rem'
-                  }}>
-                    <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-                      {[false, true].map(isOrig => (
-                        <button
-                          key={String(isOrig)}
-                          type="button"
-                          onClick={() => setShowOriginal(isOrig)}
-                          style={{
-                            padding: '2px 10px', borderRadius: '12px', fontSize: '0.75rem',
-                            border: showOriginal === isOrig
-                              ? '1px solid #10b981' : '1px solid var(--border)',
-                            background: showOriginal === isOrig
-                              ? 'rgba(16,185,129,0.15)' : 'transparent',
-                            color: showOriginal === isOrig ? '#10b981' : 'var(--text-muted)',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          {isOrig ? `Original (${detectedLanguage})` : 'English'}
-                        </button>
-                      ))}
-                    </div>
-                    <div style={{ color: 'var(--text-muted)' }}>
-                      {showOriginal ? descriptionOriginal : descriptionTranslated}
-                    </div>
-                  </div>
-                )}
+              {/* Language pills */}
+              <div style={{ display: 'flex', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
+                {LANGUAGES.map(lang => (
+                  <button key={lang.label} type="button" onClick={() => setSelectedLang(lang)}
+                    style={{
+                      padding: '5px 10px', fontSize: 12, borderRadius: 7, cursor: 'pointer',
+                      background: selectedLang.label === lang.label ? 'rgba(124,110,250,0.08)' : 'var(--bg-raised)',
+                      border: selectedLang.label === lang.label ? '1px solid rgba(124,110,250,0.35)' : '1px solid var(--border-v2)',
+                      color: selectedLang.label === lang.label ? 'var(--violet)' : 'var(--text-ghost)',
+                      fontFamily: 'var(--font-body)', transition: 'all 0.2s ease'
+                    }}
+                  >{lang.label}</button>
+                ))}
               </div>
 
-              <textarea
-                className="form-input"
-                rows={4}
-                placeholder="Provide specific details about the issue..."
-                value={description}
-                onChange={e => setDescription(e.target.value)}
-                onBlur={handleDescriptionBlur}
-              />
+              {/* Mic button */}
+              <button type="button" onClick={handleMicClick} disabled={isTranscribing}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  padding: '8px 14px', borderRadius: 7, fontSize: 13,
+                  background: 'transparent',
+                  border: isRecording ? '1px solid var(--red)' : '1px solid var(--border-v2)',
+                  color: isRecording ? 'var(--red)' : 'var(--text-secondary)',
+                  cursor: 'pointer', fontFamily: 'var(--font-body)',
+                  marginBottom: 10, transition: 'all 0.2s ease'
+                }}
+              >
+                {isRecording && <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--red)', animation: 'pulse 1s infinite', display: 'inline-block' }} />}
+                {!isRecording && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="1" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0014 0"/><line x1="12" y1="17" x2="12" y2="21"/></svg>}
+                {isTranscribing ? 'Transcribing...' : isTranslating ? 'Translating...' : isRecording ? 'Recording...' : 'Use Voice'}
+              </button>
+
+              {/* Firefox fallback hints */}
+              {!hasNativeSpeech && voiceBlob && (
+                <div style={{ fontSize: 12, color: 'var(--green)', marginBottom: 8 }}>Voice recorded — type a brief description above</div>
+              )}
+
+              {/* Translation toggle */}
+              {descriptionOriginal && descriptionTranslated && descriptionOriginal !== descriptionTranslated && (
+                <button type="button" onClick={() => setShowOriginal(!showOriginal)}
+                  style={{ background: 'none', border: 'none', color: 'var(--violet)', fontSize: 12, cursor: 'pointer', marginBottom: 8, padding: 0, fontFamily: 'var(--font-body)' }}>
+                  {showOriginal ? 'Show translated' : `Show original (${detectedLanguage})`}
+                </button>
+              )}
+
+              {/* Textarea */}
+              {isTranslating ? (
+                <div className="skeleton" style={{ height: 60, width: '100%' }} />
+              ) : (
+                <textarea
+                  value={description} onChange={e => setDescription(e.target.value)} onBlur={handleDescriptionBlur}
+                  rows={4} placeholder="Provide specific details about the issue..."
+                  style={{
+                    width: '100%', background: 'var(--bg-raised)', border: '1px solid var(--border-v2)',
+                    borderRadius: 'var(--radius-sm)', padding: '11px 14px', fontSize: 13,
+                    fontFamily: 'var(--font-body)', color: 'var(--text-primary)', outline: 'none',
+                    minHeight: 100, resize: 'vertical', transition: 'border-color 0.2s ease'
+                  }}
+                  onFocus={e => e.target.style.borderColor = 'rgba(124,110,250,0.4)'}
+                />
+              )}
             </div>
 
-            {/* File Uploads */}
-            <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px dashed var(--border)', borderRadius: '8px', padding: '1rem' }}>
-              <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', cursor: 'pointer' }}>
-                📎 Attach Media
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*,video/*,audio/*"
-                  onChange={handleFileChange}
-                  style={{ display: 'none' }}
-                />
-                <span className="btn btn-sm btn-outline">Browse</span>
+            {/* ── Media ─────────────────────────────────────── */}
+            <div style={{ marginBottom: 24 }}>
+              <div className="section-label">Attach Media</div>
+              <label style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+                border: '1.5px dashed #252A38', borderRadius: 10, padding: 24,
+                textAlign: 'center', cursor: 'pointer', transition: 'border-color 0.2s ease'
+              }}
+                onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-hover)'}
+                onMouseLeave={e => e.currentTarget.style.borderColor = '#252A38'}
+              >
+                <input type="file" multiple accept="image/*,video/*,audio/*" onChange={handleFileChange} style={{ display: 'none' }} />
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-ghost)" strokeWidth="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+                <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>
+                  Attach Media <span style={{ color: 'var(--violet)', textDecoration: 'underline' }}>Browse</span>
+                </span>
+                <span style={{ color: 'var(--text-ghost)', fontSize: 12, fontFamily: 'var(--font-mono)' }}>
+                  Max 50MB per file. Images, videos, audio.
+                </span>
               </label>
-              <p className="text-xs text-muted mb-2">Max 50MB per file. Images, short videos, or audio.</p>
 
               {files.length > 0 && (
-                <div className="flex gap-2 flex-wrap mt-2">
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
                   {files.map((f, idx) => {
                     const isImg = f.type.startsWith('image/');
                     return (
-                      <div key={idx} style={{ position: 'relative', width: 64, height: 64, borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--border)', background: '#1f2937' }}>
+                      <div key={idx} style={{
+                        position: 'relative', width: 64, height: 64, borderRadius: 8,
+                        background: 'var(--bg-raised)', border: '1px solid var(--border-v2)', overflow: 'hidden'
+                      }}>
                         {isImg ? (
                           <img src={URL.createObjectURL(f)} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         ) : (
-                          <div className="flex align-items-center justify-content-center" style={{ width: '100%', height: '100%', fontSize: '0.7rem', color: '#9ca3af', textAlign: 'center', padding: 2, wordBreak: 'break-all' }}>
+                          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: 'var(--text-ghost)', wordBreak: 'break-all', padding: 4 }}>
                             {f.name.split('.').pop()}
                           </div>
                         )}
-                        <button
-                          type="button"
-                          onClick={() => removeFile(idx)}
-                          style={{ position: 'absolute', top: 2, right: 2, background: 'rgba(0,0,0,0.7)', color: 'white', border: 'none', borderRadius: '50%', width: 18, height: 18, fontSize: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-                        >✕</button>
+                        <button type="button" onClick={() => removeFile(idx)}
+                          style={{
+                            position: 'absolute', top: -4, right: -4, width: 16, height: 16, borderRadius: '50%',
+                            background: 'var(--red)', color: '#fff', border: 'none', fontSize: 10,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
+                          }}>x</button>
                       </div>
                     );
                   })}
@@ -534,41 +534,46 @@ export default function NewComplaint() {
               )}
             </div>
 
-            {/* Priority */}
-            <div>
-              <label className="form-label">Priority Level</label>
-              <div className="flex gap-2">
-                {PRIORITIES.map(p => (
-                  <button
-                    type="button"
-                    key={p}
-                    className="btn btn-sm flex-1"
-                    style={{
-                      border: priority === p ? 'none' : '1px solid var(--border)',
-                      background: priority === p
-                        ? (p === 'low' ? '#10b981' : p === 'medium' ? '#f59e0b' : '#ef4444')
-                        : 'transparent',
-                      color: priority === p ? '#fff' : 'var(--text-muted)'
-                    }}
-                    onClick={() => setPriority(p)}
-                  >
-                    {p.charAt(0).toUpperCase() + p.slice(1)}
-                  </button>
-                ))}
+            {/* ── Priority ──────────────────────────────────── */}
+            <div style={{ marginBottom: 24 }}>
+              <div className="section-label">Priority Level</div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {PRIORITIES.map(p => {
+                  const colors = { low: 'var(--green)', medium: 'var(--amber)', high: 'var(--red)' };
+                  const isActive = priority === p;
+                  return (
+                    <button type="button" key={p} onClick={() => setPriority(p)}
+                      style={{
+                        flex: 1, padding: '8px 14px', borderRadius: 7, fontSize: 13,
+                        fontFamily: 'var(--font-body)', cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        background: isActive ? `${colors[p]}15` : 'var(--bg-raised)',
+                        border: isActive ? `1px solid ${colors[p]}40` : '1px solid var(--border-v2)',
+                        color: isActive ? colors[p] : 'var(--text-ghost)'
+                      }}
+                    >{p.charAt(0).toUpperCase() + p.slice(1)}</button>
+                  );
+                })}
               </div>
             </div>
 
-            <button
-              type="submit"
-              className="btn btn-primary btn-full mt-2"
-              disabled={isSubmitting || !title.trim() || !category}
-              style={{ padding: '1rem', fontSize: '1.1rem' }}
+            {/* ── Submit ────────────────────────────────────── */}
+            <button type="submit" disabled={isSubmitting || !title.trim() || !category}
+              style={{
+                width: '100%', background: 'var(--violet)', color: '#fff', border: 'none',
+                borderRadius: 9, padding: 12, fontSize: 13, fontFamily: 'var(--font-heading)',
+                fontWeight: 500, cursor: 'pointer', transition: 'opacity 0.2s ease',
+                opacity: (isSubmitting || !title.trim() || !category) ? 0.5 : 1,
+                marginTop: 8
+              }}
             >
-              {isSubmitting ? (submitStatus || 'Uploading & Submitting...') : 'Submit Complaint'}
+              {isSubmitting ? (submitStatus || 'Submitting...') : 'Submit Complaint'}
             </button>
+            <div style={{ textAlign: 'center', marginTop: 8, fontSize: 12, color: 'var(--text-ghost)', fontFamily: 'var(--font-mono)' }}>
+              Warden will be notified immediately
+            </div>
 
           </form>
-
         </div>
       </div>
     </div>
