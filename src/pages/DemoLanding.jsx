@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, setPersistence, browserSessionPersistence } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
 import { useAuth } from '../context/AuthContext';
@@ -17,6 +17,7 @@ export default function DemoLanding() {
     const password = role === 'student' ? 'DemoStudent123' : 'DemoWarden123';
 
     try {
+      await setPersistence(auth, browserSessionPersistence);
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const userSnap = await getDoc(doc(db, 'users', userCredential.user.uid));
 
