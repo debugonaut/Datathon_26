@@ -70,7 +70,7 @@ async function run() {
   const studentSnap = await getDoc(doc(db, 'users', studentUid));
   const wardenSnap = await getDoc(doc(db, 'users', wardenUid));
 
-  if (studentSnap.exists() && wardenSnap.exists()) {
+  if (studentSnap.exists() && wardenSnap.exists() && false) { // Force re-seed for hierarchy fix
     const sData = studentSnap.data();
     const wData = wardenSnap.data();
     if (sData.isProfileComplete && sData.isRegistered && sData.roomId && wData.isProfileComplete && wData.hostelId) {
@@ -134,16 +134,17 @@ async function run() {
         hostelId,
         maxOccupants: 2,
         currentOccupants: is204 ? 1 : 0,
-        occupants: is204 ? [{ uid: studentUid, role: 'student' }] : [],
+        occupants: is204 ? [{ uid: studentUid, name: 'Demo Student' }] : [],
         score: is204 ? 55 : 100
       };
 
-      await setDoc(doc(db, 'rooms', roomId), rData);
+      const roomRef = doc(db, 'hostels', hostelId, 'blocks', blockId, 'buildings', buildingId, 'floors', floorId, 'rooms', roomId);
+      await setDoc(roomRef, rData);
       roomDocRefs.push(roomId);
 
       if (is204) {
         console.log('Adding room history aliases to 204...');
-        await setDoc(doc(db, 'rooms', roomId, 'history', 'hist1'), {
+        await setDoc(doc(roomRef, 'history', 'hist1'), {
           title: 'AC totally broken',
           category: 'Electrical',
           priority: 'high',
@@ -152,7 +153,7 @@ async function run() {
           createdAt: Timestamp.fromDate(new Date(Date.now() - 90 * 86400000)),
           resolvedAt: Timestamp.fromDate(new Date(Date.now() - 88 * 86400000))
         });
-        await setDoc(doc(db, 'rooms', roomId, 'history', 'hist2'), {
+        await setDoc(doc(roomRef, 'history', 'hist2'), {
           title: 'Bed frame squeaky missing screws',
           category: 'Furniture',
           priority: 'low',
