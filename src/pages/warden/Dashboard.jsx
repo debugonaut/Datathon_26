@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 import { useAuth } from '../../context/AuthContext';
 import { logoutUser } from '../../firebase/auth';
@@ -14,6 +14,8 @@ import ComplaintsList from '../../components/warden/ComplaintsList';
 import WardenQRDirectory from '../../components/warden/WardenQRDirectory';
 import OverviewOccupancy from '../../components/warden/OverviewOccupancy';
 import WardenAnalytics from '../../components/warden/WardenAnalytics';
+import clusterComplaints from '../../utils/clusterComplaints';
+import { getSLAStatus } from '../../utils/sla';
 
 export default function WardenDashboard() {
   const { user, userDoc } = useAuth();
