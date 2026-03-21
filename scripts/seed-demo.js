@@ -76,7 +76,7 @@ async function run() {
     if (sData.isProfileComplete && sData.isRegistered && sData.roomId && wData.isProfileComplete && wData.hostelId && sData.blockName) {
       // Verify hierarchy is correctly nested before skipping
       const roomCheck = await getDoc(doc(db, 'hostels', hostelId, 'blocks', blockId, 'buildings', buildingId, 'floors', 'demo-floor-2', 'rooms', 'demo-room-204'));
-      if (roomCheck.exists()) {
+      if (roomCheck.exists() && false) { // Forced update
         console.log('✅ Demo data fully populated with correct hierarchy. Exiting early.');
         process.exit(0);
       }
