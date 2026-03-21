@@ -88,43 +88,53 @@ export default function WardenDashboard() {
   );
 
   const TABS = [
-    { id: 'overview', label: '🏠 Overview' },
-    { id: 'analytics', label: '📊 Analytics' },
-    { id: 'complaints', label: '🛠️ Complaints' },
-    { id: 'qrcodes', label: '🖨️ Print QRs' },
-    { id: 'announcements', label: '📢 Announcements' },
-    { id: '3dview', label: '🏢 3D Visualizer' },
+    { id: 'overview', label: 'Overview' },
+    { id: 'analytics', label: 'Analytics' },
+    { id: 'complaints', label: 'Complaints' },
+    { id: 'qrcodes', label: 'QR Codes' },
+    { id: 'announcements', label: 'Announcements' },
+    { id: '3dview', label: '3D Visualizer' },
   ];
 
   return (
-    <div className="page">
+    <div style={{ background: 'var(--bg-base)', minHeight: '100vh' }}>
       <Navbar />
-      <div className="dashboard">
-        <div className="dashboard-header">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
-            <div>
-              <h1>{hostel?.name}</h1>
-              <p className="text-muted">{hostel?.collegeName} · Warden: {userDoc?.name}</p>
-            </div>
-            <button className="btn btn-outline" onClick={() => navigate('/warden/setup')}>
-              ✏️ Map Hostel
-            </button>
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 24px' }}>
+
+        {/* Dashboard Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+          <div>
+            <h1 style={{ fontFamily: 'var(--font-heading)', fontWeight: 600, fontSize: 20, letterSpacing: '-0.02em', margin: 0, color: 'var(--text-primary)' }}>{hostel?.name}</h1>
+            <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0', fontSize: 13 }}>{hostel?.collegeName} · Warden: {userDoc?.name}</p>
           </div>
+          <button onClick={() => navigate('/warden/setup')}
+            style={{
+              background: 'transparent', border: '1px solid var(--border-v2)',
+              borderRadius: 7, padding: '7px 14px', fontSize: 13,
+              color: 'var(--text-secondary)', cursor: 'pointer', fontFamily: 'var(--font-body)',
+              transition: 'border-color 0.2s ease'
+            }}
+            onMouseEnter={e => e.target.style.borderColor = 'var(--border-hover)'}
+            onMouseLeave={e => e.target.style.borderColor = 'var(--border-v2)'}
+          >Edit Hostel</button>
         </div>
 
-        {/* Custom Tabs Navigation */}
-        <div style={{ borderBottom: '1px solid var(--border)', display: 'flex', gap: '2rem', marginBottom: '2rem', overflowX: 'auto', whiteSpace: 'nowrap' }}>
+        {/* Tab Bar */}
+        <div style={{
+          background: 'var(--bg-surface)', borderBottom: '1px solid var(--border-v2)',
+          display: 'flex', gap: 0, marginBottom: 24, overflowX: 'auto', scrollbarWidth: 'none',
+          borderRadius: '8px 8px 0 0'
+        }}>
           {TABS.map(t => (
-            <div 
-              key={t.id} 
+            <div
+              key={t.id}
               onClick={() => setActiveTab(t.id)}
               style={{
-                padding: '0.75rem 0',
-                fontWeight: 600,
-                cursor: 'pointer',
-                color: activeTab === t.id ? 'var(--primary)' : 'var(--text-muted)',
-                borderBottom: activeTab === t.id ? '3px solid var(--primary)' : '3px solid transparent',
-                transition: 'all 0.2s'
+                padding: '12px 20px', fontWeight: 500, cursor: 'pointer',
+                fontSize: 13, fontFamily: 'var(--font-body)', whiteSpace: 'nowrap',
+                color: activeTab === t.id ? 'var(--text-primary)' : 'var(--text-secondary)',
+                borderBottom: activeTab === t.id ? '2px solid var(--violet)' : '2px solid transparent',
+                transition: 'all 0.2s ease'
               }}
             >
               {t.label}
@@ -132,47 +142,62 @@ export default function WardenDashboard() {
           ))}
         </div>
 
-        {/* Tab Content */}
+        {/* ── Overview Tab ─────────────────────────────────── */}
         {activeTab === 'overview' && (
-          <div className="animation-fade-in">
-            <div className="stats-grid">
+          <div>
+            {/* Stats Strip */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 12, marginBottom: 20 }}>
               {[
-                { icon: '📦', label: 'Blocks', value: stats.blocks },
-                { icon: '🏢', label: 'Buildings', value: stats.buildings },
-                { icon: '🪜', label: 'Floors', value: stats.floors },
-                { icon: '🚪', label: 'Rooms', value: stats.rooms },
-              ].map((s) => (
-                <div key={s.label} className="stat-card">
-                  <div className="stat-icon">{s.icon}</div>
-                  <div className="stat-label">{s.label}</div>
-                  <div className="stat-value">{s.value}</div>
+                { label: 'Total', value: complaints.length, accent: 'var(--violet)' },
+                { label: 'Open', value: complaints.filter(c => c.status === 'todo').length, accent: 'var(--red)' },
+                { label: 'In Progress', value: complaints.filter(c => c.status === 'in_progress').length, accent: 'var(--amber)' },
+                { label: 'Resolved', value: complaints.filter(c => c.status === 'resolved').length, accent: 'var(--green)' },
+                { label: 'Rooms', value: stats.rooms, accent: 'var(--blue)' },
+              ].map(s => (
+                <div key={s.label} className="data-card" style={{ borderTop: `2px solid ${s.accent}` }}>
+                  <div className="section-label">{s.label}</div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 24, fontWeight: 600, color: 'var(--text-primary)' }}>{s.value}</div>
                 </div>
               ))}
             </div>
 
-            <div className="card mt-3" style={{ maxWidth: 700 }}>
-              <h3 style={{ marginBottom: '1rem', fontWeight: 700 }}>📋 Warden Details</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                <div className="info-row">
-                  <span className="info-icon">👤</span>
-                  <div>
-                    <div className="info-label">Name</div>
-                    <div className="info-value">{userDoc?.name}</div>
+            {/* Two Column Layout */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 16 }}>
+              {/* Left — Warden Details + Occupancy */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div className="data-card" style={{ borderTop: '2px solid var(--violet)' }}>
+                  <div className="section-label" style={{ marginBottom: 12 }}>Warden Details</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    {[
+                      { label: 'Name', value: userDoc?.name },
+                      { label: 'Email', value: userDoc?.email },
+                      { label: 'Hostel', value: hostel?.name },
+                      { label: 'College', value: hostel?.collegeName },
+                    ].map(item => (
+                      <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{item.label}</span>
+                        <span style={{ fontSize: 13, color: 'var(--text-primary)', fontFamily: 'var(--font-body)' }}>{item.value}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
-                <div className="info-row">
-                  <span className="info-icon">📧</span>
-                  <div>
-                    <div className="info-label">Email</div>
-                    <div className="info-value">{userDoc?.email}</div>
-                  </div>
-                </div>
+                <OverviewOccupancy hostelId={hostel.id} />
               </div>
-            </div>
 
-            <div className="mt-3">
-              <h3 style={{ marginBottom: '1rem', fontWeight: 700 }}>🛏️ Room Occupancy</h3>
-              <OverviewOccupancy hostelId={hostel.id} />
+              {/* Right — Complaint Summary */}
+              <div className="data-card" style={{ borderTop: '2px solid var(--amber)', height: 'fit-content' }}>
+                <div className="section-label" style={{ marginBottom: 16 }}>Complaint Summary</div>
+                {[
+                  { label: 'Open', value: complaints.filter(c => c.status === 'todo').length, color: 'var(--red)' },
+                  { label: 'In Progress', value: complaints.filter(c => c.status === 'in_progress').length, color: 'var(--amber)' },
+                  { label: 'Resolved', value: complaints.filter(c => c.status === 'resolved').length, color: 'var(--green)' },
+                ].map(row => (
+                  <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                    <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{row.label}</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 20, fontWeight: 600, color: row.color }}>{row.value}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
@@ -183,57 +208,52 @@ export default function WardenDashboard() {
       {activeTab === 'qrcodes' && <WardenQRDirectory hostelId={hostel.id} />}
 
       {activeTab === 'complaints' && (
-        <div className="animation-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', height: '100%', minHeight: '600px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minHeight: 600 }}>
           
-          {/* Top Control Bar */}
-          <div className="card" style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', justifyContent: 'space-between', alignItems: 'center', padding: '1rem' }}>
+          {/* Control Bar */}
+          <div className="data-card" style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'space-between', alignItems: 'center' }}>
             
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button 
-                className={`btn btn-sm ${viewMode === 'kanban' ? 'btn-primary' : 'btn-outline'}`} 
-                onClick={() => setViewMode('kanban')}
-              >
-                Kanban Board
-              </button>
-              <button 
-                className={`btn btn-sm ${viewMode === 'list' ? 'btn-primary' : 'btn-outline'}`}
-                onClick={() => setViewMode('list')}
-              >
-                List View
-              </button>
+            <div style={{ display: 'flex', gap: 6 }}>
+              {['kanban', 'list'].map(mode => (
+                <button key={mode}
+                  onClick={() => setViewMode(mode)}
+                  style={{
+                    padding: '6px 14px', borderRadius: 20, fontSize: 12,
+                    background: viewMode === mode ? 'var(--violet)' : 'var(--bg-raised)',
+                    color: viewMode === mode ? '#fff' : 'var(--text-secondary)',
+                    border: 'none', cursor: 'pointer', fontFamily: 'var(--font-body)',
+                    transition: 'all 0.2s ease'
+                  }}
+                >{mode === 'kanban' ? 'Kanban' : 'List'}</button>
+              ))}
             </div>
 
-            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-              <select className="form-input" style={{ width: 'auto', padding: '0.4rem', outline: 'none' }} value={filters.building} onChange={e => setFilters({...filters, building: e.target.value})}>
-                <option value="">All Buildings</option>
-                {[...new Set(complaints.map(c => c.buildingName))].map(b => (
-                  <option key={b} value={b}>{b}</option>
-                ))}
-              </select>
-              <select className="form-input" style={{ width: 'auto', padding: '0.4rem', outline: 'none' }} value={filters.category} onChange={e => setFilters({...filters, category: e.target.value})}>
-                <option value="">All Categories</option>
-                {['Plumbing', 'Electrical', 'Cleaning', 'Furniture', 'Other'].map(c => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-              <select className="form-input" style={{ width: 'auto', padding: '0.4rem', outline: 'none' }} value={filters.priority} onChange={e => setFilters({...filters, priority: e.target.value})}>
-                <option value="">All Priorities</option>
-                <option value="high">High</option>
-                <option value="medium">Medium</option>
-                <option value="low">Low</option>
-              </select>
-              {viewMode === 'list' && (
-                <select className="form-input" style={{ width: 'auto', padding: '0.4rem', outline: 'none' }} value={filters.status} onChange={e => setFilters({...filters, status: e.target.value})}>
-                  <option value="">All Statuses</option>
-                  <option value="todo">To Do</option>
-                  <option value="in_progress">In Progress</option>
-                  <option value="resolved">Resolved</option>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {[
+                { key: 'building', label: 'All Buildings', options: [...new Set(complaints.map(c => c.buildingName))] },
+                { key: 'category', label: 'All Categories', options: ['Plumbing', 'Electrical', 'Cleaning', 'Furniture', 'Other'] },
+                { key: 'priority', label: 'All Priorities', options: ['high', 'medium', 'low'] },
+              ].map(sel => (
+                <select key={sel.key}
+                  value={filters[sel.key]}
+                  onChange={e => setFilters({...filters, [sel.key]: e.target.value})}
+                  style={{
+                    background: 'var(--bg-raised)', border: '1px solid var(--border-v2)',
+                    borderRadius: 7, padding: '7px 12px', color: 'var(--text-primary)',
+                    fontSize: 13, outline: 'none', fontFamily: 'var(--font-body)'
+                  }}
+                >
+                  <option value="">{sel.label}</option>
+                  {sel.options.map(o => <option key={o} value={o}>{o}</option>)}
                 </select>
-              )}
+              ))}
               {Object.values(filters).some(v => v !== '') && (
-                <button className="btn btn-sm" style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-muted)' }} onClick={() => setFilters({ building: '', category: '', priority: '', status: '' })}>
-                  Clear
-                </button>
+                <button onClick={() => setFilters({ building: '', category: '', priority: '', status: '' })}
+                  style={{
+                    background: 'transparent', border: '1px solid var(--border-v2)',
+                    borderRadius: 7, padding: '6px 12px', fontSize: 12,
+                    color: 'var(--text-ghost)', cursor: 'pointer'
+                  }}>Clear</button>
               )}
             </div>
           </div>
