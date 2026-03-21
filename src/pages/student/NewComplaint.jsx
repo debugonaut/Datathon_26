@@ -3,8 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 import { useAuth } from '../../context/AuthContext';
 import { createComplaint } from '../../firebase/firestore';
-import { storage } from '../../firebase/config';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { analyzeComplaint } from '../../utils/aiComplaintAnalyzer';
 
 const CATEGORIES = ['Plumbing', 'Electrical', 'Cleaning', 'Furniture', 'Other'];
@@ -242,18 +240,24 @@ export default function NewComplaint() {
     setError('');
 
     try {
-      const mediaPaths = [];
       const uploadPromises = files.map(async (file, index) => {
-        const timestamp = Date.now();
-        const extension = file.name ? (file.name.split('.').pop() || '') : 'blob';
-        const fileName = `${timestamp}_${index}_${Math.random().toString(36).substring(7)}.${extension}`;
-        const filePath = `complaints/${userDoc.hostelId}/${userDoc.roomId}/${fileName}`;
-        
-        mediaPaths.push(filePath);
         setSubmitStatus(`Uploading media ${index + 1}/${files.length}...`);
-        const storageRef = ref(storage, filePath);
-        const snapshot = await uploadBytes(storageRef, file);
-        return getDownloadURL(snapshot.ref);
+        
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', 'aadesh'); // User provided preset
+
+        const res = await fetch('https://api.cloudinary.com/v1_1/dgqwct6f2/auto/upload', {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (!res.ok) {
+          throw new Error(`Media upload failed (${res.status})`);
+        }
+        
+        const data = await res.json();
+        return data.secure_url;
       });
 
       const mediaUrls = await Promise.all(uploadPromises);
@@ -282,7 +286,7 @@ export default function NewComplaint() {
         category,
         priority,
         mediaUrls,
-        mediaPaths,
+        mediaPaths: [], // Retaining empty array for schema compatibility
         mediaTypes,
         acknowledgedAt: null,
         estimatedResolutionAt: null,

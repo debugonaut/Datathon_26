@@ -17,8 +17,7 @@ import {
   arrayRemove,
   Timestamp,
 } from 'firebase/firestore';
-import { db, storage } from './config';
-import { ref, deleteObject } from 'firebase/storage';
+import { db } from './config';
 
 // ─── Hostel ─────────────────────────────────────────────────────────────────
 export const createHostel = async (wardenId, name, collegeName) => {
@@ -280,20 +279,12 @@ export const updateComplaintStatus = async (complaint, newStatus) => {
   if (complaint.status === 'todo' && newStatus === 'in_progress') {
     updateData.acknowledgedAt = serverTimestamp();
     
-    // Deletion logic
-    if (complaint.mediaPaths && complaint.mediaPaths.length > 0) {
-      const deletePromises = complaint.mediaPaths.map(path => {
-        const fileRef = ref(storage, path);
-        return deleteObject(fileRef).catch(err => {
-          console.warn(`Failed to delete ${path}:`, err);
-        });
-      });
-      await Promise.all(deletePromises);
-      
+    // Deletion logic (Cloudinary Migration: Just scrub the links from the DB)
+    if (complaint.mediaUrls && complaint.mediaUrls.length > 0) {
       updateData.mediaUrls = [];
       updateData.mediaPaths = [];
       updateData.internalNotes = arrayUnion({
-        text: "System: Original media files deleted upon acknowledgment to optimize storage.",
+        text: "System: Original media attachments scrubbed from complaint view upon acknowledgment to protect privacy.",
         createdAt: Timestamp.now(),
         wardenName: "System"
       });
