@@ -43,6 +43,7 @@ function timeAgo(date) {
 
 const SortableComplaintCard = ({ complaint }) => {
   const { userDoc } = useAuth();
+  const [isProcessing, setIsProcessing] = useState(false);
   const {
     attributes,
     listeners,
@@ -62,6 +63,19 @@ const SortableComplaintCard = ({ complaint }) => {
   const [showNotes, setShowNotes] = useState(false);
   const [newNote, setNewNote] = useState('');
   const [showingOriginal, setShowingOriginal] = useState(false);
+
+  const handleAcknowledge = async (e) => {
+    e.stopPropagation();
+    setIsProcessing(true);
+    try {
+      await updateComplaintStatus(complaint, 'in_progress');
+    } catch (err) {
+      console.error('Acknowledgment failed:', err);
+      alert('Failed to acknowledge complaint: ' + err.message);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   return (
     <div 
@@ -164,20 +178,17 @@ const SortableComplaintCard = ({ complaint }) => {
         {/* Acknowledge Button */}
         {!complaint.acknowledgedAt && complaint.status === 'todo' && !complaint.withdrawnAt && (
           <button
-            onPointerDown={async (e) => {
-              e.stopPropagation();
-              await updateDoc(doc(db, 'complaints', complaint.id), {
-                acknowledgedAt: Timestamp.now(),
-                status: 'in_progress'
-              });
-            }}
+            onPointerDown={handleAcknowledge}
+            disabled={isProcessing}
             style={{
               marginBottom: '8px', width: '100%', padding: '5px',
-              background: 'rgba(55,138,221,0.12)', border: '1px solid rgba(55,138,221,0.3)',
-              borderRadius: '6px', color: '#378ADD', fontSize: '0.78rem', cursor: 'pointer', fontWeight: 600
+              background: isProcessing ? 'rgba(255,255,255,0.05)' : 'rgba(55,138,221,0.12)', 
+              border: isProcessing ? '1px solid var(--border)' : '1px solid rgba(55,138,221,0.3)',
+              borderRadius: '6px', color: isProcessing ? 'var(--text-muted)' : '#378ADD', 
+              fontSize: '0.78rem', cursor: isProcessing ? 'not-allowed' : 'pointer', fontWeight: 600
             }}
           >
-            ✓ Acknowledge
+            {isProcessing ? '⏳ Cleaning up media...' : '✓ Acknowledge'}
           </button>
         )}
         {complaint.acknowledgedAt && complaint.status === 'todo' && (

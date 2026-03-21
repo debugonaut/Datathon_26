@@ -242,12 +242,14 @@ export default function NewComplaint() {
     setError('');
 
     try {
+      const mediaPaths = [];
       const uploadPromises = files.map(async (file, index) => {
         const timestamp = Date.now();
         const extension = file.name ? (file.name.split('.').pop() || '') : 'blob';
         const fileName = `${timestamp}_${index}_${Math.random().toString(36).substring(7)}.${extension}`;
         const filePath = `complaints/${userDoc.hostelId}/${userDoc.roomId}/${fileName}`;
         
+        mediaPaths.push(filePath);
         setSubmitStatus(`Uploading media ${index + 1}/${files.length}...`);
         const storageRef = ref(storage, filePath);
         const snapshot = await uploadBytes(storageRef, file);
@@ -280,6 +282,7 @@ export default function NewComplaint() {
         category,
         priority,
         mediaUrls,
+        mediaPaths,
         mediaTypes,
         acknowledgedAt: null,
         estimatedResolutionAt: null,

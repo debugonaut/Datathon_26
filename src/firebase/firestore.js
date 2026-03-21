@@ -15,8 +15,10 @@ import {
   runTransaction,
   arrayUnion,
   arrayRemove,
+  Timestamp,
 } from 'firebase/firestore';
-import { db } from './config';
+import { db, storage } from './config';
+import { ref, deleteObject } from 'firebase/storage';
 
 // ─── Hostel ─────────────────────────────────────────────────────────────────
 export const createHostel = async (wardenId, name, collegeName) => {
@@ -263,7 +265,7 @@ export const createComplaint = async (data) => {
 };
 
 export const updateComplaintStatus = async (complaint, newStatus) => {
-  if (complaint.status === newStatus) return; // redundant
+  if (complaint.status === newStatus) return;
   
   const batch = writeBatch(db);
   const complaintRef = doc(db, 'complaints', complaint.id);
@@ -273,6 +275,31 @@ export const updateComplaintStatus = async (complaint, newStatus) => {
     updatedAt: serverTimestamp()
   };
   
+  // ── AUTO-DELETION ON ACKNOWLEDGMENT ───────────────────────────────────
+  // Acknowledge = move from todo to in_progress
+  if (complaint.status === 'todo' && newStatus === 'in_progress') {
+    updateData.acknowledgedAt = serverTimestamp();
+    
+    // Deletion logic
+    if (complaint.mediaPaths && complaint.mediaPaths.length > 0) {
+      const deletePromises = complaint.mediaPaths.map(path => {
+        const fileRef = ref(storage, path);
+        return deleteObject(fileRef).catch(err => {
+          console.warn(`Failed to delete ${path}:`, err);
+        });
+      });
+      await Promise.all(deletePromises);
+      
+      updateData.mediaUrls = [];
+      updateData.mediaPaths = [];
+      updateData.internalNotes = arrayUnion({
+        text: "System: Original media files deleted upon acknowledgment to optimize storage.",
+        createdAt: Timestamp.now(),
+        wardenName: "System"
+      });
+    }
+  }
+
   const wasOpen = complaint.status !== 'resolved';
   const isNowResolved = newStatus === 'resolved';
 
@@ -285,7 +312,7 @@ export const updateComplaintStatus = async (complaint, newStatus) => {
   if (wasOpen && isNowResolved) {
     scoreChange = penalty; // restore points
     updateData.resolvedAt = serverTimestamp();
-  } else if (!wasOpen && !isNowResolved) {
+  } else if (!wasOpen && !isNowResolved && newStatus !== 'todo') {
     scoreChange = -penalty; // deduct points again
     updateData.resolvedAt = null;
   }
