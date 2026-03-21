@@ -17,7 +17,7 @@ envContent.split('\n').forEach(line => {
 
 import { initializeApp } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
-import { getFirestore, collection, doc, setDoc, getDocs, query, where, Timestamp } from 'firebase/firestore';
+import { getFirestore, collection, doc, setDoc, getDoc, getDocs, query, where, Timestamp } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: env.VITE_FIREBASE_API_KEY,
@@ -64,6 +64,40 @@ async function run() {
   const hostelId = 'demo-hostel-1';
   const blockId = 'demo-block-A';
   const buildingId = 'demo-building-A1';
+  const room204Id = 'demo-room-204';
+
+  console.log('Checking existing user profiles...');
+  const studentSnap = await getDoc(doc(db, 'users', studentUid));
+  const wardenSnap = await getDoc(doc(db, 'users', wardenUid));
+
+  if (studentSnap.exists() && wardenSnap.exists()) {
+    const sData = studentSnap.data();
+    const wData = wardenSnap.data();
+    if (sData.isProfileComplete && sData.isRegistered && sData.roomId && wData.isProfileComplete && wData.hostelId) {
+      console.log('✅ Demo users already fully populated. Exiting early (idempotent skip).');
+      process.exit(0);
+    }
+  }
+
+  console.log('Overwriting/Seeding user profiles...');
+  await setDoc(doc(db, 'users', wardenUid), {
+    role: 'warden',
+    name: 'Demo Warden',
+    email: WARDEN_EMAIL,
+    hostelId: hostelId,
+    isProfileComplete: true
+  });
+
+  await setDoc(doc(db, 'users', studentUid), {
+    role: 'student',
+    name: 'Demo Student',
+    email: STUDENT_EMAIL,
+    PRN: '210101120001',
+    isProfileComplete: true,
+    isRegistered: true,
+    roomId: room204Id,
+    hostelId, blockId, buildingId, floorId: 'demo-floor-2', roomNumber: '204'
+  });
   
   console.log('Seeding hostel hierarchy...');
   // Ensure hostel exists
@@ -80,7 +114,6 @@ async function run() {
 
   // Floors & Rooms
   const roomDocRefs = [];
-  let room204Id = null;
 
   for (let f = 1; f <= 3; f++) {
     const floorId = `demo-floor-${f}`;
@@ -107,7 +140,6 @@ async function run() {
 
       await setDoc(doc(db, 'rooms', roomId), rData);
       roomDocRefs.push(roomId);
-      if (is204) room204Id = roomId;
 
       if (is204) {
         console.log('Adding room history aliases to 204...');
@@ -132,26 +164,6 @@ async function run() {
       }
     }
   }
-
-  console.log('Seeding user profiles...');
-  await setDoc(doc(db, 'users', wardenUid), {
-    role: 'warden',
-    name: 'Demo Warden',
-    email: WARDEN_EMAIL,
-    hostelId: hostelId,
-    isProfileComplete: true
-  });
-
-  await setDoc(doc(db, 'users', studentUid), {
-    role: 'student',
-    name: 'Demo Student',
-    email: STUDENT_EMAIL,
-    PRN: '210101120001',
-    isProfileComplete: true,
-    isRegistered: true,
-    roomId: room204Id,
-    hostelId, blockId, buildingId, floorId: 'demo-floor-2', roomNumber: '204'
-  });
 
   console.log('Seeding complaints...');
   const complaintsRef = collection(db, 'complaints');

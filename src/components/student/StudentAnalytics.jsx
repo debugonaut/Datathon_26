@@ -331,8 +331,8 @@ export default function StudentAnalytics({ roomScore }) {
                     {c.estimatedResolutionAt && c.status !== 'resolved' && (
                       <div style={{ marginTop: '2px', fontSize: '0.78rem',
                         color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        🕐 Expected fix: {c.estimatedResolutionAt.toDate()
-                          .toLocaleDateString('en-IN', {
+                        🕐 Expected fix: {new Date(typeof c.estimatedResolutionAt?.toDate === 'function' ? c.estimatedResolutionAt.toDate() : c.estimatedResolutionAt)
+                          .toLocaleString('en-IN', {
                             weekday: 'short', day: 'numeric', month: 'short',
                             hour: '2-digit', minute: '2-digit'
                           })}

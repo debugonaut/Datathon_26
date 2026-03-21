@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
-import { auth, db } from '../../firebase/config';
-import { useAuth } from '../../context/AuthContext';
+import { auth, db } from '../firebase/config';
+import { useAuth } from '../context/AuthContext';
 
 export default function DemoLanding() {
   const [loadingRole, setLoadingRole] = useState(null);
@@ -26,13 +26,13 @@ export default function DemoLanding() {
         const uDoc = userSnap.data();
         setUserDoc(uDoc);
         if (uDoc.role === 'warden') {
-          navigate('/warden/dashboard', { replace: true });
+          window.open('/warden/dashboard', '_blank');
         } else {
-          // If profile is incomplete, send to setup, but demo should already be complete
-          if (!uDoc.isProfileComplete) navigate('/student/setup', { replace: true });
-          else if (!uDoc.roomId) navigate('/student/join', { replace: true });
-          else navigate('/student/dashboard', { replace: true });
+          window.open('/student/dashboard', '_blank');
         }
+        
+        // Sign out of the demo page so it stays ready for the next click
+        await auth.signOut();
       } else {
         throw new Error('User document not found. Run the seed script first.');
       }
