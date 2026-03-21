@@ -170,24 +170,37 @@ const SortableComplaintCard = ({ complaint }) => {
         </div>
       )}
 
-      {/* SLA Timer */}
+      {/* Urgency Timer */}
       {sla && (
-        <div style={{ marginTop: '8px', marginBottom: '8px' }}>
-          <div style={{
-            display: 'flex', justifyContent: 'space-between',
-            fontSize: '0.7rem', marginBottom: '3px',
-            color: sla.breached ? '#ef4444' : sla.critical ? '#f59e0b' : 'var(--text-muted)'
-          }}>
-            <span>{sla.breached ? '⚠ SLA Breached' : 'SLA'}</span>
-            <span>{sla.label}</span>
+        <div style={{ marginTop: '12px', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ position: 'relative', width: 36, height: 36 }}>
+            {/* Background Circle */}
+            <svg fill="transparent" width="36" height="36" viewBox="0 0 36 36">
+              <circle cx="18" cy="18" r="14" stroke="rgba(255,255,255,0.05)" strokeWidth="4" />
+              {/* Progress Circle */}
+              <circle
+                cx="18" cy="18" r="14"
+                stroke={sla.breached ? '#ef4444' : sla.critical ? '#f59e0b' : '#378ADD'} 
+                strokeWidth="4"
+                strokeDasharray={`${2 * Math.PI * 14}`}
+                strokeDashoffset={`${(2 * Math.PI * 14) * (1 - Math.min(100, Math.max(0, sla.percent)) / 100)}`}
+                strokeLinecap="round"
+                style={{ transition: 'stroke-dashoffset 0.5s ease', transform: 'rotate(-90deg)', transformOrigin: '50% 50%' }}
+              />
+            </svg>
+            <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', fontWeight: 'bold', color: sla.breached ? '#ef4444' : sla.critical ? '#f59e0b' : 'var(--text-primary)'}}>
+              {sla.breached ? '!!' : `${Math.round(sla.percent)}%`}
+            </div>
           </div>
-          <div style={{ height: '4px', borderRadius: '2px',
-            background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
-            <div style={{
-              height: '100%', width: `${sla.percent}%`, borderRadius: '2px',
-              background: sla.breached ? '#ef4444' : sla.critical ? '#f59e0b' : '#10b981',
-              transition: 'width 1s linear'
-            }} />
+          
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span className="text-xs text-muted" style={{ fontWeight: 600 }}>Urgency Timer</span>
+            <span style={{ 
+              fontSize: '0.8rem', fontWeight: 600, 
+              color: sla.breached ? '#ef4444' : sla.critical ? '#f59e0b' : 'var(--text-primary)' 
+            }}>
+              {sla.label}
+            </span>
           </div>
         </div>
       )}
@@ -390,7 +403,7 @@ export default function ComplaintsKanban({ complaints }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       
-      {/* Breached SLA Banner */}
+      {/* Breached Urgency Timer Banner */}
       {breachedComplaints.length > 0 && (
         <div style={{
           background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
@@ -398,7 +411,7 @@ export default function ComplaintsKanban({ complaints }) {
           marginBottom: '12px', fontSize: '0.85rem'
         }}>
           <span style={{ color: '#ef4444', fontWeight: 600 }}>
-            ⚠ {breachedComplaints.length} complaint{breachedComplaints.length > 1 ? 's have' : ' has'} breached SLA
+            ⚠ {breachedComplaints.length} complaint{breachedComplaints.length > 1 ? 's have' : ' has'} breached the Urgency Timer
           </span>
           <span style={{ color: 'var(--text-muted)', marginLeft: '8px' }}>
             — {breachedComplaints.map(c => `Room ${c.roomNumber}`).join(', ')}

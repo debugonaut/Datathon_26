@@ -18,6 +18,7 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import { db } from './config';
+import { getSLAStatus, SLA_HOURS } from '../utils/sla';
 
 // ─── Hostel ─────────────────────────────────────────────────────────────────
 export const createHostel = async (wardenId, name, collegeName) => {
@@ -303,10 +304,21 @@ export const updateComplaintStatus = async (complaint, newStatus) => {
   if (complaint.priority === 'high') penalty = 30;
 
   if (wasOpen && isNowResolved) {
-    scoreChange = penalty; // restore points
+    const sla = getSLAStatus(complaint);
+    const breachPenalty = sla?.breached ? 5 : 0;
+    
+    scoreChange = penalty - breachPenalty; // restore points, minus 5 if breached
     updateData.resolvedAt = serverTimestamp();
+    
+    if (sla?.breached) {
+      updateData.internalNotes = arrayUnion({
+        text: `System: Urgency Timer breached. Room penalized ${breachPenalty} points from their regular refund.`,
+        createdAt: Timestamp.now(),
+        wardenName: "System"
+      });
+    }
   } else if (!wasOpen && !isNowResolved && newStatus !== 'todo') {
-    scoreChange = -penalty; // deduct points again
+    scoreChange = -penalty; // deduct initial points again
     updateData.resolvedAt = null;
   }
 
