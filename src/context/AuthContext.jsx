@@ -25,6 +25,7 @@ export const AuthProvider = ({ children }) => {
           doc.roomId = doc.roomId || 'demo-room-204';
           doc.hostelId = doc.hostelId || 'demo-hostel-1';
           doc.blockId = doc.blockId || 'demo-block-A';
+          doc.blockName = doc.blockName || 'A Block';
           doc.buildingId = doc.buildingId || 'demo-building-A1';
           doc.buildingName = doc.buildingName || 'A1';
           doc.floorId = doc.floorId || 'demo-floor-2';

@@ -55,9 +55,9 @@ export default function StudentDashboard() {
         ]);
         
         setHierarchyNames({
-          block: blkSnap.data()?.name || 'Unknown Block',
-          building: bldSnap.data()?.name || 'Unknown Building',
-          floor: flrSnap.data()?.floorNumber || '0'
+          block: blkSnap.data()?.name || userDoc.blockName || 'Unknown Block',
+          building: bldSnap.data()?.name || userDoc.buildingName || 'Unknown Building',
+          floor: flrSnap.data()?.floorNumber || userDoc.floorNumber || '0'
         });
 
         // Fetch Announcements
