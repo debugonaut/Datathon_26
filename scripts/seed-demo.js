@@ -70,7 +70,7 @@ async function run() {
   const studentSnap = await getDoc(doc(db, 'users', studentUid));
   const wardenSnap = await getDoc(doc(db, 'users', wardenUid));
 
-  if (studentSnap.exists() && wardenSnap.exists() && false) { // Force re-seed for hierarchy fix
+  if (studentSnap.exists() && wardenSnap.exists() && false) { // Force re-seed for metadata fix
     const sData = studentSnap.data();
     const wData = wardenSnap.data();
     if (sData.isProfileComplete && sData.isRegistered && sData.roomId && wData.isProfileComplete && wData.hostelId) {
@@ -96,13 +96,16 @@ async function run() {
     isProfileComplete: true,
     isRegistered: true,
     roomId: room204Id,
-    hostelId, blockId, buildingId, floorId: 'demo-floor-2', roomNumber: '204'
+    hostelId, blockId, buildingId, floorId: 'demo-floor-2', roomNumber: '204',
+    buildingName: 'A1', floorNumber: 2
   });
   
   console.log('Seeding hostel hierarchy...');
   // Ensure hostel exists
   await setDoc(doc(db, 'hostels', hostelId), {
     name: 'MITAOE Boys Hostel',
+    collegeName: 'MIT Academy of Engineering',
+    wardenId: wardenUid,
     createdAt: Timestamp.now()
   });
 

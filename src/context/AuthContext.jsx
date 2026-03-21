@@ -26,10 +26,13 @@ export const AuthProvider = ({ children }) => {
           doc.hostelId = doc.hostelId || 'demo-hostel-1';
           doc.blockId = doc.blockId || 'demo-block-A';
           doc.buildingId = doc.buildingId || 'demo-building-A1';
+          doc.buildingName = doc.buildingName || 'A1';
           doc.floorId = doc.floorId || 'demo-floor-2';
+          doc.floorNumber = doc.floorNumber || 2;
           doc.roomNumber = doc.roomNumber || '204';
         } else if (firebaseUser.email === 'demo.warden@fixmyhostel.dev') {
-          if (!doc) doc = { role: 'warden', email: firebaseUser.email };
+          if (!doc) doc = { email: firebaseUser.email };
+          doc.role = 'warden';
           doc.isProfileComplete = true;
           doc.hostelId = doc.hostelId || 'demo-hostel-1';
         }
