@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import Navbar from '../../components/Navbar';
 import { useAuth } from '../../context/AuthContext';
@@ -9,6 +9,7 @@ import ThemeToggle from '../../components/ThemeToggle';
 import { getAnnouncements, markAnnouncementRead } from '../../firebase/firestore';
 import { fetchRoomHistory, generateRoomSummary } from '../../firebase/roomHistory';
 import StudentAnalytics from '../../components/student/StudentAnalytics';
+import MiniTimeline from '../../components/student/MiniTimeline';
 
 export default function StudentDashboard() {
   const { user, userDoc } = useAuth();
@@ -18,6 +19,7 @@ export default function StudentDashboard() {
   const [roomData, setRoomData] = useState(null);
   const [hierarchyNames, setHierarchyNames] = useState({ block: '', building: '', floor: '' });
   const [announcements, setAnnouncements] = useState([]);
+  const [recentComplaints, setRecentComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const [fullRoomHistory, setFullRoomHistory] = useState([]);
@@ -65,6 +67,13 @@ export default function StudentDashboard() {
         // Fetch Announcements
         const feeds = await getAnnouncements(hostelId);
         setAnnouncements(feeds);
+
+        // Fetch Recent Complaints
+        const qC = query(collection(db, 'complaints'), where('roomId', '==', roomId));
+        const compSnap = await getDocs(qC);
+        const comps = compSnap.docs.map(d => ({ id: d.id, ...d.data() }))
+          .sort((a,b) => (b.createdAt?.toMillis()||0) - (a.createdAt?.toMillis()||0));
+        setRecentComplaints(comps);
       } catch (err) {
         console.error('Error loading student dashboard data', err);
       }
@@ -209,7 +218,6 @@ export default function StudentDashboard() {
                 </div>
               </div>
 
-              {/* Announcements */}
               <div className="card-flat">
                 <div className="label">Announcements</div>
                 {announcements.length===0
@@ -233,6 +241,11 @@ export default function StudentDashboard() {
                   ))
                 }
               </div>
+
+              <MiniTimeline 
+                complaints={recentComplaints} 
+                onSeeAll={() => setActiveTab('complaints')} 
+              />
             </div>
 
             {/* Right */}
@@ -281,8 +294,8 @@ export default function StudentDashboard() {
           </div>
         )}
 
-        {activeTab==='complaints' && <StudentAnalytics roomScore={roomData?.score} />}
-        {activeTab==='stats' && <StudentAnalytics roomScore={roomData?.score} />}
+        {activeTab==='complaints' && <StudentAnalytics roomScore={roomData?.score} view="complaints" />}
+        {activeTab==='stats' && <StudentAnalytics roomScore={roomData?.score} view="analytics" />}
       </div>
     </div>
   </div>

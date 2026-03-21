@@ -9,6 +9,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { db } from '../../firebase/config';
 import { collection, query, where, getDocs, doc, updateDoc, Timestamp, increment } from 'firebase/firestore';
+import { getSLAStatus } from '../../utils/sla';
 
 const TT = { background: '#1a1f2e', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', color: '#e2e8f0', fontSize: '0.75rem' };
 const CHART_COLORS = ['#4FA3F7', '#22D3A0', '#F5A623', '#F06565', '#7C6EFA'];
@@ -28,6 +29,17 @@ function isOverdue(c) {
   return (c.priority === 'high' && h > 24) || (c.priority === 'medium' && h > 72) || (c.priority === 'low' && h > 168);
 }
 
+function chipStyle(val, type = 'status') {
+  if (type === 'priority') {
+    if (val === 'high')   return { background:'rgba(239,68,68,0.12)',   color:'var(--red)'   };
+    if (val === 'medium') return { background:'rgba(245,158,11,0.12)',  color:'var(--amber)' };
+    return                       { background:'rgba(16,185,129,0.12)',  color:'var(--green)' };
+  }
+  if (val === 'in_progress') return { background:'rgba(245,158,11,0.12)',  color:'var(--amber)' };
+  if (val === 'todo')        return { background:'rgba(239,68,68,0.12)',   color:'var(--red)'   };
+  return                           { background:'rgba(16,185,129,0.12)',  color:'var(--green)' };
+}
+
 function myAvg(c) { const r = c.filter(x => x.resolvedAt && x.createdAt); if (!r.length) return null; return Math.round(r.reduce((s, x) => s + (x.resolvedAt.toDate()-x.createdAt.toDate()), 0)/r.length/3600000); }
 function catBreak(c) { const m = {}; c.forEach(x => m[x.category]=(m[x.category]||0)+1); return Object.entries(m).map(([n,v])=>({name:n,value:v})); }
 function scoreHist(c, cs) {
@@ -41,7 +53,7 @@ function scoreHist(c, cs) {
   return d;
 }
 
-export default function StudentAnalytics({ roomScore }) {
+export default function StudentAnalytics({ roomScore, view = 'complaints' }) {
   const { userDoc } = useAuth();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -116,266 +128,329 @@ export default function StudentAnalytics({ roomScore }) {
     return matchesSearch && matchesStatus && matchesCategory && matchesPriority;
   });
 
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '0.25rem 0' }}>
-      {/* Row 1: KPI cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
-        {[
-          { l: 'Total Filed', v: data.length, c: '#4FA3F7' },
-          { l: 'Open', v: open.length, c: '#F06565' },
-          { l: 'Resolved', v: resolved.length, c: '#22D3A0' },
-          { l: 'Overdue', v: overdue.length, c: overdue.length > 0 ? '#F06565' : '#22D3A0' },
-          { l: 'Avg Res.', v: avg != null ? `${avg}h` : '—', c: '#F5A623' },
-        ].map(k => (
-          <div key={k.l} style={card}>
-            <div style={label}>{k.l}</div>
-            <div style={{ fontSize: '1.4rem', fontWeight: 700, color: k.c, lineHeight: 1.1 }}>{k.v}</div>
-          </div>
-        ))}
-      </div>
+  if (view === 'analytics') {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '0.25rem 0' }}>
+        {/* Row 1: KPI cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
+          {[
+            { l: 'Total Filed', v: data.length, c: '#4FA3F7' },
+            { l: 'Open', v: open.length, c: '#F06565' },
+            { l: 'Resolved', v: resolved.length, c: '#22D3A0' },
+            { l: 'Overdue', v: overdue.length, c: overdue.length > 0 ? '#F06565' : '#22D3A0' },
+            { l: 'Avg Res.', v: avg != null ? `${avg}h` : '—', c: '#F5A623' },
+          ].map(k => (
+            <div key={k.l} style={card}>
+              <div style={label}>{k.l}</div>
+              <div style={{ fontSize: '1.4rem', fontWeight: 700, color: k.c, lineHeight: 1.1 }}>{k.v}</div>
+            </div>
+          ))}
+        </div>
 
-      {/* Row 2: 3-column dashboard */}
-      <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr 1fr', gap: '8px', minHeight: 0 }}>
-
-        {/* Left: Room score gauge */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <div style={{ ...card, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={label}>Room Score</div>
-            <div style={{
-              width: '140px', height: '140px', margin: '1rem auto',
-              borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: `conic-gradient(${sc} ${score}%, rgba(255,255,255,0.05) ${score}%)`,
-              position: 'relative'
-            }}>
+        {/* Row 2: 2-column dashboard */}
+        <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: '8px', minHeight: 0 }}>
+          {/* Left: Room score gauge */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ ...card, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={label}>Room Score</div>
               <div style={{
-                position: 'absolute', inset: '10px', background: 'var(--bg-surface)', borderRadius: '50%',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column'
+                width: '140px', height: '140px', margin: '1rem auto',
+                borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: `conic-gradient(${sc} ${score}%, rgba(255,255,255,0.05) ${score}%)`,
+                position: 'relative'
               }}>
-                <span style={{ fontSize: '2.5rem', fontWeight: 800, color: sc }}>{score}</span>
-                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>/ 100</span>
+                <div style={{
+                  position: 'absolute', inset: '10px', background: 'var(--bg-surface)', borderRadius: '50%',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column'
+                }}>
+                  <span style={{ fontSize: '2.5rem', fontWeight: 800, color: sc }}>{score}</span>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>/ 100</span>
+                </div>
+              </div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', textAlign: 'center' }}>
+                {score >= 71 ? 'Good shape' : score >= 41 ? 'Needs attention' : 'Critical'}
               </div>
             </div>
-            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', textAlign: 'center' }}>
-              {score >= 71 ? 'Good shape' : score >= 41 ? 'Needs attention' : 'Critical'}
-            </div>
-          </div>
 
-          {/* Category donut */}
-          <div style={card}>
-            <div style={label}>By Category</div>
-            <ResponsiveContainer width="100%" height={220}>
-              <PieChart>
-                <Pie data={cats} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={2} dataKey="value">
-                  {cats.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
-                </Pie>
-                <Tooltip contentStyle={TT} />
-                <Legend iconType="circle" iconSize={6} wrapperStyle={{ fontSize: '0.6rem' }} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* Resolution comparison */}
-          {resComp.length > 0 && (
+            {/* Category donut */}
             <div style={card}>
-              <div style={label}>My vs Hostel Avg</div>
-              <ResponsiveContainer width="100%" height={160}>
-                <RadialBarChart cx="50%" cy="50%" innerRadius="30%" outerRadius="90%" data={resComp} startAngle={90} endAngle={-270}>
-                  <RadialBar dataKey="hours" cornerRadius={4}>{resComp.map((e, i) => <Cell key={i} fill={e.fill} />)}</RadialBar>
+              <div style={label}>By Category</div>
+              <ResponsiveContainer width="100%" height={220}>
+                <PieChart>
+                  <Pie data={cats} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={2} dataKey="value">
+                    {cats.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
+                  </Pie>
+                  <Tooltip contentStyle={TT} />
                   <Legend iconType="circle" iconSize={6} wrapperStyle={{ fontSize: '0.6rem' }} />
-                  <Tooltip contentStyle={TT} formatter={v => [`${v}h`, 'Avg']} />
-                </RadialBarChart>
+                </PieChart>
               </ResponsiveContainer>
             </div>
-          )}
-        </div>
 
-        {/* Center: Score trend chart */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <div style={card}>
-            <div style={label}>Room Score — 30 Days</div>
-            <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={hist}>
-                <defs>
-                  <linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis dataKey="date" tick={{ fontSize: 8, fill: 'var(--text-muted)' }} interval={6} />
-                <YAxis domain={[0, 100]} tick={{ fontSize: 9, fill: 'var(--text-muted)' }} width={20} />
-                <Tooltip contentStyle={TT} />
-                <Area type="monotone" dataKey="score" stroke="#10b981" fill="url(#sg)" strokeWidth={2} />
-              </AreaChart>
-            </ResponsiveContainer>
+            {/* Resolution comparison */}
+            {resComp.length > 0 && (
+              <div style={card}>
+                <div style={label}>My vs Hostel Avg</div>
+                <ResponsiveContainer width="100%" height={160}>
+                  <RadialBarChart cx="50%" cy="50%" innerRadius="30%" outerRadius="90%" data={resComp} startAngle={90} endAngle={-270}>
+                    <RadialBar dataKey="hours" cornerRadius={4}>{resComp.map((e, i) => <Cell key={i} fill={e.fill} />)}</RadialBar>
+                    <Legend iconType="circle" iconSize={6} wrapperStyle={{ fontSize: '0.6rem' }} />
+                    <Tooltip contentStyle={TT} formatter={v => [`${v}h`, 'Avg']} />
+                  </RadialBarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           </div>
 
-          {/* Overdue alerts */}
-          {overdue.length > 0 && (
-            <div style={{ ...card, background: 'rgba(240,101,101,0.06)', border: '1px solid rgba(240,101,101,0.2)' }}>
-              <div style={label}>Overdue Complaints</div>
-              {overdue.slice(0, 3).map(c => (
-                <div key={c.id} style={{ fontSize: '0.75rem', color: 'var(--text-primary)', padding: '4px 0', borderBottom: '1px solid var(--border)' }}>
-                  <strong style={{ color: '#F06565' }}>{c.title}</strong> — {c.category} · {timeAgo(c.createdAt)} ago
-                </div>
-              ))}
+          {/* Center: Score trend chart */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={card}>
+              <div style={label}>Room Score — 30 Days</div>
+              <ResponsiveContainer width="100%" height={300}>
+                <AreaChart data={hist}>
+                  <defs>
+                    <linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                  <XAxis dataKey="date" tick={{ fontSize: 8, fill: 'var(--text-muted)' }} interval={6} />
+                  <YAxis domain={[0, 100]} tick={{ fontSize: 9, fill: 'var(--text-muted)' }} width={20} />
+                  <Tooltip contentStyle={TT} />
+                  <Area type="monotone" dataKey="score" stroke="#10b981" fill="url(#sg)" strokeWidth={2} />
+                </AreaChart>
+              </ResponsiveContainer>
             </div>
-          )}
-        </div>
 
-        {/* Right: Complaint Timeline */}
-        <div style={{ ...card, overflowY: 'auto', maxHeight: '600px' }}>
-          <div style={label}>Complaint Timeline</div>
-
-          {/* Feature 10: Search and Filter Bar */}
-          <div style={{ marginBottom: '16px', marginTop: '10px' }}>
-            <input
-              type="text"
-              placeholder="Search complaints..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              style={{ width: '100%', padding: '8px 14px', marginBottom: '10px',
-                background: 'var(--bg-surface)', border: '1px solid var(--border)',
-                borderRadius: '8px', color: 'var(--text-primary)', fontSize: '0.85rem' }}
-            />
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              {['all','todo','in_progress','resolved'].map(s => (
-                <button key={s} onClick={() => setFilterStatus(s)} style={{
-                  padding: '4px 8px', borderRadius: '20px', fontSize: '0.70rem',
-                  border: filterStatus === s ? '1px solid #378ADD' : '1px solid var(--border)',
-                  background: filterStatus === s ? 'rgba(79,163,247,0.15)' : 'transparent',
-                  color: filterStatus === s ? '#4FA3F7' : 'var(--text-muted)', cursor: 'pointer'
-                }}>
-                  {s === 'all' ? 'All' : s === 'todo' ? 'To Do'
-                    : s === 'in_progress' ? 'In Progress' : 'Resolved'}
-                </button>
-              ))}
-              <span style={{ color: 'var(--border)', alignSelf: 'center' }}>|</span>
-              {['all','Plumbing','Electrical','Cleaning','Furniture','Other'].map(c => (
-                <button key={c} onClick={() => setFilterCategory(c)} style={{
-                  padding: '4px 8px', borderRadius: '20px', fontSize: '0.70rem',
-                  border: filterCategory === c ? '1px solid #10b981' : '1px solid var(--border)',
-                  background: filterCategory === c ? 'rgba(34,211,160,0.15)' : 'transparent',
-                  color: filterCategory === c ? '#22D3A0' : 'var(--text-muted)', cursor: 'pointer'
-                }}>
-                  {c === 'all' ? 'All' : c}
-                </button>
-              ))}
-              <span style={{ color: 'var(--border)', alignSelf: 'center' }}>|</span>
-              {['all','high','medium','low'].map(p => (
-                <button key={p} onClick={() => setFilterPriority(p)} style={{
-                  padding: '4px 8px', borderRadius: '20px', fontSize: '0.70rem',
-                  border: filterPriority === p ? '1px solid #f59e0b' : '1px solid var(--border)',
-                  background: filterPriority === p ? 'rgba(245,166,35,0.15)' : 'transparent',
-                  color: filterPriority === p ? '#F5A623' : 'var(--text-muted)', cursor: 'pointer'
-                }}>
-                  {p === 'all' ? 'All' : p.charAt(0).toUpperCase() + p.slice(1)}
-                </button>
-              ))}
-              {(searchQuery || filterStatus !== 'all' || filterCategory !== 'all' || filterPriority !== 'all') && (
-                <button
-                  onClick={() => { setSearchQuery(''); setFilterStatus('all');
-                    setFilterCategory('all'); setFilterPriority('all'); }}
-                  style={{ padding: '4px 8px', borderRadius: '20px', fontSize: '0.70rem',
-                    border: '1px solid rgba(240,101,101,0.3)',
-                    background: 'transparent', color: '#F06565', cursor: 'pointer' }}
-                >Clear</button>
-              )}
-            </div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '8px' }}>
-              {filteredComplaints.length === data.length
-                ? `${data.length} complaint${data.length !== 1 ? 's' : ''}`
-                : `${filteredComplaints.length} of ${data.length} complaints`}
-            </div>
-          </div>
-          {filteredComplaints.length === 0 && data.length > 0 && (
-            <div style={{ textAlign: 'center', padding: '2rem',
-              color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-              No complaints match your filters.
-              <button
-                onClick={() => { setSearchQuery(''); setFilterStatus('all');
-                  setFilterCategory('all'); setFilterPriority('all'); }}
-                style={{ display: 'block', margin: '8px auto 0', background: 'none',
-                  border: 'none', color: '#4FA3F7', cursor: 'pointer', fontSize: '0.85rem' }}
-              >Clear all filters</button>
-            </div>
-          )}
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0', marginTop: '12px' }}>
-            {filteredComplaints.map((c, i) => (
-              <div key={c.id} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', paddingBottom: i < filteredComplaints.length - 1 ? '16px' : '0', position: 'relative' }}>
-                {i < filteredComplaints.length - 1 && <div style={{ position: 'absolute', left: '7px', top: '18px', width: '2px', bottom: 0, background: 'var(--border)' }} />}
-                <div style={{ width: '16px', height: '16px', borderRadius: '50%', flexShrink: 0, marginTop: '2px', background: ST_C[c.status], boxShadow: `0 0 6px ${ST_C[c.status]}66` }} />
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                    <span style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-primary)' }}>{c.title}</span>
-                    <span style={{ fontSize: '0.7rem', padding: '1px 8px', borderRadius: '8px', background: `${PRI_C[c.priority]}22`, color: PRI_C[c.priority], fontWeight: 600 }}>{c.priority}</span>
-                    {isOverdue(c) && <span style={{ fontSize: '0.7rem', padding: '1px 8px', borderRadius: '8px', background: 'rgba(240,101,101,0.15)', color: '#F06565', fontWeight: 600 }}>OVERDUE</span>}
+            {/* Overdue alerts */}
+            {overdue.length > 0 && (
+              <div style={{ ...card, background: 'rgba(240,101,101,0.06)', border: '1px solid rgba(240,101,101,0.2)' }}>
+                <div style={label}>Overdue Complaints</div>
+                {overdue.slice(0, 3).map(c => (
+                  <div key={c.id} style={{ fontSize: '0.75rem', color: 'var(--text-primary)', padding: '4px 0', borderBottom: '1px solid var(--border)' }}>
+                    <strong style={{ color: '#F06565' }}>{c.title}</strong> — {c.category} · {timeAgo(c.createdAt)} ago
                   </div>
-                  
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', margin: '4px 0' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem' }}>
-                      <span style={{ color: 'var(--text-muted)' }}>{timeAgo(c.createdAt)} ago</span>
-                      <span style={{ color: 'var(--border)' }}>|</span>
-                      <span style={{ color: 'var(--text-muted)' }}>{ST_L[c.status]}</span>
+  // view === 'complaints'
+  const nodeColors = {
+    in_progress: { bg:'#FEF3C7', stroke:'#F59E0B', icon:'#D97706', line:'#F59E0B', top:'#F59E0B' },
+    todo:        { bg:'#FEE2E2', stroke:'#EF4444', icon:'#DC2626', line:'#EF4444', top:'#EF4444' },
+    resolved:    { bg:'#D1FAE5', stroke:'#10B981', icon:'#059669', line:'#10B981', top:'#10B981' },
+  };
+
+  const HexNode = ({ status }) => {
+    const nc = nodeColors[status] || nodeColors.todo;
+    const iconPath = status === 'resolved'
+      ? <path d="M20 6 9 17l-5-5"/>
+      : status === 'in_progress'
+      ? <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+      : <circle cx="12" cy="12" r="8"/>;
+
+    return (
+      <div style={{ position:'relative', width:44, height:44, flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center' }}>
+        <svg style={{ position:'absolute', top:0, left:0 }} width="44" height="44" viewBox="0 0 44 44">
+          <polygon points="22,2 40,12 40,32 22,42 4,32 4,12" fill={nc.bg} stroke={nc.stroke} strokeWidth="1.5"/>
+        </svg>
+        <svg style={{ position:'relative', zIndex:1 }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={nc.icon} strokeWidth="2.5">
+          {iconPath}
+        </svg>
+      </div>
+    );
+  };
+
+  // Group by date
+  const groupByDate = (items) => {
+    const groups = {};
+    items.forEach(c => {
+      const d = c.createdAt?.toDate?.();
+      if (!d) return;
+      const now = new Date();
+      const diff = Math.floor((now - d) / 86400000);
+      const label = diff === 0 ? 'Today' : diff === 1 ? 'Yesterday' : d.toLocaleDateString('en-IN', { day:'numeric', month:'short' });
+      if (!groups[label]) groups[label] = [];
+      groups[label].push(c);
+    });
+    return groups;
+  };
+
+  const grouped = groupByDate(filteredComplaints);
+
+  return (
+    <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+      {/* Search + filters — keep existing filter logic */}
+      <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+        <div style={{ position:'relative' }}>
+          <svg style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', width:14, height:14, color:'var(--text-3)' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input
+            className="input"
+            style={{ paddingLeft:34 }}
+            placeholder="Search complaints…"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+          />
+        </div>
+        <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+          {[['all','All'],['todo','To Do'],['in_progress','In Progress'],['resolved','Resolved']].map(([v,l]) => (
+            <button key={v} onClick={() => setFilterStatus(v)}
+              style={{ fontSize:11.5, padding:'4px 11px', borderRadius:20, border:'1px solid', cursor:'pointer', transition:'all 0.15s', fontFamily:'var(--font)',
+                background: filterStatus===v ? 'var(--primary)' : 'transparent',
+                color: filterStatus===v ? '#fff' : 'var(--text-2)',
+                borderColor: filterStatus===v ? 'var(--primary)' : 'var(--border-strong)'
+              }}>{l}</button>
+          ))}
+          {['Plumbing','Electrical','Cleaning','Furniture','Other'].map(cat => (
+            <button key={cat} onClick={() => setFilterCategory(filterCategory===cat?'all':cat)}
+              style={{ fontSize:11.5, padding:'4px 11px', borderRadius:20, border:'1px solid', cursor:'pointer', transition:'all 0.15s', fontFamily:'var(--font)',
+                background: filterCategory===cat ? 'var(--primary)' : 'transparent',
+                color: filterCategory===cat ? '#fff' : 'var(--text-2)',
+                borderColor: filterCategory===cat ? 'var(--primary)' : 'var(--border-strong)'
+              }}>{cat}</button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ fontSize:13, color:'var(--text-2)', fontFamily:'var(--font-mono)' }}>
+        {filteredComplaints.length} complaint{filteredComplaints.length !== 1 ? 's' : ''}
+      </div>
+
+      {/* Timeline grouped by date */}
+      {Object.keys(grouped).length === 0 && (
+        <div style={{ textAlign:'center', padding:'40px 0', color:'var(--text-3)', fontSize:13 }}>
+          No complaints match your filter.
+        </div>
+      )}
+
+      {Object.entries(grouped).map(([date, items]) => (
+        <div key={date}>
+          {/* Date separator */}
+          <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:16 }}>
+            <span style={{ fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', color:'var(--text-3)', whiteSpace:'nowrap' }}>{date}</span>
+            <div style={{ flex:1, height:1, background:'var(--border)' }} />
+          </div>
+
+          {items.map((c, i) => {
+            const nc = nodeColors[c.status] || nodeColors.todo;
+            const sla = getSLAStatus(c);
+            const isLast = i === items.length - 1;
+            const resolved = c.status === 'resolved';
+
+            return (
+              <div key={c.id} style={{ display:'flex', gap:0, marginBottom:4 }}>
+                {/* Spine */}
+                <div style={{ display:'flex', flexDirection:'column', alignItems:'center', width:52, flexShrink:0 }}>
+                  <HexNode status={c.status} />
+                  {!isLast && <div style={{ width:2, flex:1, minHeight:16, margin:'3px 0', borderRadius:1, background:nc.line, opacity:0.2 }} />}
+                </div>
+
+                {/* Card */}
+                <div style={{ flex:1, paddingBottom: isLast ? 24 : 24, paddingLeft:10 }}>
+                  <div style={{
+                    background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:14,
+                    padding:'16px 18px', opacity: resolved ? 0.7 : 1,
+                    transition:'box-shadow 0.15s, border-color 0.15s',
+                    position:'relative', overflow:'hidden',
+                  }}
+                    onMouseOver={e => { e.currentTarget.style.boxShadow='0 3px 12px rgba(0,0,0,0.15)'; e.currentTarget.style.borderColor='var(--border-strong)'; }}
+                    onMouseOut={e => { e.currentTarget.style.boxShadow='none'; e.currentTarget.style.borderColor='var(--border)'; }}
+                  >
+                    {/* Top accent bar */}
+                    <div style={{ position:'absolute', top:0, left:0, right:0, height:3, background:nc.top, borderRadius:'14px 14px 0 0' }} />
+
+                    {/* Title row */}
+                    <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:6 }}>
+                      <div style={{ fontSize:14, fontWeight:700, color:'var(--text)', lineHeight:1.3 }}>{c.title}</div>
+                      <div style={{ fontSize:11, color:'var(--text-3)', flexShrink:0, marginLeft:12, marginTop:2, fontFamily:'var(--font-mono)' }}>
+                        {timeAgo(c.createdAt)}
+                      </div>
                     </div>
 
-                    {/* Acknowledgment & Expected Fix */}
-                    {c.acknowledgedAt ? (
-                      <span style={{ color: '#22D3A0', fontSize: '0.78rem' }}>✓ Warden has seen this</span>
-                    ) : (
-                      <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>Pending acknowledgement</span>
-                    )}
+                    {/* Description */}
+                    <div style={{ fontSize:13, color:'var(--text-2)', lineHeight:1.55, marginBottom:10 }}>
+                      {c.descriptionTranslated || c.description}
+                    </div>
 
-                    {c.estimatedResolutionAt && c.status !== 'resolved' && (
-                      <div style={{ marginTop: '2px', fontSize: '0.78rem',
-                        color: '#F5A623', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        Expected fix: {new Date(typeof c.estimatedResolutionAt?.toDate === 'function' ? c.estimatedResolutionAt.toDate() : c.estimatedResolutionAt)
-                          .toLocaleString('en-IN', {
-                            weekday: 'short', day: 'numeric', month: 'short',
-                            hour: '2-digit', minute: '2-digit'
-                          })}
+                    {/* Pills */}
+                    <div style={{ display:'flex', gap:5, flexWrap:'wrap', marginBottom:10 }}>
+                      <span style={{ fontSize:11, fontWeight:500, padding:'3px 8px', borderRadius:4, ...chipStyle(c.status) }}>
+                        {ST_L[c.status]}
+                      </span>
+                      <span style={{ fontSize:11, fontWeight:500, padding:'3px 8px', borderRadius:4, ...chipStyle(c.priority, 'priority') }}>
+                        {c.priority}
+                      </span>
+                      <span style={{ fontSize:11, padding:'3px 8px', borderRadius:4, background:'var(--bg-input)', color:'var(--text-2)' }}>
+                        {c.category}
+                      </span>
+                      {sla?.breached && (
+                        <span style={{ fontSize:11, fontWeight:600, padding:'3px 8px', borderRadius:4, background:'rgba(220,38,38,0.12)', color:'var(--red)', border:'1px solid rgba(220,38,38,0.2)', display:'flex', alignItems:'center', gap:4 }}>
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                          Timer breach
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Footer */}
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:8 }}>
+                      <div style={{ display:'flex', flexDirection:'column', gap:3, flex:1 }}>
+                        {c.acknowledgedAt
+                          ? <span style={{ fontSize:12, color:'var(--green)' }}>✓ Warden has seen this</span>
+                          : <span style={{ fontSize:12, color:'var(--text-3)' }}>Pending warden acknowledgement</span>
+                        }
+                        {c.estimatedResolutionAt && c.status !== 'resolved' && (
+                          <span style={{ fontSize:12, color:'var(--amber)', display:'flex', alignItems:'center', gap:4 }}>
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                            Expected: {new Date(typeof c.estimatedResolutionAt?.toDate === 'function' ? c.estimatedResolutionAt.toDate() : c.estimatedResolutionAt).toLocaleDateString('en-IN', { day:'numeric', month:'short' })}
+                          </span>
+                        )}
+                        {sla && !sla.breached && c.status !== 'resolved' && (
+                          <span style={{ fontSize:11, color:'var(--text-3)', fontFamily:'var(--font-mono)' }}>
+                            {sla.label}
+                          </span>
+                        )}
+                        {/* Timer bar */}
+                        {sla && c.status !== 'resolved' && (
+                          <div style={{ height:4, borderRadius:2, background:'var(--bg-input)', overflow:'hidden', width:140, marginTop:2 }}>
+                            <div style={{
+                              width:`${sla.percent}%`, height:'100%', borderRadius:2,
+                              background: sla.percent >= 80 ? 'var(--red)' : sla.percent >= 50 ? 'var(--amber)' : 'var(--green)',
+                              transition:'width 0.5s ease'
+                            }} />
+                          </div>
+                        )}
                       </div>
-                    )}
-                    
-                    {/* Withdraw / Re-open Action buttons */}
-                    {c.status !== 'resolved' && c.withdrawnAt === null && (
-                      <button
-                        onClick={() => { setSelectedComplaint(c); setShowWithdrawModal(true); }}
-                        style={{
-                          marginTop: '4px', padding: '4px 12px', background: 'transparent',
-                          border: '1px solid rgba(240,101,101,0.3)', borderRadius: '6px',
-                          color: '#F06565', fontSize: '0.75rem', cursor: 'pointer', width: 'fit-content'
-                        }}
-                      >
-                        Withdraw complaint
-                      </button>
-                    )}
-
-                    {c.status === 'resolved' && (c.reopenCount || 0) < 2 && c.withdrawnAt === null && (
-                      <button
-                        onClick={() => { setSelectedComplaint(c); setShowReopenModal(true); }}
-                        style={{ marginTop: '4px', padding: '4px 12px', background: 'transparent',
-                          border: '1px solid rgba(245,166,35,0.3)', borderRadius: '6px',
-                          color: '#F5A623', fontSize: '0.75rem', cursor: 'pointer', width: 'fit-content' }}
-                      >
-                        Issue not fixed? Re-open
-                      </button>
-                    )}
-
-                  </div>
-
-                  <div style={{ marginTop: '4px', fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.4, wordBreak: 'break-word', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                    {c.descriptionTranslated || c.description}
+                      <div style={{ display:'flex', gap:6 }}>
+                        {c.status !== 'resolved' && c.withdrawnAt === null && (
+                          <button
+                            onClick={() => { setSelectedComplaint(c); setShowWithdrawModal(true); }}
+                            style={{ fontSize:12, padding:'5px 12px', borderRadius:7, border:'1px solid rgba(239,68,68,0.3)', background:'transparent', color:'var(--red)', cursor:'pointer', fontFamily:'var(--font)', fontWeight:500, transition:'background 0.12s' }}
+                            onMouseOver={e => e.currentTarget.style.background='var(--red-soft)'}
+                            onMouseOut={e => e.currentTarget.style.background='transparent'}
+                          >Withdraw</button>
+                        )}
+                        {c.status === 'resolved' && (c.reopenCount||0) < 2 && c.withdrawnAt === null && (
+                          <button
+                            onClick={() => { setSelectedComplaint(c); setShowReopenModal(true); }}
+                            style={{ fontSize:12, padding:'5px 12px', borderRadius:7, border:'1px solid rgba(59,130,246,0.3)', background:'transparent', color:'var(--blue)', cursor:'pointer', fontFamily:'var(--font)', fontWeight:500, transition:'background 0.12s' }}
+                            onMouseOver={e => e.currentTarget.style.background='var(--blue-soft)'}
+                            onMouseOut={e => e.currentTarget.style.background='transparent'}
+                          >Issue not fixed? Re-open</button>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
+            );
+          })}
         </div>
-
-      </div>
+      ))}
 
       {/* Feature 7 Modal: Withdraw Complaint */}
       {showWithdrawModal && selectedComplaint && (
