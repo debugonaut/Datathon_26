@@ -24,9 +24,14 @@ const hasNativeSpeech = !!(window.SpeechRecognition || window.webkitSpeechRecogn
 const translateToEnglish = async (text, sourceLangCode) => {
   if (!sourceLangCode || sourceLangCode === 'en') return text;
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+
     const res = await fetch(
-      `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${sourceLangCode}|en`
+      `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${sourceLangCode}|en`,
+      { signal: controller.signal }
     );
+    clearTimeout(timeoutId);
     const data = await res.json();
     return data.responseData?.translatedText || text;
   } catch {
@@ -222,34 +227,42 @@ export default function NewComplaint() {
   };
 
   // ── Submit ─────────────────────────────────────────────────────────────────
+  const [submitStatus, setSubmitStatus] = useState('');
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!title.trim() || !category) return;
+    if (!userDoc?.hostelId || !userDoc?.roomId) {
+      setError('Your room profile is incomplete. Please re-login.');
+      return;
+    }
 
     setIsSubmitting(true);
+    setSubmitStatus('Preparing submission...');
     setError('');
 
     try {
-      const mediaUrls = [];
-      const mediaTypes = [];
-
-      for (const file of files) {
+      const uploadPromises = files.map(async (file, index) => {
         const timestamp = Date.now();
-        const extension = file.name.split('.').pop() || '';
-        const fileName = `${timestamp}_${Math.random().toString(36).substring(7)}.${extension}`;
+        const extension = file.name ? (file.name.split('.').pop() || '') : 'blob';
+        const fileName = `${timestamp}_${index}_${Math.random().toString(36).substring(7)}.${extension}`;
         const filePath = `complaints/${userDoc.hostelId}/${userDoc.roomId}/${fileName}`;
         
+        setSubmitStatus(`Uploading media ${index + 1}/${files.length}...`);
         const storageRef = ref(storage, filePath);
         const snapshot = await uploadBytes(storageRef, file);
-        const downloadUrl = await getDownloadURL(snapshot.ref);
+        return getDownloadURL(snapshot.ref);
+      });
 
-        mediaUrls.push(downloadUrl);
-        if (file.type.startsWith('image/')) mediaTypes.push('image');
-        else if (file.type.startsWith('video/')) mediaTypes.push('video');
-        else if (file.type.startsWith('audio/')) mediaTypes.push('audio');
-        else mediaTypes.push('document');
-      }
+      const mediaUrls = await Promise.all(uploadPromises);
+      const mediaTypes = files.map(file => {
+        if (file.type.startsWith('image/')) return 'image';
+        if (file.type.startsWith('video/')) return 'video';
+        if (file.type.startsWith('audio/')) return 'audio';
+        return 'document';
+      });
 
+      setSubmitStatus('Writing to database...');
       const complaintData = {
         hostelId: userDoc.hostelId,
         blockId: userDoc.blockId,
@@ -268,7 +281,6 @@ export default function NewComplaint() {
         priority,
         mediaUrls,
         mediaTypes,
-        // Phase 2 + Phase 3 new fields
         acknowledgedAt: null,
         estimatedResolutionAt: null,
         withdrawnAt: null,
@@ -280,12 +292,17 @@ export default function NewComplaint() {
       };
 
       const complaintId = await createComplaint(complaintData);
+      setSubmitStatus('Done!');
       navigate('/complaint/confirmation', { state: { complaintId }, replace: true });
 
     } catch (err) {
-      console.error(err);
-      setError('Failed to submit complaint. ' + err.message);
+      console.error('Submission error:', err);
+      let msg = err.message;
+      if (err.code === 'storage/unauthorized') msg = 'Storage permission denied. Ensure you are signed in.';
+      if (err.code === 'storage/canceled') msg = 'Upload was canceled.';
+      setError('Failed to submit complaint: ' + msg);
       setIsSubmitting(false);
+      setSubmitStatus('');
     }
   };
 
@@ -540,7 +557,7 @@ export default function NewComplaint() {
               disabled={isSubmitting || !title.trim() || !category}
               style={{ padding: '1rem', fontSize: '1.1rem' }}
             >
-              {isSubmitting ? 'Uploading & Submitting...' : 'Submit Complaint'}
+              {isSubmitting ? (submitStatus || 'Uploading & Submitting...') : 'Submit Complaint'}
             </button>
 
           </form>
