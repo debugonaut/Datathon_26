@@ -70,10 +70,10 @@ async function run() {
   const studentSnap = await getDoc(doc(db, 'users', studentUid));
   const wardenSnap = await getDoc(doc(db, 'users', wardenUid));
 
-  if (studentSnap.exists() && wardenSnap.exists() && false) { // Force re-seed for hostel cleanup fix
+  if (studentSnap.exists() && wardenSnap.exists()) {
     const sData = studentSnap.data();
     const wData = wardenSnap.data();
-    if (sData.isProfileComplete && sData.isRegistered && sData.roomId && wData.isProfileComplete && wData.hostelId && sData.blockName && false) { 
+    if (sData.isProfileComplete && sData.isRegistered && sData.roomId && wData.isProfileComplete && wData.hostelId && sData.blockName) {
       console.log('✅ Demo users already fully populated. Exiting early (idempotent skip).');
       process.exit(0);
     }

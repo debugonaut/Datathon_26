@@ -26,7 +26,8 @@ const COLUMNS = [
 
 function timeAgo(date) {
   if (!date) return '';
-  const seconds = Math.floor((new Date() - date.toDate()) / 1000);
+  const d = typeof date.toDate === 'function' ? date.toDate() : new Date(date);
+  const seconds = Math.floor((new Date() - d) / 1000);
   let interval = seconds / 31536000;
   if(interval > 1) return Math.floor(interval) + "y";
   interval = seconds / 2592000;
@@ -185,13 +186,30 @@ const SortableComplaintCard = ({ complaint }) => {
           </div>
         )}
 
+        {/* Resolve Button */}
+        {complaint.status === 'in_progress' && !complaint.withdrawnAt && (
+          <button
+            onPointerDown={async (e) => {
+              e.stopPropagation();
+              await updateComplaintStatus(complaint, 'resolved');
+            }}
+            style={{
+              marginBottom: '8px', width: '100%', padding: '5px',
+              background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)',
+              borderRadius: '6px', color: '#10b981', fontSize: '0.78rem', cursor: 'pointer', fontWeight: 600
+            }}
+          >
+            ✓ Mark as Resolved
+          </button>
+        )}
+
         {/* Estimated Resolution */}
         {complaint.status === 'in_progress' && !complaint.withdrawnAt && (
           <div style={{ marginBottom: '8px' }} onPointerDown={(e) => e.stopPropagation()}>
             <input
               type="datetime-local"
               defaultValue={complaint.estimatedResolutionAt
-                ? new Date(complaint.estimatedResolutionAt.toDate() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 16) : ''}
+                ? new Date((typeof complaint.estimatedResolutionAt.toDate === 'function' ? complaint.estimatedResolutionAt.toDate() : new Date(complaint.estimatedResolutionAt)) - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 16) : ''}
               onChange={async (e) => {
                 if (!e.target.value) return;
                 await updateDoc(doc(db, 'complaints', complaint.id), {

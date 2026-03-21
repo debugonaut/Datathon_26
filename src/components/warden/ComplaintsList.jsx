@@ -3,7 +3,8 @@ import { updateComplaintStatus } from '../../firebase/firestore';
 
 function timeAgo(date) {
   if (!date) return '';
-  const seconds = Math.floor((new Date() - date.toDate()) / 1000);
+  const d = typeof date.toDate === 'function' ? date.toDate() : new Date(date);
+  const seconds = Math.floor((new Date() - d) / 1000);
   let interval = seconds / 31536000;
   if(interval > 1) return Math.floor(interval) + "y";
   interval = seconds / 2592000;
