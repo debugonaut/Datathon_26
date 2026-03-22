@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import { useAuth } from '../../context/AuthContext';
+import { resolveRoomByCode, joinRoomTransaction } from '../../firebase/firestore';
 import { Scanner } from '@yudiel/react-qr-scanner';
 
 export default function RoomRegister() {
@@ -30,19 +31,19 @@ export default function RoomRegister() {
     if (targetCode.length < 6) { setError('Invalid room code.'); return; }
     setLoading(true); setError('');
     try {
-      const snap = await getDoc(doc(db, 'roomCodes', targetCode.toUpperCase()));
-      if (!snap.exists()) { setError(`Room code "${targetCode}" not found.`); setLoading(false); return; }
-      const roomData = snap.data();
-      await updateDoc(doc(db, 'users', user.uid), {
-        hostelId: roomData.hostelId,
-        blockId: roomData.blockId,
-        buildingId: roomData.buildingId,
-        floorId: roomData.floorId,
-        roomId: roomData.roomId,
-        roomNumber: roomData.roomNumber,
-        floorNumber: roomData.floorNumber,
-        isRegistered: true,
+      const roomData = await resolveRoomByCode(targetCode);
+      if (!roomData) { 
+        setError(`Room code "${targetCode}" not found. Please check the code and try again.`); 
+        setLoading(false); 
+        return; 
+      }
+      
+      // Use the transaction to join the room properly (handles occupancy, etc.)
+      await joinRoomTransaction(user.uid, roomData, {
+        name: userDoc.name,
+        PRN_hash: userDoc.PRN_hash || user.uid // fallback if hash is missing
       });
+
       setUserDoc(prev => ({ ...prev, ...roomData, isRegistered: true }));
       navigate('/student/dashboard');
     } catch (err) {
@@ -91,12 +92,22 @@ export default function RoomRegister() {
                 <Scanner
                   onScan={(results) => {
                     if (results?.length > 0) {
-                      const text = results[0].rawValue;
-                      if (text.length === 6) processRoomCode(text);
+                      const raw = results[0].rawValue;
+                      // Handle URLs (extract last segment) or direct 6-char codes
+                      const extracted = raw.split('/').filter(Boolean).pop().trim().toUpperCase();
+                      if (extracted.length === 6) {
+                        processRoomCode(extracted);
+                      } else {
+                        setError(`Scanned code "${extracted}" is invalid. Please scan the 6-character room code.`);
+                      }
                       setShowScanner(false);
                     }
                   }}
-                  onError={(err) => console.log(err)}
+                  onError={(err) => {
+                    console.error("Scanner error:", err);
+                    setError("Camera access or scanning failed. Please try manual entry.");
+                    setShowScanner(false);
+                  }}
                   styles={{ container: { width: '100%', height: '100%' } }}
                 />
               ) : (
