@@ -253,36 +253,21 @@ export default function StudentAnalytics({ roomScore, view = 'complaints' }) {
   }
 
   // view === 'complaints'
-  const nodeColors = {
-    in_progress: { bg:'#FEF3C7', stroke:'#F59E0B', icon:'#D97706', line:'#F59E0B', top:'#F59E0B' },
-    todo:        { bg:'#FEE2E2', stroke:'#EF4444', icon:'#DC2626', line:'#EF4444', top:'#EF4444' },
-    resolved:    { bg:'#D1FAE5', stroke:'#10B981', icon:'#059669', line:'#10B981', top:'#10B981' },
+  const categoryConfig = {
+    Electrical: { icon: <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>, color: '#6C63FF', bg: 'rgba(108,99,255,0.08)' },
+    Plumbing:   { icon: <><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></>, color: '#06B6D4', bg: 'rgba(6,182,212,0.08)' },
+    Furniture:  { icon: <><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-4 0v2M8 7V5a2 2 0 0 1 4 0"/></>, color: '#F59E0B', bg: 'rgba(245,158,11,0.08)' },
+    Cleaning:   { icon: <><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></>, color: '#10B981', bg: 'rgba(16,185,129,0.08)' },
+    Internet:   { icon: <><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></>, color: '#3B82F6', bg: 'rgba(59,130,246,0.08)' },
+    Other:      { icon: <><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></>, color: '#64748B', bg: 'rgba(100,116,139,0.08)' },
   };
 
-  const HexNode = ({ status }) => {
-    const nc = nodeColors[status] || nodeColors.todo;
-    const iconPath = status === 'resolved'
-      ? <path d="M20 6 9 17l-5-5"/>
-      : status === 'in_progress'
-      ? <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
-      : <circle cx="12" cy="12" r="8"/>;
-
-    return (
-      <div style={{ position:'relative', width:44, height:44, flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center' }}>
-        <svg style={{ position:'absolute', top:0, left:0 }} width="44" height="44" viewBox="0 0 44 44">
-          <polygon points="22,2 40,12 40,32 22,42 4,32 4,12" fill={nc.bg} stroke={nc.stroke} strokeWidth="1.5"/>
-        </svg>
-        <svg style={{ position:'relative', zIndex:1 }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={nc.icon} strokeWidth="2.5">
-          {iconPath}
-        </svg>
-      </div>
-    );
-  };
-
-  // Group by date
   const groupByDate = (items) => {
     const groups = {};
-    items.forEach(c => {
+    const active = items.filter(c => c.status !== 'resolved');
+    const resolved = items.filter(c => c.status === 'resolved');
+    
+    active.forEach(c => {
       const d = c.createdAt?.toDate?.();
       if (!d) return;
       const now = new Date();
@@ -291,29 +276,30 @@ export default function StudentAnalytics({ roomScore, view = 'complaints' }) {
       if (!groups[label]) groups[label] = [];
       groups[label].push(c);
     });
+    if (resolved.length) groups['Resolved'] = resolved;
     return groups;
   };
 
   const grouped = groupByDate(filteredComplaints);
 
   return (
-    <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
-      {/* Search + filters — keep existing filter logic */}
+    <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
+      {/* Search & Filters */}
       <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
         <div style={{ position:'relative' }}>
-          <svg style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', width:14, height:14, color:'var(--text-3)' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <svg style={{ position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', width:16, height:16, color:'var(--text-3)' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
           <input
             className="input"
-            style={{ paddingLeft:34 }}
-            placeholder="Search complaints…"
+            style={{ paddingLeft:40, borderRadius:16, background:'var(--bg-card)', border:'1px solid var(--border)' }}
+            placeholder="Search my complaints…"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
           />
         </div>
-        <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+        <div style={{ display:'flex', gap:7, flexWrap:'wrap' }}>
           {[['all','All'],['todo','To Do'],['in_progress','In Progress'],['resolved','Resolved']].map(([v,l]) => (
             <button key={v} onClick={() => setFilterStatus(v)}
-              style={{ fontSize:11.5, padding:'4px 11px', borderRadius:20, border:'1px solid', cursor:'pointer', transition:'all 0.15s', fontFamily:'var(--font)',
+              style={{ fontSize:12, padding:'5px 14px', borderRadius:20, border:'1px solid', cursor:'pointer', transition:'all 0.15s', fontFamily:'var(--font)',
                 background: filterStatus===v ? 'var(--primary)' : 'transparent',
                 color: filterStatus===v ? '#fff' : 'var(--text-2)',
                 borderColor: filterStatus===v ? 'var(--primary)' : 'var(--border-strong)'
@@ -321,7 +307,7 @@ export default function StudentAnalytics({ roomScore, view = 'complaints' }) {
           ))}
           {['Plumbing','Electrical','Cleaning','Furniture','Other'].map(cat => (
             <button key={cat} onClick={() => setFilterCategory(filterCategory===cat?'all':cat)}
-              style={{ fontSize:11.5, padding:'4px 11px', borderRadius:20, border:'1px solid', cursor:'pointer', transition:'all 0.15s', fontFamily:'var(--font)',
+              style={{ fontSize:12, padding:'5px 14px', borderRadius:20, border:'1px solid', cursor:'pointer', transition:'all 0.15s', fontFamily:'var(--font)',
                 background: filterCategory===cat ? 'var(--primary)' : 'transparent',
                 color: filterCategory===cat ? '#fff' : 'var(--text-2)',
                 borderColor: filterCategory===cat ? 'var(--primary)' : 'var(--border-strong)'
@@ -330,261 +316,152 @@ export default function StudentAnalytics({ roomScore, view = 'complaints' }) {
         </div>
       </div>
 
-      <div style={{ fontSize:13, color:'var(--text-2)', fontFamily:'var(--font-mono)' }}>
-        {filteredComplaints.length} complaint{filteredComplaints.length !== 1 ? 's' : ''}
-      </div>
-
-      {/* Timeline grouped by date */}
       {Object.keys(grouped).length === 0 && (
-        <div style={{ textAlign:'center', padding:'40px 0', color:'var(--text-3)', fontSize:13 }}>
-          No complaints match your filter.
+        <div style={{ textAlign:'center', padding:'60px 0', color:'var(--text-3)', fontSize:14 }}>
+          No complaints found.
         </div>
       )}
 
       {Object.entries(grouped).map(([date, items]) => (
         <div key={date}>
-          {/* Date separator */}
-          <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:16 }}>
-            <span style={{ fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', color:'var(--text-3)', whiteSpace:'nowrap' }}>{date}</span>
-            <div style={{ flex:1, height:1, background:'var(--border)' }} />
+          <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:16, marginTop: date==='Today'?0:10 }}>
+            <span style={{ fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', color:'var(--text-3)', whiteSpace:'nowrap' }}>{date}</span>
+            <div style={{ flex:1, height:1, background:'var(--border)', opacity:0.6 }} />
           </div>
 
-          {items.map((c, i) => {
-            const nc = nodeColors[c.status] || nodeColors.todo;
-            const sla = getSLAStatus(c);
-            const isLast = i === items.length - 1;
-            const resolved = c.status === 'resolved';
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(340px, 1fr))', gap:16 }}>
+            {items.map((c) => {
+              const sla = getSLAStatus(c);
+              const isResolved = c.status === 'resolved';
+              const conf = categoryConfig[c.category] || categoryConfig.Other;
 
-            return (
-              <div key={c.id} style={{ display:'flex', gap:0, marginBottom:4 }}>
-                {/* Spine */}
-                <div style={{ display:'flex', flexDirection:'column', alignItems:'center', width:52, flexShrink:0 }}>
-                  <HexNode status={c.status} />
-                  {!isLast && <div style={{ width:2, flex:1, minHeight:16, margin:'3px 0', borderRadius:1, background:nc.line, opacity:0.2 }} />}
-                </div>
+              return (
+                <div key={c.id} style={{
+                  background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:20,
+                  padding:'20px', position:'relative', overflow:'hidden',
+                  opacity: isResolved ? 0.7 : 1, transition:'transform 0.2s, box-shadow 0.2s'
+                }}
+                  onMouseOver={e => { if(!isResolved) { e.currentTarget.style.transform='translateY(-3px)'; e.currentTarget.style.boxShadow='0 8px 30px rgba(0,0,0,0.12)'; }}}
+                  onMouseOut={e => { e.currentTarget.style.transform='none'; e.currentTarget.style.boxShadow='none'; }}
+                >
+                  {/* Decorative blobs */}
+                  <div style={{ position:'absolute', top:-20, right:-20, width:100, height:100, borderRadius:'50%', background:conf.bg, filter:'blur(20px)', zIndex:0 }} />
+                  <div style={{ position:'absolute', bottom:-40, left:-20, width:140, height:140, borderRadius:'50%', background:'var(--primary-soft)', opacity:0.1, filter:'blur(30px)', zIndex:0 }} />
 
-                {/* Card */}
-                <div style={{ flex:1, paddingBottom: isLast ? 24 : 24, paddingLeft:10 }}>
-                  <div style={{
-                    background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:14,
-                    padding:'16px 18px', opacity: resolved ? 0.7 : 1,
-                    transition:'box-shadow 0.15s, border-color 0.15s',
-                    position:'relative', overflow:'hidden',
-                  }}
-                    onMouseOver={e => { e.currentTarget.style.boxShadow='0 3px 12px rgba(0,0,0,0.15)'; e.currentTarget.style.borderColor='var(--border-strong)'; }}
-                    onMouseOut={e => { e.currentTarget.style.boxShadow='none'; e.currentTarget.style.borderColor='var(--border)'; }}
-                  >
-                    {/* Top accent bar */}
-                    <div style={{ position:'absolute', top:0, left:0, right:0, height:3, background:nc.top, borderRadius:'14px 14px 0 0' }} />
-
-                    {/* Title row */}
-                    <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:6 }}>
-                      <div style={{ fontSize:14, fontWeight:700, color:'var(--text)', lineHeight:1.3 }}>{c.title}</div>
-                      <div style={{ fontSize:11, color:'var(--text-3)', flexShrink:0, marginLeft:12, marginTop:2, fontFamily:'var(--font-mono)' }}>
-                        {timeAgo(c.createdAt)}
+                  <div style={{ position:'relative', zIndex:1 }}>
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                        <div style={{ width:38, height:38, borderRadius:'50%', background:conf.bg, display:'flex', alignItems:'center', justifyContent:'center', border:`1px solid ${conf.color}33` }}>
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={conf.color} strokeWidth="2.5">{conf.icon}</svg>
+                        </div>
+                        <div>
+                          <div style={{ fontSize:13, fontWeight:700, color:'var(--text)' }}>{c.category}</div>
+                          <div style={{ fontSize:11, color:'var(--text-3)', fontFamily:'var(--font-mono)' }}>{timeAgo(c.createdAt)} ago</div>
+                        </div>
+                      </div>
+                      <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:4 }}>
+                        <span style={{ fontSize:10, fontWeight:800, textTransform:'uppercase', padding:'3px 8px', borderRadius:20, background: PRI_C[c.priority]+'22', color:PRI_C[c.priority], border:`1px solid ${PRI_C[c.priority]}44` }}>
+                          {c.priority}
+                        </span>
+                        <span style={{ fontSize:10, fontWeight:700, color:'var(--text-3)' }}>Room {c.roomNumber}</span>
                       </div>
                     </div>
 
-                    {/* Description */}
-                    <div style={{ fontSize:13, color:'var(--text-2)', lineHeight:1.55, marginBottom:10 }}>
+                    <div style={{ fontSize:15, fontWeight:700, color:'var(--text)', marginBottom:8, lineHeight:1.3 }}>{c.title}</div>
+                    
+                    <div style={{ background:'var(--bg-input)', borderRadius:12, padding:'10px 14px', marginBottom:14, fontSize:13, color:'var(--text-2)', lineHeight:1.6, border:'1px solid var(--border)' }}>
                       {c.descriptionTranslated || c.description}
                     </div>
 
-                    {/* Pills */}
-                    <div style={{ display:'flex', gap:5, flexWrap:'wrap', marginBottom:10 }}>
-                      <span style={{ fontSize:11, fontWeight:500, padding:'3px 8px', borderRadius:4, ...chipStyle(c.status) }}>
-                        {ST_L[c.status]}
-                      </span>
-                      <span style={{ fontSize:11, fontWeight:500, padding:'3px 8px', borderRadius:4, ...chipStyle(c.priority, 'priority') }}>
-                        {c.priority}
-                      </span>
-                      <span style={{ fontSize:11, padding:'3px 8px', borderRadius:4, background:'var(--bg-input)', color:'var(--text-2)' }}>
-                        {c.category}
-                      </span>
-                      {sla?.breached && (
-                        <span style={{ fontSize:11, fontWeight:600, padding:'3px 8px', borderRadius:4, background:'rgba(220,38,38,0.12)', color:'var(--red)', border:'1px solid rgba(220,38,38,0.2)', display:'flex', alignItems:'center', gap:4 }}>
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                          Timer breach
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Footer */}
-                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:8 }}>
-                      <div style={{ display:'flex', flexDirection:'column', gap:3, flex:1 }}>
-                        {c.acknowledgedAt
-                          ? <span style={{ fontSize:12, color:'var(--green)' }}>✓ Warden has seen this</span>
-                          : <span style={{ fontSize:12, color:'var(--text-3)' }}>Pending warden acknowledgement</span>
-                        }
-                        {c.estimatedResolutionAt && c.status !== 'resolved' && (
-                          <span style={{ fontSize:12, color:'var(--amber)', display:'flex', alignItems:'center', gap:4 }}>
-                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                            Expected: {new Date(typeof c.estimatedResolutionAt?.toDate === 'function' ? c.estimatedResolutionAt.toDate() : c.estimatedResolutionAt).toLocaleDateString('en-IN', { day:'numeric', month:'short' })}
-                          </span>
-                        )}
-                        {sla && !sla.breached && c.status !== 'resolved' && (
-                          <span style={{ fontSize:11, color:'var(--text-3)', fontFamily:'var(--font-mono)' }}>
-                            {sla.label}
-                          </span>
-                        )}
-                        {/* Timer bar */}
-                        {sla && c.status !== 'resolved' && (
-                          <div style={{ height:4, borderRadius:2, background:'var(--bg-input)', overflow:'hidden', width:140, marginTop:2 }}>
-                            <div style={{
-                              width:`${sla.percent}%`, height:'100%', borderRadius:2,
-                              background: sla.percent >= 80 ? 'var(--red)' : sla.percent >= 50 ? 'var(--amber)' : 'var(--green)',
-                              transition:'width 0.5s ease'
-                            }} />
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:10 }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+                        {!isResolved && sla && (
+                          <div style={{ position:'relative', width:42, height:42 }}>
+                            <svg width="42" height="42" viewBox="0 0 42 42" style={{ transform:'rotate(-90deg)' }}>
+                              <circle cx="21" cy="21" r="18" fill="none" stroke="var(--border)" strokeWidth="4"/>
+                              <circle cx="21" cy="21" r="18" fill="none" stroke={sla.breached ? 'var(--red)' : sla.critical ? 'var(--amber)' : 'var(--green)'} strokeWidth="4" strokeLinecap="round"
+                                strokeDasharray={`${sla.percent * 1.13} 113`}
+                                style={{ transition:'stroke-dasharray 0.5s ease' }}
+                              />
+                            </svg>
+                            <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', fontSize:9, fontWeight:800, fontFamily:'var(--font-mono)', color:'var(--text)' }}>
+                              {Math.round(sla.percent)}%
+                            </div>
                           </div>
                         )}
+                        <div style={{ display:'flex', flexDirection:'column', gap:2 }}>
+                          <span style={{ fontSize:12, fontWeight:600, color: ST_C[c.status] }}>{ST_L[c.status]}</span>
+                          {c.acknowledgedAt && !isResolved && <span style={{ fontSize:10.5, color:'var(--green)', fontWeight:500 }}>✓ Acknowledged</span>}
+                          {c.estimatedResolutionAt && !isResolved && <span style={{ fontSize:10.5, color:'var(--amber)', fontWeight:500 }}>ETA: {new Date(c.estimatedResolutionAt.toDate()).toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</span>}
+                        </div>
                       </div>
+
                       <div style={{ display:'flex', gap:6 }}>
-                        {c.status !== 'resolved' && c.withdrawnAt === null && (
-                          <button
-                            onClick={() => { setSelectedComplaint(c); setShowWithdrawModal(true); }}
-                            style={{ fontSize:12, padding:'5px 12px', borderRadius:7, border:'1px solid rgba(239,68,68,0.3)', background:'transparent', color:'var(--red)', cursor:'pointer', fontFamily:'var(--font)', fontWeight:500, transition:'background 0.12s' }}
-                            onMouseOver={e => e.currentTarget.style.background='var(--red-soft)'}
-                            onMouseOut={e => e.currentTarget.style.background='transparent'}
+                        {!isResolved && !c.withdrawnAt && (
+                          <button onClick={() => { setSelectedComplaint(c); setShowWithdrawModal(true); }}
+                            style={{ padding:'6px 12px', borderRadius:10, border:'1px solid var(--red)33', background:'var(--red)11', color:'var(--red)', fontSize:11.5, fontWeight:600, cursor:'pointer', fontFamily:'var(--font)' }}
                           >Withdraw</button>
                         )}
-                        {c.status === 'resolved' && (c.reopenCount||0) < 2 && c.withdrawnAt === null && (
-                          <button
-                            onClick={() => { setSelectedComplaint(c); setShowReopenModal(true); }}
-                            style={{ fontSize:12, padding:'5px 12px', borderRadius:7, border:'1px solid rgba(59,130,246,0.3)', background:'transparent', color:'var(--blue)', cursor:'pointer', fontFamily:'var(--font)', fontWeight:500, transition:'background 0.12s' }}
-                            onMouseOver={e => e.currentTarget.style.background='var(--blue-soft)'}
-                            onMouseOut={e => e.currentTarget.style.background='transparent'}
-                          >Issue not fixed? Re-open</button>
+                        {isResolved && (c.reopenCount||0) < 2 && !c.withdrawnAt && (
+                          <button onClick={() => { setSelectedComplaint(c); setShowReopenModal(true); }}
+                            style={{ padding:'6px 12px', borderRadius:10, border:'1px solid var(--primary)33', background:'var(--primary)11', color:'var(--primary)', fontSize:11.5, fontWeight:600, cursor:'pointer', fontFamily:'var(--font)' }}
+                          >Re-open</button>
                         )}
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       ))}
 
-      {/* Feature 7 Modal: Withdraw Complaint */}
+      {/* Modals - keep existing logic but update UI */}
       {showWithdrawModal && selectedComplaint && (
-        <div style={{
-          position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.6)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center'
-        }}>
-          <div style={{
-            background: 'var(--bg-surface)', borderRadius: '12px',
-            border: '1px solid var(--border)', padding: '1.5rem',
-            width: '100%', maxWidth: '400px'
-          }}>
-            <div style={{ fontWeight: 600, marginBottom: '8px' }}>Withdraw this complaint?</div>
-            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '12px' }}>
-              Only withdraw if the issue has already been fixed or is no longer relevant.
-            </div>
-            <textarea
-              placeholder="Brief reason (optional)"
-              value={withdrawReason}
-              onChange={e => setWithdrawReason(e.target.value)}
-              rows={3}
-              style={{
-                width: '100%', padding: '8px 12px',
-                background: 'var(--surface-2)', border: '1px solid var(--border)',
-                borderRadius: '8px', color: 'var(--text-primary)',
-                fontSize: '0.85rem', resize: 'none', marginBottom: '12px'
-              }}
+        <div style={{ position:'fixed', inset:0, zIndex:1000, background:'rgba(0,0,0,0.7)', backdropFilter:'blur(4px)', display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
+          <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:24, padding:24, width:'100%', maxWidth:400, boxShadow:'0 20px 50px rgba(0,0,0,0.3)' }}>
+            <div style={{ fontSize:18, fontWeight:700, color:'var(--text)', marginBottom:8 }}>Withdraw Complaint?</div>
+            <div style={{ fontSize:13, color:'var(--text-3)', marginBottom:16 }}>Only withdraw if the issue has been resolved or is no longer relevant.</div>
+            <textarea placeholder="Reason (optional)..." value={withdrawReason} onChange={e => setWithdrawReason(e.target.value)} rows={3}
+              style={{ width:'100%', padding:12, borderRadius:12, background:'var(--bg-input)', border:'1px solid var(--border)', color:'var(--text)', fontSize:14, fontFamily:'var(--font)', resize:'none', marginBottom:16 }}
             />
-            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-              <button
-                onClick={() => { setShowWithdrawModal(false); setWithdrawReason(''); }}
-                style={{ padding: '6px 16px', borderRadius: '8px', background: 'transparent',
-                  border: '1px solid var(--border)', color: 'var(--text-muted)', cursor: 'pointer' }}
-              >Cancel</button>
-              <button
-                onClick={async () => {
-                  await updateDoc(doc(db, 'complaints', selectedComplaint.id), {
-                    withdrawnAt: Timestamp.now(),
-                    withdrawnReason: withdrawReason || 'No reason provided',
-                    status: 'resolved', resolvedAt: Timestamp.now(),
-                  });
-                  const pts = selectedComplaint.priority === 'high' ? 30
-                    : selectedComplaint.priority === 'medium' ? 15 : 5;
-                  
-                  const roomRef = doc(db, 'hostels', selectedComplaint.hostelId, 'blocks', selectedComplaint.blockId, 'buildings', selectedComplaint.buildingId, 'floors', selectedComplaint.floorId, 'rooms', selectedComplaint.roomId);
-                  await updateDoc(roomRef, { score: increment(pts) });
-                  setShowWithdrawModal(false); setWithdrawReason('');
-                }}
-                style={{ padding: '6px 16px', borderRadius: '8px',
-                  background: 'rgba(240,101,101,0.15)', border: '1px solid rgba(240,101,101,0.4)',
-                  color: '#F06565', cursor: 'pointer', fontWeight: 600 }}
-              >Confirm Withdraw</button>
+            <div style={{ display:'flex', gap:10 }}>
+              <button onClick={() => setShowWithdrawModal(false)} style={{ flex:1, padding:11, borderRadius:12, border:'1px solid var(--border)', background:'transparent', color:'var(--text-3)', fontWeight:600, cursor:'pointer' }}>Cancel</button>
+              <button onClick={async () => {
+                await updateDoc(doc(db, 'complaints', selectedComplaint.id), { withdrawnAt: Timestamp.now(), withdrawnReason: withdrawReason || 'No reason provided', status: 'resolved', resolvedAt: Timestamp.now() });
+                const pts = selectedComplaint.priority === 'high' ? 30 : selectedComplaint.priority === 'medium' ? 15 : 5;
+                const roomRef = doc(db, 'hostels', selectedComplaint.hostelId, 'blocks', selectedComplaint.blockId, 'buildings', selectedComplaint.buildingId, 'floors', selectedComplaint.floorId, 'rooms', selectedComplaint.roomId);
+                await updateDoc(roomRef, { score: increment(pts) });
+                setShowWithdrawModal(false); setWithdrawReason('');
+              }} style={{ flex:1, padding:11, borderRadius:12, border:'none', background:'var(--red)', color:'#fff', fontWeight:600, cursor:'pointer' }}>Withdraw</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Feature 9 Modal: Re-open Complaint */}
       {showReopenModal && selectedComplaint && (
-        <div style={{
-          position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.6)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center'
-        }}>
-          <div style={{
-            background: 'var(--bg-surface)', borderRadius: '12px',
-            border: '1px solid var(--border)', padding: '1.5rem',
-            width: '100%', maxWidth: '400px'
-          }}>
-            <div style={{ fontWeight: 600, marginBottom: '8px' }}>Re-open this complaint?</div>
-            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '12px' }}>
-              Please describe what is still wrong so the warden can follow up.
-              {(selectedComplaint.reopenCount || 0) === 1 && (
-                <span style={{ color: '#F5A623', display: 'block', marginTop: '4px' }}>
-                  Note: this complaint can only be re-opened once more after this.
-                </span>
-              )}
-            </div>
-            <textarea
-              placeholder="What is still wrong? (required)"
-              value={reopenReason}
-              onChange={e => setReopenReason(e.target.value)}
-              rows={3}
-              style={{ width: '100%', padding: '8px 12px',
-                background: 'var(--surface-2)', border: '1px solid var(--border)',
-                borderRadius: '8px', color: 'var(--text-primary)',
-                fontSize: '0.85rem', resize: 'none', marginBottom: '12px' }}
+        <div style={{ position:'fixed', inset:0, zIndex:1000, background:'rgba(0,0,0,0.7)', backdropFilter:'blur(4px)', display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
+          <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:24, padding:24, width:'100%', maxWidth:400, boxShadow:'0 20px 50px rgba(0,0,0,0.3)' }}>
+            <div style={{ fontSize:18, fontWeight:700, color:'var(--text)', marginBottom:8 }}>Re-open Complaint?</div>
+            <div style={{ fontSize:13, color:'var(--text-3)', marginBottom:16 }}>Please provide a reason. You can re-open a complaint up to 2 times.</div>
+            <textarea placeholder="What's still wrong?..." value={reopenReason} onChange={e => setReopenReason(e.target.value)} rows={3}
+              style={{ width:'100%', padding:12, borderRadius:12, background:'var(--bg-input)', border:'1px solid var(--border)', color:'var(--text)', fontSize:14, fontFamily:'var(--font)', resize:'none', marginBottom:16 }}
             />
-            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-              <button
-                onClick={() => { setShowReopenModal(false); setReopenReason(''); }}
-                style={{ padding: '6px 16px', borderRadius: '8px', background: 'transparent',
-                  border: '1px solid var(--border)', color: 'var(--text-muted)', cursor: 'pointer' }}
-              >Cancel</button>
-              <button
-                disabled={!reopenReason.trim()}
-                onClick={async () => {
-                  if (!reopenReason.trim()) return;
-                  const pts = selectedComplaint.priority === 'high' ? 30
-                    : selectedComplaint.priority === 'medium' ? 15 : 5;
-                  
-                  await updateDoc(doc(db, 'complaints', selectedComplaint.id), {
-                    status: 'in_progress', reopenedAt: Timestamp.now(),
-                    reopenReason: reopenReason.trim(),
-                    reopenCount: increment(1),
-                    resolvedAt: null, estimatedResolutionAt: null,
-                  });
-
-                  const roomRef = doc(db, 'hostels', selectedComplaint.hostelId, 'blocks', selectedComplaint.blockId, 'buildings', selectedComplaint.buildingId, 'floors', selectedComplaint.floorId, 'rooms', selectedComplaint.roomId);
-                  await updateDoc(roomRef, { score: increment(-pts) });
-                  setShowReopenModal(false); setReopenReason('');
-                }}
-                style={{ padding: '6px 16px', borderRadius: '8px',
-                  background: 'rgba(245,166,35,0.15)', border: '1px solid rgba(245,166,35,0.4)',
-                  color: '#F5A623', cursor: 'pointer', fontWeight: 600,
-                  opacity: reopenReason.trim() ? 1 : 0.5 }}
-              >Re-open</button>
+            <div style={{ display:'flex', gap:10 }}>
+              <button onClick={() => setShowReopenModal(false)} style={{ flex:1, padding:11, borderRadius:12, border:'1px solid var(--border)', background:'transparent', color:'var(--text-3)', fontWeight:600, cursor:'pointer' }}>Cancel</button>
+              <button disabled={!reopenReason.trim()} onClick={async () => {
+                if (!reopenReason.trim()) return;
+                const pts = selectedComplaint.priority === 'high' ? 30 : selectedComplaint.priority === 'medium' ? 15 : 5;
+                await updateDoc(doc(db, 'complaints', selectedComplaint.id), { status:'in_progress', reopenedAt: Timestamp.now(), reopenReason: reopenReason.trim(), reopenCount: increment(1), resolvedAt: null, estimatedResolutionAt: null });
+                const roomRef = doc(db, 'hostels', selectedComplaint.hostelId, 'blocks', selectedComplaint.blockId, 'buildings', selectedComplaint.buildingId, 'floors', selectedComplaint.floorId, 'rooms', selectedComplaint.roomId);
+                await updateDoc(roomRef, { score: increment(-pts) });
+                setShowReopenModal(false); setReopenReason('');
+              }} style={{ flex:1, padding:11, borderRadius:12, border:'none', background:'var(--primary)', color:'#fff', fontWeight:600, cursor:'pointer', opacity:reopenReason.trim()?1:0.5 }}>Re-open</button>
             </div>
           </div>
         </div>
       )}
-
     </div>
   );
 }
