@@ -304,7 +304,7 @@ export default function LandingPage() {
 
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               <button
-                onClick={() => navigate('/demo')}
+                onClick={() => window.open('/demo', '_blank')}
                 style={{ height: 46, padding: '0 22px', borderRadius: 23, background: 'linear-gradient(135deg, #10B981, #3B82F6)', border: 'none', color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 8 }}
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polygon points="5 3 19 12 5 21 5 3" /></svg>
