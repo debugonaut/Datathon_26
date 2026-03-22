@@ -68,7 +68,7 @@ function ComplaintCardShell({ complaint }) {
   return (
     <div key={complaint.id} style={{
       background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:16,
-      overflow:'hidden', marginBottom:12,
+      overflow:'hidden', marginBottom:0,
       opacity: isResolved ? 0.55 : 1,
       transition:'transform 0.18s, box-shadow 0.18s',
     }}
@@ -412,9 +412,11 @@ export default function ComplaintsKanban({ complaints }) {
             </span>
             <div style={{ flex:1, height:0.5, background:'var(--border)' }} />
           </div>
-          {items.map(complaint => (
-            <ComplaintCardShell key={complaint.id} complaint={complaint} />
-          ))}
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(420px, 1fr))', gap:12 }}>
+            {items.map(complaint => (
+              <ComplaintCardShell key={complaint.id} complaint={complaint} />
+            ))}
+          </div>
         </div>
       ))}
 
