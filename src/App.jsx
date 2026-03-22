@@ -3,7 +3,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
-import RoleSetupPage from './pages/RoleSetupPage';
+import SetupRole from './pages/SetupRole';
 import ProfileSetup from './pages/student/ProfileSetup';
 import RoomRegister from './pages/student/RoomRegister';
 import StudentDashboard from './pages/student/Dashboard';
@@ -79,7 +79,7 @@ const AppRoutes = () => (
     <Route path="/" element={<RoleRedirect />} />
     <Route path="/login" element={<LoginPage />} />
     <Route path="/register" element={<RegisterPage />} />
-    <Route path="/setup-role" element={<RoleSetupPage />} />
+    <Route path="/setup-role" element={<SetupRole />} />
     
     {/* Student Routes with progressive guards */}
     <Route path="/student/profile-setup" element={

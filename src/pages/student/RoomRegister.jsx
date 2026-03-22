@@ -1,255 +1,145 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Scanner } from '@yudiel/react-qr-scanner';
-import { doc, getDoc } from 'firebase/firestore';
+import { useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase/config';
-import Navbar from '../../components/Navbar';
 import { useAuth } from '../../context/AuthContext';
-import { resolveRoomByCode, joinRoomTransaction } from '../../firebase/firestore';
-
-async function computePRNHash(prn) {
-  const hashBuffer = await crypto.subtle.digest(
-    'SHA-256',
-    new TextEncoder().encode(prn)
-  );
-  return Array.from(new Uint8Array(hashBuffer))
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
-}
 
 export default function RoomRegister() {
   const { user, userDoc, setUserDoc } = useAuth();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-
-  const [manualCode, setManualCode] = useState('');
-  const [resolving, setResolving] = useState(false);
-  const [resolvedRoom, setResolvedRoom] = useState(null);
-  const [hostelName, setHostelName] = useState('');
-  const [cameraActive, setCameraActive] = useState(false);
+  const [chars, setChars] = useState(['','','','','','']);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [joining, setJoining] = useState(false);
-  const [occupancyCheck, setOccupancyCheck] = useState(null); // { current, max, isFull }
+  const refs = [useRef(),useRef(),useRef(),useRef(),useRef(),useRef()];
 
-  // Auto-prefill from pendingRoomId or URL param
-  useEffect(() => {
-    const prefill = searchParams.get('prefill');
-    const pending = localStorage.getItem('pendingRoomId');
-    const code = prefill || pending;
-    if (code) {
-      localStorage.removeItem('pendingRoomId');
-      handleResolveCode(code);
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const code = chars.join('').toUpperCase();
 
-  const handleResolveCode = async (codeStr) => {
-    if (!codeStr || codeStr.length < 6) return;
-    setResolving(true);
-    setError('');
-    setOccupancyCheck(null);
+  const handleChar = (i, val) => {
+    const v = val.replace(/[^a-zA-Z0-9]/g,'').toUpperCase().slice(-1);
+    const next = [...chars]; next[i] = v; setChars(next);
+    if (v && i < 5) refs[i+1].current?.focus();
+  };
 
+  const handleKeyDown = (i, e) => {
+    if (e.key === 'Backspace' && !chars[i] && i > 0) refs[i-1].current?.focus();
+  };
+
+  const handleSearch = async () => {
+    if (code.length < 6) { setError('Please enter the full 6-character room code.'); return; }
+    setLoading(true); setError('');
     try {
-      let codeToSearch = typeof codeStr === 'string' ? codeStr : String(codeStr);
-      if (codeToSearch.includes('/room/')) {
-        const parts = codeToSearch.split('/');
-        codeToSearch = parts[parts.length - 1].slice(-6);
-      } else {
-        codeToSearch = codeToSearch.slice(-6);
-      }
-
-      const roomData = await resolveRoomByCode(codeToSearch);
-      if (!roomData) throw new Error('Invalid or unrecognized Room Code.');
-
-      const hostelSnap = await getDoc(doc(db, 'hostels', roomData.hostelId));
-      let hName = 'Unknown Hostel';
-      if (hostelSnap.exists()) hName = hostelSnap.data().name;
-      setHostelName(hName);
-
-      // Compute occupancy
-      const current = roomData.data.currentOccupants || 0;
-      const max = roomData.data.maxOccupants || 2;
-      setOccupancyCheck({ current, max, isFull: current >= max });
-
-      // Check PRN hash uniqueness
-      if (userDoc?.PRN) {
-        const prnHash = await computePRNHash(userDoc.PRN);
-        const occupants = roomData.data.occupants || [];
-        if (occupants.some(o => o.PRN_hash === prnHash)) {
-          setError('Your PRN is already registered to this room.');
-          setResolving(false);
-          return;
-        }
-      }
-
-      // Check if student is already registered elsewhere
-      if (userDoc?.roomId) {
-        setError('You are already registered to a room. Contact your warden to change rooms.');
-        setResolving(false);
-        return;
-      }
-
-      setResolvedRoom(roomData);
+      // search across hostels — adjust path to match your Firestore structure
+      const snap = await getDoc(doc(db, 'roomCodes', code));
+      if (!snap.exists()) { setError(`Room code "${code}" not found. Check the code on your door.`); setLoading(false); return; }
+      const roomData = snap.data();
+      await updateDoc(doc(db, 'users', user.uid), {
+        hostelId: roomData.hostelId,
+        blockId: roomData.blockId,
+        buildingId: roomData.buildingId,
+        floorId: roomData.floorId,
+        roomId: roomData.roomId,
+        roomNumber: roomData.roomNumber,
+        floorNumber: roomData.floorNumber,
+      });
+      setUserDoc(prev => ({ ...prev, ...roomData }));
+      navigate('/student/dashboard');
     } catch (err) {
       setError(err.message);
     } finally {
-      setResolving(false);
+      setLoading(false);
     }
   };
-
-  const handleConfirmJoin = async () => {
-    if (!resolvedRoom || joining) return;
-    setJoining(true);
-    setError('');
-
-    try {
-      const prnHash = await computePRNHash(userDoc.PRN);
-
-      await joinRoomTransaction(user.uid, resolvedRoom, {
-        name: userDoc.name,
-        PRN_hash: prnHash
-      });
-
-      // Update local context
-      setUserDoc(prev => ({
-        ...prev,
-        roomId: resolvedRoom.roomId,
-        hostelId: resolvedRoom.hostelId,
-        blockId: resolvedRoom.blockId,
-        buildingId: resolvedRoom.buildingId,
-        floorId: resolvedRoom.floorId,
-        roomNumber: resolvedRoom.roomNumber,
-        isRegistered: true,
-      }));
-
-      setTimeout(() => {
-        navigate('/student/dashboard', { replace: true });
-      }, 800);
-    } catch (err) {
-      console.error(err);
-      setError(err.message || 'Failed to join room.');
-      setJoining(false);
-    }
-  };
-
-  const occPercent = occupancyCheck ? Math.round((occupancyCheck.current / occupancyCheck.max) * 100) : 0;
 
   return (
-    <div className="page">
-      <Navbar />
-      <div className="auth-center" style={{ paddingTop: '3rem', paddingBottom: '3rem' }}>
-        <div className="auth-card animation-fade-in" style={{ maxWidth: 500, width: '100%' }}>
-
-          {!resolvedRoom ? (
-            <>
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ margin: '0 auto 1rem', display: 'block' }}>
-                <path d="M20 20V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v16M2 20h20M14 12v.01" />
-              </svg>
-              <h2 className="auth-title">Join Your Room</h2>
-              <p className="auth-subtitle mb-3">Scan the QR code on your door, or enter the 6-character room code.</p>
-
-              {error && <div className="form-error">{error}</div>}
-
-              {cameraActive ? (
-                <div style={{ borderRadius: '12px', overflow: 'hidden', border: '2px solid var(--border)', marginBottom: '1.5rem', background: '#000', position: 'relative' }}>
-                  <Scanner
-                    onScan={(result) => {
-                      if (!result) return;
-                      const val = Array.isArray(result) ? result[0].rawValue : (result.rawValue || result.text || result);
-                      if (val) { setCameraActive(false); handleResolveCode(val); }
-                    }}
-                    components={{ audio: false }}
-                  />
-                  <button className="btn btn-sm btn-ghost" style={{ position: 'absolute', top: 10, right: 10, background: 'rgba(0,0,0,0.5)', color: 'white' }} onClick={() => setCameraActive(false)}>Close Camera</button>
-                </div>
-              ) : (
-                <button className="btn btn-outline btn-full mb-3" onClick={() => setCameraActive(true)}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px', verticalAlign: 'middle' }}><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
-                  Scan Room QR Code
-                </button>
-              )}
-
-              <div className="divider">OR ENTER MANUALLY</div>
-
-              <div className="flex gap-2">
-                <input
-                  className="input flex-1"
-                  placeholder="e.g. A9B2C4"
-                  value={manualCode}
-                  onChange={e => setManualCode(e.target.value.toUpperCase())}
-                  maxLength={6}
-                  style={{ textTransform: 'uppercase', letterSpacing: '2px', textAlign: 'center', fontWeight: 'bold' }}
-                />
-                <button
-                  className="btn btn-primary"
-                  disabled={manualCode.length < 6 || resolving}
-                  onClick={() => handleResolveCode(manualCode)}
-                >
-                  {resolving ? 'Searching...' : 'Search'}
-                </button>
+    <div style={{ fontFamily: "'Sora','Inter',sans-serif", height: '100vh', background: '#060810', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      {/* Navbar */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 28px', borderBottom: '1px solid rgba(255,255,255,0.05)', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, color: '#F1F5F9' }}>
+          <svg width="20" height="20" viewBox="0 0 32 32" fill="none"><polygon points="16,2 28,9 28,23 16,30 4,23 4,9" stroke="#6C63FF" strokeWidth="1.5"/><path d="M16 9 L16 16 L20 19" stroke="#6C63FF" strokeWidth="1.8" strokeLinecap="round"/></svg>
+          Fix My Hostel
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {[['✓','Role','done'],['✓','Profile','done'],['3','Room','active']].map(([n,l,s],i) => (
+            <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {i > 0 && <div style={{ width: 24, height: 1, background: '#10B981' }} />}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: s === 'active' ? '#F1F5F9' : '#10B981' }}>
+                <div style={{ width: 20, height: 20, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 700, background: s === 'active' ? '#6C63FF' : '#10B981', color: '#fff' }}>{n}</div>
+                {l}
               </div>
-            </>
-          ) : (
-            <div className="text-center">
-              <div style={{
-                width: 64, height: 64, margin: '0 auto 1rem', borderRadius: '50%',
-                background: occupancyCheck?.isFull ? 'rgba(240,101,101,0.1)' : 'rgba(34,211,160,0.1)',
-                color: occupancyCheck?.isFull ? 'var(--red)' : 'var(--green)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem'
-              }}>
-                {occupancyCheck?.isFull ? '✕' : '✓'}
-              </div>
-
-              <h2 className="font-bold mb-1">Room Found</h2>
-              <p className="text-secondary mb-3" style={{ lineHeight: 1.5 }}>
-                <strong>Room {resolvedRoom.roomNumber}</strong><br />
-                <span style={{ fontSize: '0.9rem' }}>{hostelName}</span>
-              </p>
-
-              {error && <div className="form-error text-left mb-2">{error}</div>}
-
-              {/* Occupancy Bar */}
-              {occupancyCheck && (
-                <div style={{
-                  background: 'var(--bg-raised)', padding: '1rem', borderRadius: '8px',
-                  marginBottom: '1.5rem', border: '1px solid var(--border)'
-                }}>
-                  <div className="text-xs text-muted mb-1">Occupancy</div>
-                  <div style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>
-                    {occupancyCheck.current} of {occupancyCheck.max} beds filled
-                  </div>
-                  <div style={{ height: 8, borderRadius: 4, background: 'rgba(255,255,255,0.1)', overflow: 'hidden' }}>
-                    <div style={{
-                      height: '100%', borderRadius: 4,
-                      width: `${occPercent}%`,
-                      background: occupancyCheck.isFull ? 'var(--red)' : occPercent > 75 ? 'var(--amber)' : 'var(--green)',
-                      transition: 'width 0.3s'
-                    }} />
-                  </div>
-                  {occupancyCheck.isFull && (
-                    <div className="text-xs mt-1" style={{ color: 'var(--red)' }}>
-                      This room is full. Please contact your warden.
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <div className="flex gap-2">
-                <button className="btn btn-ghost flex-1" onClick={() => { setResolvedRoom(null); setError(''); setOccupancyCheck(null); }} disabled={joining}>Back</button>
-                <button
-                  className="btn btn-primary flex-1"
-                  onClick={handleConfirmJoin}
-                  disabled={joining || occupancyCheck?.isFull || !!error}
-                  style={{ padding: '1rem' }}
-                >
-                  {joining ? 'Joining...' : 'Confirm & Join'}
-                </button>
-              </div>
-
-              <p className="text-center text-xs text-muted mt-3">
-                This action cannot be reversed without warden approval.
-              </p>
             </div>
-          )}
+          ))}
+        </div>
+        <div style={{ width: 120 }} />
+      </div>
+
+      {/* Body — 50/50 split */}
+      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', overflow: 'hidden' }}>
+        {/* Left — QR scanner */}
+        <div style={{ background: '#0E1015', borderRight: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 0, padding: 36 }}>
+          <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#1E293B', marginBottom: 28 }}>Scan QR on your room door</div>
+          <div style={{ width: 200, height: 200, position: 'relative', marginBottom: 28 }}>
+            {[['tl','top:-1px;left:-1px;border-width:3px 0 0 3px;border-radius:6px 0 0 0'],['tr','top:-1px;right:-1px;border-width:3px 3px 0 0;border-radius:0 6px 0 0'],['bl','bottom:-1px;left:-1px;border-width:0 0 3px 3px;border-radius:0 0 0 6px'],['br','bottom:-1px;right:-1px;border-width:0 3px 3px 0;border-radius:0 0 6px 0']].map(([k]) => (
+              <div key={k} style={{ position: 'absolute', width: 22, height: 22, borderColor: '#6C63FF', borderStyle: 'solid', ...(k==='tl'?{top:-1,left:-1,borderWidth:'3px 0 0 3px',borderRadius:'6px 0 0 0'}:k==='tr'?{top:-1,right:-1,borderWidth:'3px 3px 0 0',borderRadius:'0 6px 0 0'}:k==='bl'?{bottom:-1,left:-1,borderWidth:'0 0 3px 3px',borderRadius:'0 0 0 6px'}:{bottom:-1,right:-1,borderWidth:'0 3px 3px 0',borderRadius:'0 0 6px 0'}) }} />
+            ))}
+            <div style={{ width: '100%', height: '100%', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.02)' }}>
+              <svg width="100" height="100" viewBox="0 0 80 80" fill="none">
+                <rect x="8" y="8" width="22" height="22" rx="3" stroke="rgba(108,99,255,0.25)" strokeWidth="1.5"/>
+                <rect x="12" y="12" width="14" height="14" rx="1" fill="rgba(108,99,255,0.18)"/>
+                <rect x="50" y="8" width="22" height="22" rx="3" stroke="rgba(108,99,255,0.25)" strokeWidth="1.5"/>
+                <rect x="54" y="12" width="14" height="14" rx="1" fill="rgba(108,99,255,0.18)"/>
+                <rect x="8" y="50" width="22" height="22" rx="3" stroke="rgba(108,99,255,0.25)" strokeWidth="1.5"/>
+                <rect x="12" y="54" width="14" height="14" rx="1" fill="rgba(108,99,255,0.18)"/>
+                <rect x="50" y="50" width="8" height="8" rx="1" fill="rgba(108,99,255,0.15)"/>
+                <rect x="62" y="50" width="8" height="8" rx="1" fill="rgba(108,99,255,0.15)"/>
+                <rect x="50" y="62" width="8" height="8" rx="1" fill="rgba(108,99,255,0.15)"/>
+                <rect x="62" y="62" width="8" height="8" rx="1" fill="rgba(108,99,255,0.15)"/>
+              </svg>
+            </div>
+          </div>
+          <button style={{ width: '100%', maxWidth: 220, padding: 13, background: '#6C63FF', border: 'none', borderRadius: 12, color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            Open Camera
+          </button>
+          <div style={{ fontSize: 11, color: '#1E293B', marginTop: 14 }}>or enter code on the right</div>
+        </div>
+
+        {/* Right — manual code */}
+        <div style={{ padding: '36px 44px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#6C63FF', background: 'rgba(108,99,255,0.1)', border: '1px solid rgba(108,99,255,0.2)', padding: '4px 10px', borderRadius: 4, display: 'inline-block', marginBottom: 20 }}>Final step</div>
+          <div style={{ fontSize: 30, fontWeight: 700, color: '#F1F5F9', letterSpacing: '-0.05em', lineHeight: 1.0, marginBottom: 8 }}>Join your<br/>room.</div>
+          <div style={{ fontSize: 12, color: '#334155', lineHeight: 1.7, marginBottom: 32 }}>Scan the QR on your door or type the 6-character code printed below it.</div>
+
+          {error && <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 8, padding: '9px 13px', fontSize: 12, color: '#ef4444', marginBottom: 16 }}>{error}</div>}
+
+          <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#334155', marginBottom: 10 }}>Room code</div>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+            {chars.map((ch, i) => (
+              <input
+                key={i}
+                ref={refs[i]}
+                value={ch}
+                onChange={e => handleChar(i, e.target.value)}
+                onKeyDown={e => handleKeyDown(i, e)}
+                maxLength={1}
+                style={{
+                  width: 48, height: 56, borderRadius: 10, textAlign: 'center',
+                  border: `1px solid ${ch ? '#6C63FF' : 'rgba(255,255,255,0.09)'}`,
+                  background: ch ? 'rgba(108,99,255,0.08)' : 'rgba(255,255,255,0.04)',
+                  color: '#F1F5F9', fontSize: 22, fontWeight: 700,
+                  fontFamily: "'Courier New', monospace",
+                  outline: 'none', cursor: 'text', textTransform: 'uppercase',
+                }}
+              />
+            ))}
+          </div>
+          <button onClick={handleSearch} disabled={loading} style={{ width: '100%', padding: 13, borderRadius: 10, background: code.length === 6 ? '#6C63FF' : 'rgba(108,99,255,0.3)', border: 'none', color: '#fff', fontSize: 14, fontWeight: 700, cursor: code.length === 6 && !loading ? 'pointer' : 'not-allowed', fontFamily: 'inherit' }}>
+            {loading ? 'Searching…' : 'Search Room'}
+          </button>
+          <div style={{ fontSize: 11, color: '#1E293B', marginTop: 12 }}>
+            No code?{' '}
+            <span onClick={() => navigate('/')} style={{ color: '#6C63FF', fontWeight: 600, cursor: 'pointer' }}>Find your hostel</span>
+            {' '}on the home page or ask your warden.
+          </div>
         </div>
       </div>
     </div>

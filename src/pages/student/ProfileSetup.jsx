@@ -1,255 +1,124 @@
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase/config';
-import Navbar from '../../components/Navbar';
 import { useAuth } from '../../context/AuthContext';
-import { checkPRNExists } from '../../firebase/firestore';
 
-const BRANCHES = [
-  'Computer Engineering',
-  'Computer Engineering (Software Engineering)',
-  'Computer Engineering (AIML)',
-  'Computer Engineering (DS)',
-  'ENTC',
-  'Chemical',
-  'Civil',
-  'Mechanical',
-  'Design',
-];
+const BRANCHES = ['Computer Engineering', 'Information Technology', 'Mechanical Engineering', 'Civil Engineering', 'Electronics', 'Other'];
 
 export default function ProfileSetup() {
-  const { user, setUserDoc } = useAuth();
+  const { user, userDoc, setUserDoc } = useAuth();
   const navigate = useNavigate();
-
-  const [name, setName] = useState(user?.displayName || '');
-  const [prn, setPrn] = useState('');
-  const [branch, setBranch] = useState('');
-  const [year, setYear] = useState('');
-  const [error, setError] = useState('');
-  const [prnError, setPrnError] = useState('');
+  const [name, setName] = useState(userDoc?.name || user?.displayName || '');
+  const [prn, setPrn] = useState(userDoc?.prn || '');
+  const [branch, setBranch] = useState(userDoc?.branch || '');
+  const [year, setYear] = useState(userDoc?.year || '');
   const [loading, setLoading] = useState(false);
-  const [prnChecking, setPrnChecking] = useState(false);
+  const [error, setError] = useState('');
 
-  const emailPRN = user?.email?.split('@')[0] || '';
-
-  // ── PRN Validation Pipeline ──────────────────────────────────────────────────
-  const validatePRN = useCallback((value) => {
-    // Step 1: Strip non-digits
-    const stripped = value.replace(/\D/g, '');
-    if (stripped !== value) {
-      setPrnError('PRN must contain only numbers.');
-      return false;
-    }
-    // Step 2: Exactly 12 digits (only enforce on blur/submit)
-    if (stripped.length > 0 && stripped.length !== 12) {
-      setPrnError(`PRN must be exactly 12 digits. Currently ${stripped.length}/12.`);
-      return false;
-    }
-    if (stripped.length === 0) {
-      setPrnError('');
-      return false;
-    }
-    // Step 3: Cannot start with 0
-    if (stripped.startsWith('0')) {
-      setPrnError('Invalid PRN format.');
-      return false;
-    }
-    // Step 4: Cross-check against email
-    if (stripped !== emailPRN) {
-      setPrnError('PRN does not match your college email address. Please enter the PRN from your email ID.');
-      return false;
-    }
-    setPrnError('');
-    return true;
-  }, [emailPRN]);
-
-  const handlePRNChange = (e) => {
-    const val = e.target.value.replace(/\D/g, '').slice(0, 12);
-    setPrn(val);
-    // Live validation (basic checks only during typing)
-    if (val.length === 0) { setPrnError(''); return; }
-    if (val.replace(/\D/g, '') !== val) { setPrnError('PRN must contain only numbers.'); return; }
-    if (val.startsWith('0')) { setPrnError('Invalid PRN format.'); return; }
-    if (val.length === 12 && val !== emailPRN) {
-      setPrnError('PRN does not match your college email address. Please enter the PRN from your email ID.');
-      return;
-    }
-    if (val.length < 12) {
-      setPrnError('');
-      return;
-    }
-    setPrnError('');
-  };
-
-  const handlePRNBlur = () => {
-    if (prn.length > 0) validatePRN(prn);
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-
-    // Full validation pipeline
-    if (!name.trim()) { setError('Please enter your full name.'); return; }
-    if (!validatePRN(prn)) return;
-    if (!branch) { setError('Please select your branch.'); return; }
-    if (!year) { setError('Please select your year.'); return; }
-
-    setLoading(true);
-
+  const handleSubmit = async () => {
+    if (!name.trim() || !prn.trim() || !branch || !year) { setError('Please fill in all fields.'); return; }
+    if (prn.trim().length !== 12) { setError('PRN must be exactly 12 digits.'); return; }
+    setLoading(true); setError('');
     try {
-      // Step 5: Firestore uniqueness check
-      setPrnChecking(true);
-      const exists = await checkPRNExists(prn);
-      setPrnChecking(false);
-      if (exists) {
-        setPrnError('This PRN is already registered. Contact your warden if this is an error.');
-        setLoading(false);
-        return;
-      }
-
-      const userData = {
-        uid: user.uid,
-        name: name.trim(),
-        PRN: prn,
-        email: user.email,
-        branch,
-        year,
-        isProfileComplete: true,
-        isRegistered: false,
-        roomId: null,
-        hostelId: null,
-        role: 'student',
-        createdAt: serverTimestamp()
-      };
-
-      await setDoc(doc(db, 'users', user.uid), userData, { merge: true });
-      setUserDoc({ ...userData, createdAt: new Date() });
-
-      // Check for pending room
-      const pending = localStorage.getItem('pendingRoomId');
-      if (pending) {
-        navigate(`/student/room-register?prefill=${pending}`, { replace: true });
-      } else {
-        navigate('/student/room-register', { replace: true });
-      }
+      const updates = { name: name.trim(), prn: prn.trim(), branch, year, profileComplete: true };
+      await updateDoc(doc(db, 'users', user.uid), updates);
+      setUserDoc(prev => ({ ...prev, ...updates }));
+      navigate('/student/room-register');
     } catch (err) {
-      console.error(err);
-      setError('Something went wrong. Please try again.');
+      setError(err.message);
+    } finally {
       setLoading(false);
     }
   };
 
-  const isFormValid = name.trim() && prn.length === 12 && !prnError && branch && year;
+  const inputStyle = { width: '100%', padding: '11px 14px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)', color: '#F1F5F9', fontSize: 14, fontFamily: 'inherit', outline: 'none' };
+  const labelStyle = { fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#334155', marginBottom: 6, display: 'flex', alignItems: 'center', justifyContent: 'space-between' };
 
   return (
-    <div className="page">
-      <Navbar />
-      <div className="auth-center" style={{ paddingTop: '3rem', paddingBottom: '3rem' }}>
-        <div className="auth-card animation-fade-in" style={{ maxWidth: 480 }}>
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ margin: '0 auto 1rem', display: 'block' }}>
-            <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
-            <path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5" />
-          </svg>
-          <h1 className="auth-title">Complete Your Profile</h1>
-          <p className="auth-subtitle mb-3">One-time setup before you can join your room.</p>
-
-          {error && <div className="form-error">{error}</div>}
-
-          <form onSubmit={handleSubmit}>
-            {/* Full Name */}
-            <div style={{ marginBottom: 16 }}>
-              <label className="label">Full Name</label>
-              <input
-                className="input"
-                type="text"
-                value={name}
-                onChange={e => setName(e.target.value)}
-                placeholder="Your full name"
-                required
-              />
+    <div style={{ fontFamily: "'Sora','Inter',sans-serif", height: '100vh', background: '#08090F', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      {/* Navbar */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 28px', borderBottom: '1px solid rgba(255,255,255,0.05)', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, color: '#F1F5F9' }}>
+          <svg width="20" height="20" viewBox="0 0 32 32" fill="none"><polygon points="16,2 28,9 28,23 16,30 4,23 4,9" stroke="#6C63FF" strokeWidth="1.5"/><path d="M16 9 L16 16 L20 19" stroke="#6C63FF" strokeWidth="1.8" strokeLinecap="round"/></svg>
+          Fix My Hostel
+        </div>
+        {/* Step indicator */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {[['✓','Role','done'],['2','Profile','active'],['3','Room','idle']].map(([n,l,s],i) => (
+            <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {i > 0 && <div style={{ width: 24, height: 1, background: s === 'idle' ? 'rgba(255,255,255,0.07)' : '#10B981' }} />}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: s === 'done' ? '#10B981' : s === 'active' ? '#F1F5F9' : '#1E293B' }}>
+                <div style={{ width: 20, height: 20, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 700, background: s === 'done' ? '#10B981' : s === 'active' ? '#6C63FF' : 'rgba(255,255,255,0.05)', color: s === 'idle' ? '#1E293B' : '#fff' }}>{n}</div>
+                {l}
+              </div>
             </div>
+          ))}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+          <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#6C63FF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, color: '#fff' }}>AK</div>
+          <div style={{ fontSize: 11, color: '#475569', fontWeight: 600 }}>{userDoc?.name || user?.displayName} · student</div>
+        </div>
+      </div>
 
-            {/* PRN */}
-            <div style={{ marginBottom: 16 }}>
-              <label className="label">
-                PRN (Permanent Registration Number)
-                <span className="text-secondary text-sm" style={{ marginLeft: '0.5rem' }}>
-                  {prn.length}/12 digits
-                </span>
-              </label>
-              <input
-                className="input"
-                type="text"
-                inputMode="numeric"
-                maxLength={12}
-                value={prn}
-                onChange={handlePRNChange}
-                onBlur={handlePRNBlur}
-                placeholder="e.g. 211090100001"
-                required
-                style={prnError ? { borderColor: 'var(--red)' } : {}}
-              />
-              {prnError && <p className="text-sm mt-1" style={{ color: 'var(--red)' }}>{prnError}</p>}
-              {prnChecking && <p className="text-sm mt-1 text-muted">Checking uniqueness...</p>}
+      {/* Body */}
+      <div style={{ flex: 1, display: 'flex', alignItems: 'stretch', overflow: 'hidden' }}>
+        {/* Left column */}
+        <div style={{ width: 260, flexShrink: 0, padding: '36px 32px', borderRight: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ fontSize: 26, fontWeight: 700, color: '#F1F5F9', letterSpacing: '-0.04em', lineHeight: 1.1, marginBottom: 12 }}>Complete<br/>your<br/>profile.</div>
+            <div style={{ fontSize: 12, color: '#334155', lineHeight: 1.7 }}>One-time setup before you can join your room. Takes about a minute.</div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: '12px 14px' }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#334155" strokeWidth="2" style={{ flexShrink: 0, marginTop: 1 }}><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <div style={{ fontSize: 11, color: '#334155', lineHeight: 1.6 }}>Email is locked — verified via <span style={{ color: '#6C63FF' }}>Google OAuth</span> and cannot be changed.</div>
+          </div>
+        </div>
+
+        {/* Fields */}
+        <div style={{ flex: 1, padding: '28px 36px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 18 }}>
+          {error && <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 8, padding: '9px 13px', fontSize: 12, color: '#ef4444' }}>{error}</div>}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div>
+              <div style={labelStyle}>Full Name</div>
+              <input style={inputStyle} type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Your full name" />
             </div>
-
-            {/* Email (locked) */}
-            <div style={{ marginBottom: 16 }}>
-              <label className="label">College Email</label>
-              <input
-                className="input"
-                type="email"
-                value={user?.email || ''}
-                disabled
-                style={{ opacity: 0.6, cursor: 'not-allowed' }}
-              />
-              <p className="text-secondary text-sm mt-1">Verified via Google OAuth. Cannot be changed.</p>
+            <div>
+              <div style={labelStyle}>College Email</div>
+              <input style={{ ...inputStyle, color: '#334155', cursor: 'not-allowed', borderColor: 'rgba(255,255,255,0.04)' }} type="email" value={user?.email || ''} readOnly />
             </div>
-
-            {/* Branch */}
-            <div style={{ marginBottom: 16 }}>
-              <label className="label">Branch</label>
-              <select
-                className="input"
-                value={branch}
-                onChange={e => setBranch(e.target.value)}
-                required
-              >
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div>
+              <div style={labelStyle}>PRN <span style={{ fontSize: 10, color: '#1E293B', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>{prn.length}/12 digits</span></div>
+              <input style={inputStyle} type="text" value={prn} onChange={e => setPrn(e.target.value.replace(/\D/g,'').slice(0,12))} placeholder="e.g. 211090100001" />
+            </div>
+            <div>
+              <div style={labelStyle}>Branch</div>
+              <select style={{ ...inputStyle, color: branch ? '#F1F5F9' : '#334155' }} value={branch} onChange={e => setBranch(e.target.value)}>
                 <option value="">Select your branch</option>
                 {BRANCHES.map(b => <option key={b} value={b}>{b}</option>)}
               </select>
             </div>
-
-            {/* Year */}
-            <div style={{ marginBottom: 16 }}>
-              <label className="label mb-1">Year</label>
-              <div className="flex gap-1">
-                {['1st', '2nd', '3rd', '4th'].map(y => (
-                  <button
-                    type="button"
-                    key={y}
-                    className={`btn btn-sm ${year === y ? 'btn-primary' : 'btn-ghost'}`}
-                    onClick={() => setYear(y)}
-                    style={{ flex: 1 }}
-                  >
-                    {y}
-                  </button>
-                ))}
-              </div>
+          </div>
+          <div>
+            <div style={labelStyle}>Year of study</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
+              {['1st','2nd','3rd','4th'].map(y => (
+                <button key={y} onClick={() => setYear(y)} style={{ padding: '10px 0', borderRadius: 9, border: `1px solid ${year === y ? '#6C63FF' : 'rgba(255,255,255,0.07)'}`, background: year === y ? '#6C63FF' : 'transparent', color: year === y ? '#fff' : '#1E293B', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s' }}>
+                  {y}
+                </button>
+              ))}
             </div>
-
-            <button
-              className="btn btn-primary btn-full mt-2"
-              type="submit"
-              disabled={!isFormValid || loading}
-              style={{ padding: '1rem' }}
-            >
-              {loading ? 'Saving Profile...' : 'Continue to Room Registration →'}
-            </button>
-          </form>
+          </div>
         </div>
+      </div>
+
+      {/* Footer */}
+      <div style={{ padding: '14px 36px 14px 296px', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'flex-end', flexShrink: 0 }}>
+        <button onClick={handleSubmit} disabled={loading} style={{ padding: '12px 28px', background: '#6C63FF', border: 'none', borderRadius: 10, color: '#fff', fontSize: 13, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', opacity: loading ? 0.7 : 1 }}>
+          {loading ? 'Saving…' : 'Continue to Room Registration →'}
+        </button>
       </div>
     </div>
   );
