@@ -117,7 +117,8 @@ export default function OverviewOccupancy({ hostelId }) {
               height: '100%', borderRadius: 5,
               width: `${overallPercent}%`,
               background: overallPercent > 90 ? '#F06565' : overallPercent > 70 ? '#F5A623' : '#22D3A0',
-              transition: 'width 0.4s'
+              transition: 'width 0.4s',
+              willChange: 'width'
             }} />
           </div>
           <div className="text-xs text-muted mt-1 text-right">{overallPercent}%</div>
@@ -163,7 +164,8 @@ export default function OverviewOccupancy({ hostelId }) {
                   height: '100%', borderRadius: 3,
                   width: `${percent}%`,
                   background: current >= max ? '#F06565' : percent > 75 ? '#F5A623' : '#22D3A0',
-                  transition: 'width 0.3s'
+                  transition: 'width 0.3s',
+                  willChange: 'width'
                 }} />
               </div>
 

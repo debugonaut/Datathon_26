@@ -37,7 +37,7 @@ export default function StudentDashboard() {
   }, [userDoc?.roomId]);
 
   useEffect(() => {
-    if (!userDoc?.hostelId) {
+    if (!user || !userDoc?.hostelId) {
       setLoading(false);
       return;
     }
@@ -81,7 +81,7 @@ export default function StudentDashboard() {
     };
 
     loadData();
-  }, [userDoc]);
+  }, [userDoc, user]);
 
   const handleReadAnnouncement = async (annId, currentReadBy) => {
     if (currentReadBy.includes(user.uid)) return;
@@ -92,7 +92,14 @@ export default function StudentDashboard() {
     }));
   };
 
-  if (loading) return (
+  if (!user || loading) return (
+    <div className="page">
+      <Navbar />
+      <div className="loading-screen"><div className="spinner" /></div>
+    </div>
+  );
+
+  if (!userDoc) return (
     <div className="page">
       <Navbar />
       <div className="loading-screen"><div className="spinner" /></div>
@@ -106,7 +113,7 @@ export default function StudentDashboard() {
         <div className="auth-center text-center">
           <div className="card" style={{ maxWidth: 400 }}>
             <h2>No Hostel Assigned</h2>
-            <p className="text-secondary mt-1 mb-2">You haven't joined a hostel room yet. Return to the homepage to search and join.</p>
+            <p className="text-secondary mt-1 mb-2">You haven't joined a hostel room yet.</p>
             <button className="btn btn-primary" onClick={() => navigate('/student/join')}>Join with Room QR</button>
           </div>
         </div>

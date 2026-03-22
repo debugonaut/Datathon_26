@@ -174,7 +174,8 @@ export default function WardenDashboard() {
       </div>
 
       {/* Content */}
-      <div className="app-content animation-fade-in">
+      <div className="app-content">
+        <div key={activeTab} className="animation-fade-in">
 
         {/* Alerts */}
         {activeTab==='complaints' && clusterComplaints(complaints).length > 0 && (
@@ -271,6 +272,7 @@ export default function WardenDashboard() {
             {viewMode==='kanban' ? <ComplaintsKanban complaints={filteredComplaints} /> : <ComplaintsList complaints={filteredComplaints} />}
           </div>
         )}
+        </div>
       </div>
     </div>
   </div>

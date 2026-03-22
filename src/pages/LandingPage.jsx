@@ -521,7 +521,7 @@ function DemoCardBody() {
       const uDoc = userSnap.data();
       setUserDoc(uDoc);
       window.open(uDoc.role === 'warden' ? '/warden/dashboard' : '/student/dashboard', '_blank');
-      setTimeout(async () => { await auth.signOut(); setUserDoc(null); }, 2500);
+      setTimeout(async () => { await auth.signOut(); setUserDoc(null); }, 5000);
     } catch (err) {
       console.error(err);
       setError(`Login failed: ${err.message}. Ensure seed script has been run.`);

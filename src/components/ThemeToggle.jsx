@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 
 export default function ThemeToggle() {
   const [dark, setDark] = useState(() => {
-    return (localStorage.getItem('fmh-theme') || 'dark') === 'dark';
+    const saved = localStorage.getItem('fmh-theme');
+    return saved ? saved === 'dark' : true;
   });
 
   useEffect(() => {
@@ -13,78 +14,41 @@ export default function ThemeToggle() {
   return (
     <button
       onClick={() => setDark(d => !d)}
-      title={dark ? 'Switch to light' : 'Switch to dark'}
+      title={dark ? 'Switch to light mode' : 'Switch to dark mode'}
       style={{
-        position: 'relative',
-        width: 52,
-        height: 28,
-        borderRadius: 999,
-        border: '1px solid var(--border-strong)',
-        background: dark ? '#1e2230' : '#e2e8f0',
-        cursor: 'pointer',
-        padding: 0,
-        transition: 'background 0.25s, border-color 0.25s',
-        flexShrink: 0,
+        width: 52, height: 28, borderRadius: 14, border: '1px solid var(--border)',
+        background: dark ? '#1C1F27' : '#E2E8F0',
+        cursor: 'pointer', position: 'relative', flexShrink: 0,
+        transition: 'background 0.25s ease, border-color 0.25s ease',
+        display: 'flex', alignItems: 'center', padding: '0 4px',
       }}
     >
       {/* Track icons */}
-      <span style={{
-        position: 'absolute',
-        left: 7,
-        top: '50%',
-        transform: 'translateY(-50%)',
-        fontSize: 11,
-        opacity: dark ? 0 : 1,
-        transition: 'opacity 0.2s',
-        lineHeight: 1,
-        pointerEvents: 'none',
-      }}>
-        {/* Sun */}
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2.5" strokeLinecap="round">
-          <circle cx="12" cy="12" r="5"/>
-          <line x1="12" y1="2" x2="12" y2="4"/>
-          <line x1="12" y1="20" x2="12" y2="22"/>
-          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-          <line x1="2" y1="12" x2="4" y2="12"/>
-          <line x1="20" y1="12" x2="22" y2="12"/>
-          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-        </svg>
-      </span>
-
-      <span style={{
-        position: 'absolute',
-        right: 7,
-        top: '50%',
-        transform: 'translateY(-50%)',
-        fontSize: 11,
-        opacity: dark ? 1 : 0,
-        transition: 'opacity 0.2s',
-        lineHeight: 1,
-        pointerEvents: 'none',
-      }}>
-        {/* Moon */}
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round">
-          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-        </svg>
-      </span>
-
-      {/* Sliding thumb */}
-      <span style={{
-        position: 'absolute',
-        top: 3,
-        left: dark ? 27 : 3,
-        width: 20,
-        height: 20,
-        borderRadius: '50%',
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style={{ position: 'absolute', left: 5, opacity: dark ? 0.3 : 1, transition: 'opacity 0.25s' }}>
+        <circle cx="12" cy="12" r="5" fill={dark ? '#94A3B8' : '#F59E0B'} />
+        <g stroke={dark ? '#94A3B8' : '#F59E0B'} strokeWidth="2" strokeLinecap="round">
+          <line x1="12" y1="2" x2="12" y2="4" />
+          <line x1="12" y1="20" x2="12" y2="22" />
+          <line x1="2" y1="12" x2="4" y2="12" />
+          <line x1="20" y1="12" x2="22" y2="12" />
+          <line x1="4.93" y1="4.93" x2="6.34" y2="6.34" />
+          <line x1="17.66" y1="17.66" x2="19.07" y2="19.07" />
+          <line x1="4.93" y1="19.07" x2="6.34" y2="17.66" />
+          <line x1="17.66" y1="6.34" x2="19.07" y2="4.93" />
+        </g>
+      </svg>
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" style={{ position: 'absolute', right: 5, opacity: dark ? 1 : 0.3, transition: 'opacity 0.25s' }}>
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" fill={dark ? '#6C63FF' : '#94A3B8'} />
+      </svg>
+      {/* Pill knob */}
+      <div style={{
+        width: 20, height: 20, borderRadius: '50%',
         background: dark ? '#6C63FF' : '#fff',
-        boxShadow: dark ? '0 0 6px rgba(108,99,255,0.5)' : '0 1px 4px rgba(0,0,0,0.15)',
-        transition: 'left 0.25s cubic-bezier(0.4,0,0.2,1), background 0.25s, box-shadow 0.25s',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        pointerEvents: 'none',
+        boxShadow: '0 1px 4px rgba(0,0,0,0.25)',
+        transform: dark ? 'translateX(24px)' : 'translateX(0px)',
+        transition: 'transform 0.25s cubic-bezier(0.4,0,0.2,1), background 0.25s ease',
+        flexShrink: 0,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
       }} />
     </button>
   );
