@@ -264,6 +264,19 @@ export const createComplaint = async (data) => {
   return complaintRef.id;
 };
 
+export const deleteComplaint = async (complaintId) => {
+  const complaintRef = doc(db, 'complaints', complaintId);
+  await updateDoc(complaintRef, { 
+    deletedAt: serverTimestamp(),
+    status: 'deleted' // We'll use a soft delete/status change to keep logs if needed, but the user asked to delete.
+  });
+  // Actually, usually "delete" means delete. Let's do a hard delete if it's resolved.
+  // But wait, it's better to keep a record. Let's just delete the doc as requested.
+  // Actually, I'll do a hard delete.
+  const { deleteDoc } = await import('firebase/firestore');
+  await deleteDoc(complaintRef);
+};
+
 export const updateComplaintStatus = async (complaint, newStatus) => {
   if (complaint.status === newStatus) return;
   

@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
-import { updateComplaintStatus } from '../../firebase/firestore';
+import { updateComplaintStatus, deleteComplaint } from '../../firebase/firestore';
+import RoomHistoryModal from './RoomHistoryModal';
 import { getSLAStatus } from '../../utils/sla';
 import { clusterComplaints } from '../../utils/clusterComplaints';
 import { doc, updateDoc, Timestamp, arrayUnion } from 'firebase/firestore';
@@ -50,6 +51,9 @@ function ComplaintCardShell({ complaint }) {
   const [showNotes, setShowNotes] = useState(false);
   const [newNote, setNewNote] = useState('');
   const [showingOriginal, setShowingOriginal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [historyRoom, setHistoryRoom] = useState(null);
+
 
   const handleAcknowledge = async (e) => {
     e.stopPropagation();
@@ -234,8 +238,17 @@ function ComplaintCardShell({ complaint }) {
         {complaint.status !== 'in_progress' && (
           <div style={{ display:'flex', gap:7 }}>
             {isResolved && (
-              <button style={{ padding:'8px 14px', borderRadius:10, border:'1px solid var(--border-strong)', background:'transparent', color:'var(--text-2)', fontSize:12.5, cursor:'pointer', fontFamily:'var(--font)' }}>
-                Re-open
+              <button 
+                onPointerDown={async (e) => {
+                  e.stopPropagation();
+                  if (!window.confirm('Delete this resolved ticket?')) return;
+                  setDeleting(true);
+                  await deleteComplaint(complaint.id);
+                }}
+                disabled={deleting}
+                style={{ padding:'8px 14px', borderRadius:10, border:'1px solid var(--red-border)', background:'var(--red-soft)', color:'var(--red)', fontSize:12.5, cursor:'pointer', fontFamily:'var(--font)', display:'flex', alignItems:'center', gap:5 }}>
+                <span className="material-icons-round" style={{ fontSize: 14 }}>delete</span>
+                {deleting ? 'Deleting...' : 'Delete'}
               </button>
             )}
             <button onPointerDown={e => { e.stopPropagation(); setShowNotes(p => !p); }} style={{
@@ -244,9 +257,18 @@ function ComplaintCardShell({ complaint }) {
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
               Notes {complaint.internalNotes?.length > 0 ? `(${complaint.internalNotes.length})` : ''}
             </button>
+            <button onPointerDown={e => { e.stopPropagation(); setHistoryRoom(complaint); }} style={{
+              padding:'8px 14px', borderRadius:10, border:'1px solid var(--border-strong)',
+              background:'transparent', color:'var(--text-2)', fontSize:12.5, cursor:'pointer', fontFamily:'var(--font)',
+              display:'flex', alignItems:'center', gap:5
+            }}>
+              <span className="material-icons-round" style={{ fontSize: 14 }}>history</span>
+              History
+            </button>
           </div>
         )}
         {showNotes && (
+
           <div style={{ padding:12, background:'var(--bg-input)', borderRadius:10, border:'1px solid var(--border)' }} onPointerDown={e => e.stopPropagation()}>
             {(complaint.internalNotes || []).map((note, i) => (
               <div key={i} style={{ fontSize:12.5, padding:'6px 0', borderBottom: i < (complaint.internalNotes||[]).length-1 ? '1px solid var(--border)' : 'none' }}>
@@ -276,10 +298,22 @@ function ComplaintCardShell({ complaint }) {
             </div>
           </div>
         )}
+        {historyRoom && (
+          <RoomHistoryModal 
+            room={{
+              id: historyRoom.roomId,
+              roomNumber: historyRoom.roomNumber,
+              buildingName: historyRoom.buildingName,
+              floorNumber: historyRoom.floorNumber
+            }} 
+            onClose={() => setHistoryRoom(null)} 
+          />
+        )}
       </div>
     </div>
   );
 }
+
 
 export default function ComplaintsKanban({ complaints }) {
   const { userDoc } = useAuth();

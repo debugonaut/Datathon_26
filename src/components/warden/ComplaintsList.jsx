@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { updateComplaintStatus } from '../../firebase/firestore';
+import { updateComplaintStatus, deleteComplaint } from '../../firebase/firestore';
+import RoomHistoryModal from './RoomHistoryModal';
 
 function timeAgo(date) {
   if (!date) return '';
@@ -21,6 +22,8 @@ function timeAgo(date) {
 export default function ComplaintsList({ complaints }) {
   const [selected, setSelected] = useState(null);
   const [showingOriginal, setShowingOriginal] = useState({});
+  const [deleting, setDeleting] = useState(null);
+  const [historyRoom, setHistoryRoom] = useState(null);
 
   const toggleOriginal = (id) => {
     setShowingOriginal(prev => ({ ...prev, [id]: !prev[id] }));
@@ -98,7 +101,7 @@ export default function ComplaintsList({ complaints }) {
         <div className="card animation-fade-in" style={{ 
           width: '380px', height: '100%', overflowY: 'auto', 
           borderLeft: '1px solid var(--border)', background: 'var(--bg-raised)',
-          display: 'flex', flexDirection: 'column'
+          display: 'flex', flexDirection: 'column', padding: '1.5rem'
         }}>
           <div className="flex justify-content-between align-items-center mb-3">
             <h3 className="m-0">Ticket Details</h3>
@@ -173,10 +176,51 @@ export default function ComplaintsList({ complaints }) {
               </div>
             </div>
           )}
+
+          <div className="mb-3" style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 'auto' }}>
+            <button 
+              className="btn btn-secondary btn-sm btn-full"
+              onClick={() => setHistoryRoom({
+                id: selected.roomId,
+                roomNumber: selected.roomNumber,
+                buildingName: selected.buildingName,
+                floorNumber: selected.floorNumber
+              })}
+            >
+              <span className="material-icons-round" style={{ fontSize: 16, marginRight: 6 }}>history</span>
+              View Room History
+            </button>
+            
+            {selected.status === 'resolved' && (
+              <button 
+                className="btn btn-sm btn-full"
+                style={{ background: 'var(--red-soft)', color: 'var(--red)', border: '1px solid var(--red-border)' }}
+                onClick={async () => {
+                  if (!window.confirm('Are you sure you want to delete this resolved ticket?')) return;
+                  setDeleting(selected.id);
+                  await deleteComplaint(selected.id);
+                  setDeleting(null);
+                  setSelected(null);
+                }}
+                disabled={deleting === selected.id}
+              >
+                <span className="material-icons-round" style={{ fontSize: 16, marginRight: 6 }}>delete</span>
+                {deleting === selected.id ? 'Deleting...' : 'Delete Ticket'}
+              </button>
+            )}
+          </div>
           
         </div>
       )}
 
+      {historyRoom && (
+        <RoomHistoryModal 
+          room={historyRoom} 
+          onClose={() => setHistoryRoom(null)} 
+        />
+      )}
     </div>
   );
 }
+
+
