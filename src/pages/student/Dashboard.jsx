@@ -235,7 +235,7 @@ export default function StudentDashboard() {
                       <div style={{flex:1}}>
                         <p style={{fontSize:13,color:'var(--text-2)',lineHeight:1.5}}>{a.message}</p>
                         <span style={{fontSize:11,color:'var(--text-3)',fontFamily:'var(--font-mono)'}}>
-                          {a.createdAt?.toDate?.().toLocaleDateString('en-IN')}
+                          {a.createdAt?.toDate ? a.createdAt.toDate().toLocaleDateString('en-IN') : 'Recent'}
                         </span>
                       </div>
                       {!a.readBy?.includes(user.uid) && (
@@ -289,7 +289,7 @@ export default function StudentDashboard() {
                           <div className="timeline-dot" style={{background:c.status==='resolved'?'var(--green)':c.priority==='high'?'var(--red)':'var(--amber)'}} />
                           <div style={{flex:1}}>
                             <div style={{fontSize:13,fontWeight:500}}>{c.title}</div>
-                            <div style={{fontSize:11,color:'var(--text-3)',fontFamily:'var(--font-mono)',marginTop:2}}>{c.category} · {c.createdAt?.toDate?.().toLocaleDateString('en-IN')}</div>
+                            <div style={{fontSize:11,color:'var(--text-3)',fontFamily:'var(--font-mono)',marginTop:2}}>{c.category} · {c.createdAt?.toDate ? c.createdAt.toDate().toLocaleDateString('en-IN') : 'Recent'}</div>
                           </div>
                         </div>
                       ))}

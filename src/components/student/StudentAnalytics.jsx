@@ -40,7 +40,11 @@ function chipStyle(val, type = 'status') {
   return                           { background:'rgba(16,185,129,0.12)',  color:'var(--green)' };
 }
 
-function myAvg(c) { const r = c.filter(x => x.resolvedAt && x.createdAt); if (!r.length) return null; return Math.round(r.reduce((s, x) => s + (x.resolvedAt.toDate()-x.createdAt.toDate()), 0)/r.length/3600000); }
+function myAvg(c) {
+  const r = c.filter(x => x.resolvedAt?.toDate && x.createdAt?.toDate);
+  if (!r.length) return null;
+  return Math.round(r.reduce((s, x) => s + (x.resolvedAt.toDate().getTime() - x.createdAt.toDate().getTime()), 0) / r.length / 3600000);
+}
 function catBreak(c) { const m = {}; c.forEach(x => m[x.category]=(m[x.category]||0)+1); return Object.entries(m).map(([n,v])=>({name:n,value:v})); }
 function scoreHist(c, cs) {
   const now = Date.now(), d = [];
@@ -392,7 +396,11 @@ export default function StudentAnalytics({ roomScore, view = 'complaints' }) {
                         <div style={{ display:'flex', flexDirection:'column', gap:2 }}>
                           <span style={{ fontSize:12, fontWeight:600, color: ST_C[c.status] }}>{ST_L[c.status]}</span>
                           {c.acknowledgedAt && !isResolved && <span style={{ fontSize:10.5, color:'var(--green)', fontWeight:500 }}>✓ Acknowledged</span>}
-                          {c.estimatedResolutionAt && !isResolved && <span style={{ fontSize:10.5, color:'var(--amber)', fontWeight:500 }}>ETA: {new Date(c.estimatedResolutionAt.toDate()).toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</span>}
+                          {c.estimatedResolutionAt?.toDate && !isResolved && (
+  <span style={{ fontSize: 10.5, color: 'var(--amber)', fontWeight: 500 }}>
+    ETA: {c.estimatedResolutionAt.toDate().toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+  </span>
+)}
                         </div>
                       </div>
 
