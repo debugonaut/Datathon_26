@@ -66,35 +66,10 @@ async function run() {
   const buildingId = 'demo-building-A1';
   const room204Id = 'demo-room-204';
 
-  console.log('Checking existing user profiles...');
-  const studentSnap = await getDoc(doc(db, 'users', studentUid));
-  const wardenSnap = await getDoc(doc(db, 'users', wardenUid));
+  console.log('--- CLEANUP: Removing demo hostel ---');
+  await deleteDoc(doc(db, 'hostels', hostelId));
 
-  if (studentSnap.exists() && wardenSnap.exists()) {
-    const sData = studentSnap.data();
-    const wData = wardenSnap.data();
-    if (sData.isProfileComplete && sData.isRegistered && sData.roomId && wData.isProfileComplete && wData.hostelId && sData.blockName) {
-      // Verify hierarchy is correctly nested before skipping
-      const roomCheck = await getDoc(doc(db, 'hostels', hostelId, 'blocks', blockId, 'buildings', buildingId, 'floors', 'demo-floor-2', 'rooms', 'demo-room-204'));
-      if (roomCheck.exists()) {
-        console.log('✅ Demo data fully populated with correct hierarchy. Exiting early.');
-        process.exit(0);
-      }
-      console.log('⚠️  User docs exist but room hierarchy is missing/wrong — reseeding hierarchy...');
-    }
-  }
-
-  console.log('--- CLEANUP: Removing duplicate demo hostels for warden ---');
-  const hostelQ = query(collection(db, 'hostels'), where('wardenId', '==', wardenUid));
-  const hostelSnap = await getDocs(hostelQ);
-  for (const hDoc of hostelSnap.docs) {
-    if (hDoc.id !== hostelId) {
-      console.log(`Deleting stray hostel: ${hDoc.id}`);
-      await deleteDoc(hDoc.ref);
-    }
-  }
-
-  console.log('Overwriting/Seeding user profiles...');
+  console.log('Seeding user profiles...');
   await setDoc(doc(db, 'users', wardenUid), {
     role: 'warden',
     name: 'Demo Warden',
@@ -107,7 +82,7 @@ async function run() {
     role: 'student',
     name: 'Demo Student',
     email: STUDENT_EMAIL,
-    PRN: '210101120001',
+    PRN_hash: '21010112',
     isProfileComplete: true,
     isRegistered: true,
     roomId: room204Id,
@@ -117,35 +92,34 @@ async function run() {
   
   console.log('Seeding hostel hierarchy...');
 
-  // Ensure hostel exists
   await setDoc(doc(db, 'hostels', hostelId), {
-    name: 'MITAOE Boys Hostel',
+    name: 'Excellence Boys Hostel',
     collegeName: 'MIT Academy of Engineering',
     wardenId: wardenUid,
     createdAt: Timestamp.now()
   });
 
-  // 1. Block
   await setDoc(doc(db, 'hostels', hostelId, 'blocks', blockId), { name: 'A Block' });
-
-  // 2. Building
   await setDoc(doc(db, 'hostels', hostelId, 'blocks', blockId, 'buildings', buildingId), { name: 'A1', blockId });
 
-  // 3. Floors
   const roomDocRefs = [];
+  const floors = 4;
+  const roomsPerFloor = 6;
 
-  for (let f = 1; f <= 3; f++) {
+  for (let f = 1; f <= floors; f++) {
     const floorId = `demo-floor-${f}`;
     await setDoc(doc(db, 'hostels', hostelId, 'blocks', blockId, 'buildings', buildingId, 'floors', floorId), {
       name: `Floor ${f}`, buildingId, floorNumber: f
     });
 
-    for (let r = 1; r <= 4; r++) {
+    for (let r = 1; r <= roomsPerFloor; r++) {
       const roomNum = f * 100 + r;
       const roomId = `demo-room-${roomNum}`;
       const is204 = roomNum === 204;
       
-      const qrLink = `https://datathon-26.vercel.app/complaint/new?roomId=${roomId}`;
+      const shortCode = roomId.slice(-6).toUpperCase();
+      const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${shortCode}`;
+
       const rData = {
         roomNumber: String(roomNum),
         floorId,
@@ -155,29 +129,30 @@ async function run() {
         maxOccupants: 2,
         currentOccupants: is204 ? 1 : 0,
         occupants: is204 ? [{ uid: studentUid, name: 'Demo Student' }] : [],
-        score: is204 ? 55 : 100,
-        qrCodeUrl: `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrLink)}`
+        score: Math.floor(Math.random() * (100 - 60 + 1) + 60),
+        qrCodeUrl,
+        buildingName: 'A1',
+        floorNumber: f
       };
 
       const roomRef = doc(db, 'hostels', hostelId, 'blocks', blockId, 'buildings', buildingId, 'floors', floorId, 'rooms', roomId);
       await setDoc(roomRef, rData);
-      roomDocRefs.push(roomId);
+      roomDocRefs.push({ roomId, roomNumber: String(roomNum), floorId });
 
       if (is204) {
-        console.log('Adding room history aliases to 204...');
         await setDoc(doc(roomRef, 'history', 'hist1'), {
-          title: 'AC totally broken',
+          title: 'AC Fan Noise',
           category: 'Electrical',
-          priority: 'high',
+          priority: 'medium',
           status: 'resolved',
           studentUid: 'past-tenant-1',
           createdAt: Timestamp.fromDate(new Date(Date.now() - 90 * 86400000)),
           resolvedAt: Timestamp.fromDate(new Date(Date.now() - 88 * 86400000))
         });
         await setDoc(doc(roomRef, 'history', 'hist2'), {
-          title: 'Bed frame squeaky missing screws',
-          category: 'Furniture',
-          priority: 'low',
+          title: 'Water pipe leakage',
+          category: 'Plumbing',
+          priority: 'high',
           status: 'resolved',
           studentUid: 'past-tenant-2',
           createdAt: Timestamp.fromDate(new Date(Date.now() - 40 * 86400000)),
@@ -189,26 +164,23 @@ async function run() {
 
   console.log('Seeding complaints...');
   const complaintsRef = collection(db, 'complaints');
-
-  const baseComp = {
-    hostelId, blockId, buildingId, floorId: 'demo-floor-2', roomId: room204Id,
-    studentUid, studentName: 'Demo Student', roomNumber: '204', reopenCount: 0
-  };
-
   const now = Date.now();
   const hoursAgo = (h) => Timestamp.fromDate(new Date(now - h * 3600000));
 
   const complaints = [
-    { ...baseComp, status: 'todo', priority: 'high', category: 'Electrical', title: 'Sparking switchboard in room 204', description: 'When I plug in my laptop the switchboard sparks and smells like burning plastic.', createdAt: hoursAgo(2) },
-    { ...baseComp, status: 'todo', priority: 'medium', category: 'Plumbing', title: 'Leaking tap in bathroom', description: 'The sink tap is constantly dripping wasting water.', createdAt: hoursAgo(5) },
-    { ...baseComp, status: 'in_progress', priority: 'high', category: 'Electrical', title: 'Power outage on Floor 2', description: 'My room and the hallway have no power since morning.', createdAt: hoursAgo(10) },
-    { ...baseComp, status: 'in_progress', priority: 'medium', category: 'Furniture', title: 'Broken study chair', description: 'The backrest of my chair snapped off.', createdAt: hoursAgo(24) },
-    { ...baseComp, status: 'resolved', priority: 'high', category: 'Plumbing', title: 'No hot water', description: 'Geyser is broken, only cold water coming out.', createdAt: hoursAgo(48), resolvedAt: hoursAgo(20) },
-    { ...baseComp, status: 'resolved', priority: 'low', category: 'Cleaning', title: 'Garbage not collected', description: 'Dustbin is overflowing for two days.', createdAt: hoursAgo(72), resolvedAt: hoursAgo(60) },
-    // ETA feature demo
-    { ...baseComp, status: 'todo', priority: 'medium', category: 'Other', title: 'Window mesh torn', description: 'Mosquitoes are coming in due to a large tear in the window mesh.', createdAt: hoursAgo(8), acknowledgedByWarden: true, estimatedResolutionAt: new Date(now + 48*3600000).toISOString().slice(0, 16) },
-    // SLA Breach demo (25+ hours high priority, not resolved)
-    { ...baseComp, status: 'todo', priority: 'high', category: 'Plumbing', title: 'Sewage backup in common washroom', description: 'Water is pooling and smells terrible on the floor 2 common washroom.', createdAt: hoursAgo(26) },
+    // Room 204
+    { hostelId, blockId, buildingId, floorId: 'demo-floor-2', roomId: room204Id, studentUid, studentName: 'Demo Student', roomNumber: '204', reopenCount: 0, status: 'todo', priority: 'high', category: 'Electrical', title: 'Main switch board sparking', description: 'When I use the top socket, there are visible sparks and a burnt smell.', createdAt: hoursAgo(1) },
+    { hostelId, blockId, buildingId, floorId: 'demo-floor-2', roomId: room204Id, studentUid, studentName: 'Demo Student', roomNumber: '204', reopenCount: 0, status: 'in_progress', priority: 'medium', category: 'Plumbing', title: 'Sink drain clogged', description: 'Water is draining very slowly in the bathroom sink.', createdAt: hoursAgo(24) },
+    { hostelId, blockId, buildingId, floorId: 'demo-floor-2', roomId: room204Id, studentUid, studentName: 'Demo Student', roomNumber: '204', reopenCount: 0, status: 'resolved', priority: 'low', category: 'Furniture', title: 'Loose door handle', description: 'The handle on the balcony door feels like it might fall off.', createdAt: hoursAgo(48), resolvedAt: hoursAgo(20) },
+
+    // Other Rooms
+    { hostelId, blockId, buildingId, floorId: 'demo-floor-1', roomId: 'demo-room-101', studentUid: 'student-101', studentName: 'Rahul Kumar', roomNumber: '101', reopenCount: 0, status: 'todo', priority: 'medium', category: 'Cleaning', title: 'Common area dusty', description: 'The corridor outside room 101 hasn\'t been cleaned since 3 days.', createdAt: hoursAgo(5) },
+    { hostelId, blockId, buildingId, floorId: 'demo-floor-3', roomId: 'demo-room-305', studentUid: 'student-305', studentName: 'Aditya Shah', roomNumber: '305', reopenCount: 0, status: 'in_progress', priority: 'high', category: 'Electrical', title: 'Fan regulator broken', description: 'Fan is running only at full speed, regulator knob is jammed.', createdAt: hoursAgo(12) },
+    { hostelId, blockId, buildingId, floorId: 'demo-floor-4', roomId: 'demo-room-402', studentUid: 'student-402', studentName: 'Sameer Sen', roomNumber: '402', reopenCount: 0, status: 'todo', priority: 'high', category: 'Water', title: 'No water in geyser', description: 'The geyser isn\'t filling or heating water. Urgent for morning.', createdAt: hoursAgo(3) },
+    
+    // SLA / ETA Examples
+    { hostelId, blockId, buildingId, floorId: 'demo-floor-2', roomId: 'demo-room-202', studentUid: 'student-202', studentName: 'Karan Mehra', roomNumber: '202', reopenCount: 0, status: 'todo', priority: 'medium', category: 'Furniture', title: 'Broken cupboard lock', description: 'I cannot lock my cupboard anymore.', createdAt: hoursAgo(8), acknowledgedByWarden: true, estimatedResolutionAt: new Date(now + 24*3600000).toISOString().slice(0, 16) },
+    { hostelId, blockId, buildingId, floorId: 'demo-floor-1', roomId: 'demo-room-105', studentUid: 'student-105', studentName: 'Vivek Singh', roomNumber: '105', reopenCount: 0, status: 'todo', priority: 'high', category: 'Plumbing', title: 'Washroom flush broken', description: 'The flush is continuously running and wasting water.', createdAt: hoursAgo(30) }, // Over 24h old high priority
   ];
 
   for (let c of complaints) {
@@ -216,7 +188,6 @@ async function run() {
     await setDoc(cd, c);
   }
 
-  // Ensure package.json is setup with type module for this run if needed
   console.log('✅ Demo seeding complete!');
   process.exit(0);
 }

@@ -100,6 +100,54 @@ export default function DemoLanding() {
         <div className="text-center mt-4">
           <div className="text-xs text-muted">Datathon 2026 Presentation · PS-15</div>
         </div>
+
+        {/* Why This Demo Section */}
+        <div style={{ marginTop: '2.5rem', borderTop: '1px solid var(--border)', paddingTop: '1.5rem' }}>
+          <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text)', marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Why this demo?
+          </h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', textAlign: 'left' }}>
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <div style={{ color: 'var(--violet)', marginTop: '2px' }}>
+                <span className="material-icons-round" style={{ fontSize: '18px' }}>qr_code_scanner</span>
+              </div>
+              <div>
+                <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text)' }}>Frictionless Onboarding</div>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.4, margin: '2px 0 0' }}>
+                  Eliminating manual paperwork with instant room registration via unique per-room QR codes.
+                </p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <div style={{ color: 'var(--violet)', marginTop: '2px' }}>
+                <span className="material-icons-round" style={{ fontSize: '18px' }}>analytics</span>
+              </div>
+              <div>
+                <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text)' }}>Data-Driven Governance</div>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.4, margin: '2px 0 0' }}>
+                  Using real-time analytics and SLA tracking to ensure student grievances are addressed transparently.
+                </p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <div style={{ color: 'var(--violet)', marginTop: '2px' }}>
+                <span className="material-icons-round" style={{ fontSize: '18px' }}>hub</span>
+              </div>
+              <div>
+                <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text)' }}>Automated Clustering</div>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.4, margin: '2px 0 0' }}>
+                  Intelligent detection of systemic issues on specific floors or wings to help wardens prioritize repairs.
+                </p>
+              </div>
+            </div>
+            
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-3)', fontStyle: 'italic', marginTop: '0.5rem', borderLeft: '2px solid var(--violet)', paddingLeft: '0.75rem' }}>
+              This demo environment is pre-populated with realistic campus data to showcase the platform's advanced analytical capabilities.
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );
