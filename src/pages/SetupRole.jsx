@@ -27,7 +27,7 @@ export default function SetupRole() {
       await setDoc(doc(db, 'users', user.uid), uDoc, { merge: true });
       setUserDoc(uDoc);
       if (role === 'student') navigate('/student/profile-setup');
-      else navigate('/warden/setup-hostel');
+      else navigate('/warden/setup');
     } catch (err) {
       console.error(err);
     } finally {

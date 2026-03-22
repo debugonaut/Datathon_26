@@ -1,15 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Scanner } from '@yudiel/react-qr-scanner';
 import Navbar from '../../components/Navbar';
 import { useAuth } from '../../context/AuthContext';
-import { resolveRoomByCode, joinRoomWithCodeData } from '../../firebase/firestore';
+import { resolveRoomByCode, joinRoomTransaction } from '../../firebase/firestore';
 import { fetchRoomHistory, generateRoomSummary } from '../../firebase/roomHistory';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 
 export default function JoinHostel() {
-  const { user } = useAuth();
+  const { user, userDoc } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -69,10 +69,17 @@ export default function JoinHostel() {
   };
 
   const handleConfirmJoin = async () => {
+    if (!userDoc) return;
     setLoading(true);
     setError('');
     try {
-      await joinRoomWithCodeData(user.uid, resolvedRoom.roomData);
+      // Need PRN_hash for the transaction
+      const studentData = {
+        name: userDoc.name || '(No Name)',
+        PRN_hash: userDoc.PRN_hash || user.uid.slice(0, 8), // Fallback if not set
+      };
+      
+      await joinRoomTransaction(user.uid, resolvedRoom.roomData, studentData);
       navigate('/student/dashboard', { replace: true });
     } catch (err) {
       setError(err.message);

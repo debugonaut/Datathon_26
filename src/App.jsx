@@ -12,6 +12,7 @@ import ComplaintConfirmation from './pages/student/ComplaintConfirmation';
 import SetupHostel from './pages/warden/SetupHostel';
 import WardenDashboard from './pages/warden/Dashboard';
 import RoomLanding from './pages/RoomLanding';
+import JoinHostel from './pages/student/JoinHostel';
 import DemoLanding from './pages/DemoLanding';
 
 // ── Generic auth guard ────────────────────────────────────────────────────────
@@ -87,6 +88,9 @@ const AppRoutes = () => (
     } />
     <Route path="/student/room-register" element={
       <StudentGuard requireRegistered={false}><RoomRegister /></StudentGuard>
+    } />
+    <Route path="/student/join" element={
+      <StudentGuard requireRegistered={false}><JoinHostel /></StudentGuard>
     } />
     <Route path="/student/dashboard" element={
       <StudentGuard><StudentDashboard /></StudentGuard>

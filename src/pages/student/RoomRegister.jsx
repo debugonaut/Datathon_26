@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useRef, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import { useAuth } from '../../context/AuthContext';
@@ -9,6 +9,7 @@ import { Scanner } from '@yudiel/react-qr-scanner';
 export default function RoomRegister() {
   const { user, userDoc, setUserDoc } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [chars, setChars] = useState(['','','','','','']);
   const [loading, setLoading] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
@@ -27,9 +28,33 @@ export default function RoomRegister() {
     if (e.key === 'Backspace' && !chars[i] && i > 0) refs[i-1].current?.focus();
   };
 
-  const processRoomCode = async (targetCode) => {
-    if (targetCode.length < 6) { setError('Invalid room code.'); return; }
-    setLoading(true); setError('');
+  const handleResolveCode = async (codeStr) => {
+    if (!codeStr) return;
+    
+    let targetCode = typeof codeStr === 'string' ? codeStr.trim() : String(codeStr).trim();
+
+    // Handle full URL variants: https://.../, http://.../, or just the path
+    if (targetCode.includes('/room/')) {
+      const afterRoom = targetCode.split('/room/')[1];
+      if (afterRoom) {
+        const segments = afterRoom.split('/').filter(Boolean);
+        const roomId = segments[segments.length - 1];
+        targetCode = roomId.slice(-6);
+      }
+    } else if (targetCode.length > 6) {
+      targetCode = targetCode.slice(-6);
+    }
+
+    targetCode = targetCode.toUpperCase();
+
+    if (targetCode.length < 6) { 
+      setError('Invalid room code. Make sure you\'re scanning the QR code on your room door, or ask your warden for the 6-character code.'); 
+      return; 
+    }
+
+    setLoading(true); 
+    setError('');
+    
     try {
       const roomData = await resolveRoomByCode(targetCode);
       if (!roomData) { 
@@ -38,10 +63,9 @@ export default function RoomRegister() {
         return; 
       }
       
-      // Use the transaction to join the room properly (handles occupancy, etc.)
       await joinRoomTransaction(user.uid, roomData, {
         name: userDoc.name,
-        PRN_hash: userDoc.PRN_hash || user.uid // fallback if hash is missing
+        PRN_hash: userDoc.PRN_hash || user.uid
       });
 
       setUserDoc(prev => ({ ...prev, ...roomData, isRegistered: true }));
@@ -53,7 +77,15 @@ export default function RoomRegister() {
     }
   };
 
-  const handleSearch = () => processRoomCode(code);
+  const handleSearch = () => handleResolveCode(code);
+
+  // Handle prefill from URL (e.g. from RoomLanding redirect)
+  useEffect(() => {
+    const prefill = searchParams.get('prefill');
+    if (prefill) {
+      handleResolveCode(prefill);
+    }
+  }, [searchParams]);
 
   return (
     <div style={{ fontFamily: "'Sora','Inter',sans-serif", height: '100vh', background: '#060810', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -90,17 +122,14 @@ export default function RoomRegister() {
             <div style={{ width: '100%', height: '100%', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, overflow: 'hidden', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               {showScanner ? (
                 <Scanner
-                  onScan={(results) => {
-                    if (results?.length > 0) {
-                      const raw = results[0].rawValue;
-                      // Handle URLs (extract last segment) or direct 6-char codes
-                      const extracted = raw.split('/').filter(Boolean).pop().trim().toUpperCase();
-                      if (extracted.length === 6) {
-                        processRoomCode(extracted);
-                      } else {
-                        setError(`Scanned code "${extracted}" is invalid. Please scan the 6-character room code.`);
-                      }
+                  onScan={(result) => {
+                    if (!result) return;
+                    const val = Array.isArray(result) ? result[0].rawValue : (result.rawValue || result.text || result);
+                    if (val) {
+                      const lastSegment = val.split('/').filter(Boolean).pop().trim().toUpperCase();
+                      const extracted = lastSegment.slice(-6); 
                       setShowScanner(false);
+                      handleResolveCode(extracted);
                     }
                   }}
                   onError={(err) => {

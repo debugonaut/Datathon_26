@@ -90,6 +90,14 @@ export default function WardenQRDirectory({ hostelId }) {
             </div>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 14, fontWeight: 500, color: 'var(--text-primary)' }}>Room {r.roomNumber}</div>
             <div style={{ fontSize: 12, color: 'var(--text-ghost)' }}>{r.buildingName} / Fl {r.floorNumber}</div>
+            <div style={{
+              fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 700,
+              color: 'var(--violet)', letterSpacing: '0.12em', marginTop: 6,
+              background: 'rgba(108,99,255,0.1)', border: '1px solid rgba(108,99,255,0.2)',
+              borderRadius: 5, padding: '3px 8px', display: 'inline-block'
+            }}>
+              {r.id.slice(-6).toUpperCase()}
+            </div>
           </div>
         ))}
         

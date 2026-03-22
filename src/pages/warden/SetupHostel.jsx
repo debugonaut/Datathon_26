@@ -189,8 +189,8 @@ export default function SetupHostel() {
             for (const roomNum of rooms) {
               const roomRef = doc(collection(db, 'hostels', hostelId, 'blocks', blockRef.id, 'buildings', bldRef.id, 'floors', floorRef.id, 'rooms'));
               
-              const joinUrl = `https://datathon-26.vercel.app/room/${hostelId}/${roomRef.id}`;
-              const qrCodeUrl = await QRCode.toDataURL(joinUrl, { width: 400, margin: 2 });
+              const shortCode = roomRef.id.slice(-6).toUpperCase();
+              const qrCodeUrl = await QRCode.toDataURL(shortCode, { width: 400, margin: 2 });
 
               batch.set(roomRef, {
                 roomNumber: roomNum,
