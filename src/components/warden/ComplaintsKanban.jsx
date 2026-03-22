@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { updateComplaintStatus, deleteComplaint, bulkDeleteResolvedComplaints } from '../../firebase/firestore';
-import RoomHistoryModal from './RoomHistoryModal';
+import RoomHistoryModal from '../shared/RoomHistoryModal';
 import { getSLAStatus } from '../../utils/sla';
 import { clusterComplaints } from '../../utils/clusterComplaints';
 import { doc, updateDoc, Timestamp, arrayUnion } from 'firebase/firestore';

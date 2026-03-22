@@ -10,6 +10,7 @@ import { getAnnouncements, markAnnouncementRead } from '../../firebase/firestore
 import { fetchRoomHistory, generateRoomSummary } from '../../firebase/roomHistory';
 import StudentAnalytics from '../../components/student/StudentAnalytics';
 import MiniTimeline from '../../components/student/MiniTimeline';
+import RoomHistoryModal from '../../components/shared/RoomHistoryModal';
 
 export default function StudentDashboard() {
   const { user, userDoc } = useAuth();
@@ -272,31 +273,24 @@ export default function StudentDashboard() {
               )}
 
               <div className="card-flat">
-                <button onClick={()=>setShowFullHistory(p=>!p)} style={{width:'100%',background:'none',border:'none',cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center',color:'var(--text)'}}>
+                <button onClick={()=>setShowFullHistory(true)} style={{width:'100%',background:'none',border:'none',cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center',color:'var(--text)'}}>
                   <span style={{fontSize:13,fontWeight:600}}>Room History</span>
-                  <span style={{fontSize:11,color:'var(--text-3)',fontFamily:'var(--font-mono)'}}>{fullRoomHistory.length} records {showFullHistory?'▲':'▼'}</span>
+                  <span style={{fontSize:11,color:'var(--text-3)',fontFamily:'var(--font-mono)'}}>{fullRoomHistory.length} records →</span>
                 </button>
+
                 {showFullHistory && (
-                  <div style={{marginTop:12,borderTop:'1px solid var(--border)',paddingTop:12,maxHeight:320,overflowY:'auto'}}>
-                    {roomSummary?.aiSummary && (
-                      <div className="alert alert-info" style={{marginBottom:12,fontSize:12,fontStyle:'italic'}}>
-                        "{roomSummary.aiSummary}"
-                      </div>
-                    )}
-                    <div className="timeline">
-                      {fullRoomHistory.map((c,i)=>(
-                        <div key={c.id||i} className="timeline-item">
-                          <div className="timeline-dot" style={{background:c.status==='resolved'?'var(--green)':c.priority==='high'?'var(--red)':'var(--amber)'}} />
-                          <div style={{flex:1}}>
-                            <div style={{fontSize:13,fontWeight:500}}>{c.title}</div>
-                            <div style={{fontSize:11,color:'var(--text-3)',fontFamily:'var(--font-mono)',marginTop:2}}>{c.category} · {c.createdAt?.toDate ? c.createdAt.toDate().toLocaleDateString('en-IN') : 'Recent'}</div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  <RoomHistoryModal 
+                    room={{
+                      id: userDoc.roomId,
+                      roomNumber: userDoc.roomNumber,
+                      buildingName: hierarchyNames.building,
+                      floorNumber: hierarchyNames.floor
+                    }} 
+                    onClose={() => setShowFullHistory(false)} 
+                  />
                 )}
               </div>
+
             </div>
           </div>
         )}

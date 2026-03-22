@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { updateComplaintStatus, deleteComplaint, bulkDeleteResolvedComplaints } from '../../firebase/firestore';
-import RoomHistoryModal from './RoomHistoryModal';
+import RoomHistoryModal from '../shared/RoomHistoryModal';
 
 function timeAgo(date) {
   if (!date) return '';

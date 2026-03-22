@@ -8,7 +8,7 @@ import {
 } from 'recharts';
 import { useAuth } from '../../context/AuthContext';
 import { db } from '../../firebase/config';
-import { collection, query, where, getDocs, doc, updateDoc, Timestamp, increment } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc, Timestamp, increment, deleteDoc, writeBatch } from 'firebase/firestore';
 import { getSLAStatus } from '../../utils/sla';
 
 const TT = { background: '#1a1f2e', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', color: '#e2e8f0', fontSize: '0.75rem' };
@@ -329,7 +329,29 @@ export default function StudentAnalytics({ roomScore, view = 'complaints' }) {
       {Object.entries(grouped).map(([date, items]) => (
         <div key={date}>
           <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:16, marginTop: date==='Today'?0:10 }}>
-            <span style={{ fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', color:'var(--text-3)', whiteSpace:'nowrap' }}>{date}</span>
+            <span style={{ fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', color:'var(--text-3)', whiteSpace:'nowrap', display: 'flex', alignItems: 'center', gap: 10 }}>
+              {date}
+              {date === 'Resolved' && items.length > 0 && (
+                <button 
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    if (!window.confirm(`Delete all ${items.length} resolved tickets? This cannot be undone.`)) return;
+                    const batch = writeBatch(db);
+                    items.forEach(item => batch.delete(doc(db, 'complaints', item.id)));
+                    await batch.commit();
+                    setData(prev => prev.filter(p => p.status !== 'resolved'));
+                  }}
+                  style={{
+                    padding: '2px 8px', borderRadius: 6, border: '1px solid var(--red-border)',
+                    background: 'var(--red-soft)', color: 'var(--red)', fontSize: 9, 
+                    fontWeight: 700, cursor: 'pointer', textTransform: 'uppercase'
+                  }}
+                >
+                  Clear All Resolved
+                </button>
+              )}
+            </span>
+
             <div style={{ flex:1, height:1, background:'var(--border)', opacity:0.6 }} />
           </div>
 
@@ -411,10 +433,21 @@ export default function StudentAnalytics({ roomScore, view = 'complaints' }) {
                           >Withdraw</button>
                         )}
                         {isResolved && (c.reopenCount||0) < 2 && !c.withdrawnAt && (
-                          <button onClick={() => { setSelectedComplaint(c); setShowReopenModal(true); }}
-                            style={{ padding:'6px 12px', borderRadius:10, border:'1px solid var(--primary)33', background:'var(--primary)11', color:'var(--primary)', fontSize:11.5, fontWeight:600, cursor:'pointer', fontFamily:'var(--font)' }}
-                          >Re-open</button>
+                          <div style={{ display: 'flex', gap: 6 }}>
+                            <button onClick={() => { setSelectedComplaint(c); setShowReopenModal(true); }}
+                              style={{ padding:'6px 12px', borderRadius:10, border:'1px solid var(--primary)33', background:'var(--primary)11', color:'var(--primary)', fontSize:11.5, fontWeight:600, cursor:'pointer', fontFamily:'var(--font)' }}
+                            >Re-open</button>
+                            <button onClick={async (e) => {
+                              e.stopPropagation();
+                              if (!window.confirm('Delete this resolved ticket?')) return;
+                              await deleteDoc(doc(db, 'complaints', c.id));
+                              setData(prev => prev.filter(p => p.id !== c.id));
+                            }}
+                              style={{ padding:'6px 12px', borderRadius:10, border:'1px solid var(--red)33', background:'var(--red)11', color:'var(--red)', fontSize:11.5, fontWeight:600, cursor:'pointer', fontFamily:'var(--font)' }}
+                            >Delete</button>
+                          </div>
                         )}
+
                       </div>
                     </div>
                   </div>
