@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import { useAuth } from '../../context/AuthContext';
+import { Scanner } from '@yudiel/react-qr-scanner';
 
 export default function RoomRegister() {
   const { user, userDoc, setUserDoc } = useAuth();
   const navigate = useNavigate();
   const [chars, setChars] = useState(['','','','','','']);
   const [loading, setLoading] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
   const [error, setError] = useState('');
   const refs = [useRef(),useRef(),useRef(),useRef(),useRef(),useRef()];
 
@@ -24,13 +26,12 @@ export default function RoomRegister() {
     if (e.key === 'Backspace' && !chars[i] && i > 0) refs[i-1].current?.focus();
   };
 
-  const handleSearch = async () => {
-    if (code.length < 6) { setError('Please enter the full 6-character room code.'); return; }
+  const processRoomCode = async (targetCode) => {
+    if (targetCode.length < 6) { setError('Invalid room code.'); return; }
     setLoading(true); setError('');
     try {
-      // search across hostels — adjust path to match your Firestore structure
-      const snap = await getDoc(doc(db, 'roomCodes', code));
-      if (!snap.exists()) { setError(`Room code "${code}" not found. Check the code on your door.`); setLoading(false); return; }
+      const snap = await getDoc(doc(db, 'roomCodes', targetCode.toUpperCase()));
+      if (!snap.exists()) { setError(`Room code "${targetCode}" not found.`); setLoading(false); return; }
       const roomData = snap.data();
       await updateDoc(doc(db, 'users', user.uid), {
         hostelId: roomData.hostelId,
@@ -42,7 +43,7 @@ export default function RoomRegister() {
         floorNumber: roomData.floorNumber,
         isRegistered: true,
       });
-      setUserDoc(prev => ({ ...prev, ...roomData }));
+      setUserDoc(prev => ({ ...prev, ...roomData, isRegistered: true }));
       navigate('/student/dashboard');
     } catch (err) {
       setError(err.message);
@@ -50,6 +51,8 @@ export default function RoomRegister() {
       setLoading(false);
     }
   };
+
+  const handleSearch = () => processRoomCode(code);
 
   return (
     <div style={{ fontFamily: "'Sora','Inter',sans-serif", height: '100vh', background: '#060810', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -77,29 +80,45 @@ export default function RoomRegister() {
       <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', overflow: 'hidden' }}>
         {/* Left — QR scanner */}
         <div style={{ background: '#0E1015', borderRight: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 0, padding: 36 }}>
-          <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#1E293B', marginBottom: 28 }}>Scan QR on your room door</div>
-          <div style={{ width: 200, height: 200, position: 'relative', marginBottom: 28 }}>
+          <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#334155', marginBottom: 28 }}>{showScanner ? 'Scanning...' : 'Scan QR on your room door'}</div>
+          
+          <div style={{ width: 240, height: 240, position: 'relative', marginBottom: 28 }}>
             {[['tl','top:-1px;left:-1px;border-width:3px 0 0 3px;border-radius:6px 0 0 0'],['tr','top:-1px;right:-1px;border-width:3px 3px 0 0;border-radius:0 6px 0 0'],['bl','bottom:-1px;left:-1px;border-width:0 0 3px 3px;border-radius:0 0 0 6px'],['br','bottom:-1px;right:-1px;border-width:0 3px 3px 0;border-radius:0 0 6px 0']].map(([k]) => (
-              <div key={k} style={{ position: 'absolute', width: 22, height: 22, borderColor: '#6C63FF', borderStyle: 'solid', ...(k==='tl'?{top:-1,left:-1,borderWidth:'3px 0 0 3px',borderRadius:'6px 0 0 0'}:k==='tr'?{top:-1,right:-1,borderWidth:'3px 3px 0 0',borderRadius:'0 6px 0 0'}:k==='bl'?{bottom:-1,left:-1,borderWidth:'0 0 3px 3px',borderRadius:'0 0 0 6px'}:{bottom:-1,right:-1,borderWidth:'0 3px 3px 0',borderRadius:'0 0 6px 0'}) }} />
+              <div key={k} style={{ position: 'absolute', width: 22, height: 22, borderColor: '#6C63FF', borderStyle: 'solid', zIndex: 10, ...(k==='tl'?{top:-1,left:-1,borderWidth:'3px 0 0 3px',borderRadius:'6px 0 0 0'}:k==='tr'?{top:-1,right:-1,borderWidth:'3px 3px 0 0',borderRadius:'0 6px 0 0'}:k==='bl'?{bottom:-1,left:-1,borderWidth:'0 0 3px 3px',borderRadius:'0 0 0 6px'}:{bottom:-1,right:-1,borderWidth:'0 3px 3px 0',borderRadius:'0 0 6px 0'}) }} />
             ))}
-            <div style={{ width: '100%', height: '100%', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.02)' }}>
-              <svg width="100" height="100" viewBox="0 0 80 80" fill="none">
-                <rect x="8" y="8" width="22" height="22" rx="3" stroke="rgba(108,99,255,0.25)" strokeWidth="1.5"/>
-                <rect x="12" y="12" width="14" height="14" rx="1" fill="rgba(108,99,255,0.18)"/>
-                <rect x="50" y="8" width="22" height="22" rx="3" stroke="rgba(108,99,255,0.25)" strokeWidth="1.5"/>
-                <rect x="54" y="12" width="14" height="14" rx="1" fill="rgba(108,99,255,0.18)"/>
-                <rect x="8" y="50" width="22" height="22" rx="3" stroke="rgba(108,99,255,0.25)" strokeWidth="1.5"/>
-                <rect x="12" y="54" width="14" height="14" rx="1" fill="rgba(108,99,255,0.18)"/>
-                <rect x="50" y="50" width="8" height="8" rx="1" fill="rgba(108,99,255,0.15)"/>
-                <rect x="62" y="50" width="8" height="8" rx="1" fill="rgba(108,99,255,0.15)"/>
-                <rect x="50" y="62" width="8" height="8" rx="1" fill="rgba(108,99,255,0.15)"/>
-                <rect x="62" y="62" width="8" height="8" rx="1" fill="rgba(108,99,255,0.15)"/>
-              </svg>
+            <div style={{ width: '100%', height: '100%', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, overflow: 'hidden', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {showScanner ? (
+                <Scanner
+                  onScan={(results) => {
+                    if (results?.length > 0) {
+                      const text = results[0].rawValue;
+                      if (text.length === 6) processRoomCode(text);
+                      setShowScanner(false);
+                    }
+                  }}
+                  onError={(err) => console.log(err)}
+                  styles={{ container: { width: '100%', height: '100%' } }}
+                />
+              ) : (
+                <svg width="100" height="100" viewBox="0 0 80 80" fill="none">
+                  <rect x="8" y="8" width="22" height="22" rx="3" stroke="rgba(108,99,255,0.25)" strokeWidth="1.5"/>
+                  <rect x="12" y="12" width="14" height="14" rx="1" fill="rgba(108,99,255,0.18)"/>
+                  <rect x="50" y="8" width="22" height="22" rx="3" stroke="rgba(108,99,255,0.25)" strokeWidth="1.5"/>
+                  <rect x="54" y="12" width="14" height="14" rx="1" fill="rgba(108,99,255,0.18)"/>
+                  <rect x="8" y="50" width="22" height="22" rx="3" stroke="rgba(108,99,255,0.25)" strokeWidth="1.5"/>
+                  <rect x="12" y="54" width="14" height="14" rx="1" fill="rgba(108,99,255,0.18)"/>
+                  <rect x="50" y="50" width="8" height="8" rx="1" fill="rgba(108,99,255,0.15)"/>
+                  <rect x="62" y="50" width="8" height="8" rx="1" fill="rgba(108,99,255,0.15)"/>
+                  <rect x="50" y="62" width="8" height="8" rx="1" fill="rgba(108,99,255,0.15)"/>
+                  <rect x="62" y="62" width="8" height="8" rx="1" fill="rgba(108,99,255,0.15)"/>
+                </svg>
+              )}
             </div>
           </div>
-          <button style={{ width: '100%', maxWidth: 220, padding: 13, background: '#6C63FF', border: 'none', borderRadius: 12, color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9 }}>
+
+          <button onClick={() => setShowScanner(!showScanner)} style={{ width: '100%', maxWidth: 220, padding: 13, background: showScanner ? '#1E293B' : '#6C63FF', border: 'none', borderRadius: 12, color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9 }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-            Open Camera
+            {showScanner ? 'Cancel Scan' : 'Open Camera'}
           </button>
           <div style={{ fontSize: 11, color: '#1E293B', marginTop: 14 }}>or enter code on the right</div>
         </div>
