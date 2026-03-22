@@ -277,6 +277,16 @@ export const deleteComplaint = async (complaintId) => {
   await deleteDoc(complaintRef);
 };
 
+export const bulkDeleteResolvedComplaints = async (complaintIds) => {
+  if (!complaintIds || complaintIds.length === 0) return;
+  const { writeBatch } = await import('firebase/firestore');
+  const batch = writeBatch(db);
+  complaintIds.forEach(id => {
+    batch.delete(doc(db, 'complaints', id));
+  });
+  await batch.commit();
+};
+
 export const updateComplaintStatus = async (complaint, newStatus) => {
   if (complaint.status === newStatus) return;
   

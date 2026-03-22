@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { updateComplaintStatus, deleteComplaint } from '../../firebase/firestore';
+import { updateComplaintStatus, deleteComplaint, bulkDeleteResolvedComplaints } from '../../firebase/firestore';
 import RoomHistoryModal from './RoomHistoryModal';
 import { getSLAStatus } from '../../utils/sla';
 import { clusterComplaints } from '../../utils/clusterComplaints';
@@ -441,9 +441,26 @@ export default function ComplaintsKanban({ complaints }) {
       {Object.entries(groupedComplaints).map(([dateLabel, items]) => (
         <div key={dateLabel}>
           <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:12, marginTop: dateLabel === 'Today' ? 0 : 8 }}>
-            <span style={{ fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.09em', color:'var(--text-3)', whiteSpace:'nowrap' }}>
+            <span style={{ fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.09em', color:'var(--text-3)', whiteSpace:'nowrap', display: 'flex', alignItems: 'center', gap: 10 }}>
               {dateLabel === '__resolved__' ? 'Resolved' : dateLabel}
+              {dateLabel === '__resolved__' && items.length > 0 && (
+                <button 
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    if (!window.confirm(`Delete all ${items.length} resolved tickets? This cannot be undone.`)) return;
+                    await bulkDeleteResolvedComplaints(items.map(i => i.id));
+                  }}
+                  style={{
+                    padding: '2px 8px', borderRadius: 6, border: '1px solid var(--red-border)',
+                    background: 'var(--red-soft)', color: 'var(--red)', fontSize: 9, 
+                    fontWeight: 700, cursor: 'pointer', textTransform: 'uppercase'
+                  }}
+                >
+                  Delete All Resolved
+                </button>
+              )}
             </span>
+
             <div style={{ flex:1, height:0.5, background:'var(--border)' }} />
           </div>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(420px, 1fr))', gap:12 }}>

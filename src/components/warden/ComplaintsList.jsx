@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { updateComplaintStatus, deleteComplaint } from '../../firebase/firestore';
+import { updateComplaintStatus, deleteComplaint, bulkDeleteResolvedComplaints } from '../../firebase/firestore';
 import RoomHistoryModal from './RoomHistoryModal';
 
 function timeAgo(date) {
@@ -209,9 +209,11 @@ export default function ComplaintsList({ complaints }) {
               </button>
             )}
           </div>
-          
         </div>
       )}
+
+
+
 
       {historyRoom && (
         <RoomHistoryModal 

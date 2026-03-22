@@ -4,7 +4,7 @@ import Navbar from '../../components/Navbar';
 import { useAuth } from '../../context/AuthContext';
 import { logoutUser } from '../../firebase/auth';
 import ThemeToggle from '../../components/ThemeToggle';
-import { getWardenHostel, getBlocks, getBuildings, getFloors, getRooms } from '../../firebase/firestore';
+import { getWardenHostel, getBlocks, getBuildings, getFloors, getRooms, bulkDeleteResolvedComplaints } from '../../firebase/firestore';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import WardenAnnouncements from '../../components/warden/WardenAnnouncements';
@@ -249,7 +249,6 @@ export default function WardenDashboard() {
 
         {activeTab==='complaints' && (
           <div className="animation-fade-in">
-            {/* Control bar */}
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16,flexWrap:'wrap',gap:10}}>
               <div style={{fontSize:13,fontWeight:600,color:'var(--text-2)',textTransform:'uppercase',letterSpacing:'0.06em'}}>Complaints</div>
               <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
@@ -259,6 +258,22 @@ export default function WardenDashboard() {
                     {cat||'All'}
                   </button>
                 ))}
+                
+                {complaints.some(c => c.status === 'resolved') && (
+                  <button 
+                    onClick={async () => {
+                      const resolved = complaints.filter(c => c.status === 'resolved');
+                      if (!window.confirm(`Delete all ${resolved.length} resolved tickets? This cannot be undone.`)) return;
+                      await bulkDeleteResolvedComplaints(resolved.map(r => r.id));
+                    }}
+                    className="btn btn-sm"
+                    style={{ background: 'var(--red-soft)', color: 'var(--red)', border: '1px solid var(--red-border)', marginLeft: 8 }}
+                  >
+                    <span className="material-icons-round" style={{ fontSize: 16, marginRight: 6 }}>delete_sweep</span>
+                    Clear Resolved
+                  </button>
+                )}
+
                 <div style={{display:'flex',border:'1px solid var(--border)',borderRadius:'var(--radius-sm)',overflow:'hidden'}}>
                   {[['kanban','view_kanban'],['list','format_list_bulleted']].map(([v,icon])=>(
                     <button key={v} onClick={()=>setViewMode(v)}
@@ -269,6 +284,7 @@ export default function WardenDashboard() {
                 </div>
               </div>
             </div>
+
             {viewMode==='kanban' ? <ComplaintsKanban complaints={filteredComplaints} /> : <ComplaintsList complaints={filteredComplaints} />}
           </div>
         )}
