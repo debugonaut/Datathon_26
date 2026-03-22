@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import Navbar from '../components/Navbar';
 import { registerUser, signInWithGoogle, getUserDoc, checkWardenExists } from '../firebase/auth';
 import { useAuth } from '../context/AuthContext';
+import ThemeToggle from '../components/ThemeToggle';
 
 export default function RegisterPage() {
   const [params] = useSearchParams();
@@ -19,6 +21,7 @@ export default function RegisterPage() {
   const { setUserDoc } = useAuth();
   const navigate = useNavigate();
 
+  // ── Google sign-in ────────────────────────────────────────────────────────────
   const handleGoogle = async () => {
     setError('');
     setGoogleLoading(true);
@@ -26,6 +29,7 @@ export default function RegisterPage() {
       const user = await signInWithGoogle();
       const doc = await getUserDoc(user.uid);
       if (!doc) {
+        // Brand new user → pick role
         navigate('/setup-role', { replace: true });
       } else {
         setUserDoc(doc);
@@ -33,7 +37,11 @@ export default function RegisterPage() {
           navigate(doc.hostelId ? '/warden/dashboard' : '/warden/setup', { replace: true });
         } else {
           if (doc.hostelId) navigate('/student/dashboard', { replace: true });
-          else navigate('/', { replace: true });
+          else {
+            const savedId = sessionStorage.getItem('selectedHostelId');
+            if (savedId) navigate(`/student/join?hostelId=${savedId}`, { replace: true });
+            else navigate('/', { replace: true });
+          }
         }
       }
     } catch (err) {
@@ -43,6 +51,7 @@ export default function RegisterPage() {
     }
   };
 
+  // ── Email/password register ────────────────────────────────────────────────────
   const validate = () => {
     if (!name.trim()) return 'Please enter your full name.';
     if (role === 'student' && !email.endsWith('@mitaoe.ac.in'))
@@ -67,9 +76,21 @@ export default function RegisterPage() {
           return;
         }
       }
+
       await registerUser(email, password, name, role);
-      if (role === 'warden') navigate('/warden/setup', { replace: true });
-      else navigate('/student/join', { replace: true });
+
+      const pending = localStorage.getItem('pendingRoomId');
+      if (pending) {
+        localStorage.removeItem('pendingRoomId');
+        navigate(`/room/${pending}`, { replace: true });
+        return;
+      }
+
+      if (role === 'warden') {
+        navigate('/warden/setup', { replace: true });
+      } else {
+        navigate('/student/join', { replace: true });
+      }
     } catch (err2) {
       setError(err2.message || 'Registration failed.');
     } finally {
@@ -77,136 +98,73 @@ export default function RegisterPage() {
     }
   };
 
-  const inputStyle = { width: '100%', padding: '11px 14px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)', color: '#F1F5F9', fontSize: 13, fontFamily: 'inherit', outline: 'none' };
-  const labelStyle = { fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#475569', marginBottom: 5 };
-
   return (
-    <div style={{
-      fontFamily: "'Sora', 'Inter', sans-serif",
-      minHeight: '100vh',
-      background: '#0A0C12',
-      position: 'relative',
-      overflow: 'hidden',
-      display: 'flex',
-    }}>
-
-      {/* Hero — left 65%, full height, diagonal cuts bottom-right */}
-      <div style={{
-        position: 'absolute', top: 0, left: 0,
-        width: '65%', height: '100%',
-        background: 'linear-gradient(135deg, #10B981 0%, #059669 55%, #3B82F6 100%)',
-        clipPath: 'polygon(0 0, 100% 0, 72% 100%, 0 100%)',
-        zIndex: 0,
-      }} />
-      <div style={{
-        position: 'absolute', top: 0, left: 0,
-        width: '65%', height: '100%',
-        clipPath: 'polygon(0 0, 100% 0, 72% 100%, 0 100%)',
-        backgroundImage: 'linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)',
-        backgroundSize: '40px 40px',
-        zIndex: 1, pointerEvents: 'none',
-      }} />
-
-      {/* Navbar */}
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '24px 32px', zIndex: 10 }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <svg width="26" height="26" viewBox="0 0 32 32" fill="none">
-              <polygon points="16,2 28,9 28,23 16,30 4,23 4,9" stroke="#fff" strokeWidth="1.5" />
-              <path d="M16 9 L16 16 L20 19" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" />
-            </svg>
-            <span style={{ fontSize: 15, fontWeight: 700, color: '#fff', letterSpacing: '-0.02em' }}>Fix My Hostel</span>
+    <div className="auth-page">
+      <div className="auth-topbar">
+        <Link to="/" style={{ display:'flex', alignItems:'center', gap:10, textDecoration:'none' }}>
+          <div className="sidebar-brand-icon">
+            <span className="material-icons-round" style={{fontSize:16}}>apartment</span>
           </div>
-          <div style={{ marginTop: 7, display: 'inline-block', fontSize: 9, fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.65)', background: 'rgba(255,255,255,0.12)', padding: '3px 10px', borderRadius: 4 }}>
-            PS-15 · Datathon 2026
-          </div>
-        </div>
-        <Link to="/" style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.65)', textDecoration: 'none', marginTop: 4 }}>
-          ← Back to home
+          <span className="sidebar-brand-name">Fix My Hostel</span>
         </Link>
-      </div>
-
-      <div style={{ position: 'absolute', top: '50%', left: 48, transform: 'translateY(-50%)', zIndex: 2, pointerEvents: 'none' }}>
-        <div style={{ fontSize: 52, fontWeight: 700, color: '#fff', letterSpacing: '-0.05em', lineHeight: 1.0 }}>
-          Create<br />Account.
-        </div>
-        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', marginTop: 12, lineHeight: 1.65, maxWidth: 240 }}>
-          Join the community of students and wardens improving hostel life together.
+        <div style={{ display:'flex', alignItems:'center', gap:16 }}>
+          <ThemeToggle />
+          <Link to="/" className="text-secondary text-sm" style={{textDecoration:'none', fontWeight:500}}>Back to home</Link>
         </div>
       </div>
+      <div className="auth-center">
+        <div className="auth-card animation-fade-in">
+          <h1 className="auth-title">Create Account</h1>
+          <p className="auth-subtitle">Join MITAOE Hostel Management</p>
 
-      {/* Form card */}
-      <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: 460, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', padding: '0 0 0 40px', zIndex: 10 }}>
-        <div style={{ width: '100%', background: '#131720', borderRadius: 20, padding: '32px 32px 36px', border: '1px solid rgba(255,255,255,0.07)', maxHeight: '90vh', overflowY: 'auto' }}>
+          {error && <div className="alert-error">{error}</div>}
 
-          <div style={{ fontSize: 22, fontWeight: 700, color: '#F1F5F9', letterSpacing: '-0.03em', marginBottom: 4 }}>Sign up</div>
-          <div style={{ fontSize: 13, color: '#475569', marginBottom: 20 }}>Join MITAOE Hostel Management</div>
-
-          {error && (
-            <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 8, padding: '10px 13px', marginBottom: 16, fontSize: 12, color: '#ef4444' }}>
-              {error}
-            </div>
-          )}
-
-          <button onClick={handleGoogle} disabled={googleLoading || loading}
-            style={{ width: '100%', padding: '12px 16px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.05)', color: '#E2E8F0', fontSize: 13, fontWeight: 600, cursor: googleLoading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 16, opacity: googleLoading ? 0.7 : 1 }}>
-            {googleLoading ? '…' : (<>
-              <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20H24v8h11.3C33.6 33.1 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.5 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20c11 0 20-8.9 20-20 0-1.3-.1-2.7-.4-4z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 16 19 13 24 13c3 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.5 29.3 4 24 4 16.3 4 9.7 8.4 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-1.9 13.5-5l-6.2-5.2C29.4 35.5 26.8 36 24 36c-5.2 0-9.6-3-11.3-7.2l-6.5 5C9.5 39.6 16.3 44 24 44z"/><path fill="#1976D2" d="M43.6 20H24v8h11.3c-.9 2.4-2.5 4.5-4.5 6l6.2 5.2C41 35.5 44 30.2 44 24c0-1.3-.1-2.7-.4-4z"/></svg>
-              Sign up with Google (@mitaoe.ac.in)
-            </>)}
+          <button onClick={handleGoogle} disabled={googleLoading} style={{ width:'100%', background:'#fff', color:'#111', border:'none', borderRadius:'var(--radius-sm)', padding:'11px', fontSize:13, fontWeight:600, fontFamily:'var(--font-body)', display:'flex', alignItems:'center', justifyContent:'center', gap:10, cursor:'pointer', marginBottom:20, transition:'opacity 0.15s' }} onMouseOver={e=>e.currentTarget.style.opacity='.9'} onMouseOut={e=>e.currentTarget.style.opacity='1'}>
+            {googleLoading ? 'Signing in…' : (<><svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20H24v8h11.3C33.6 33.1 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.5 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20c11 0 20-8.9 20-20 0-1.3-.1-2.7-.4-4z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 16 19 13 24 13c3 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.5 29.3 4 24 4 16.3 4 9.7 8.4 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-1.9 13.5-5l-6.2-5.2C29.4 35.5 26.8 36 24 36c-5.2 0-9.6-3-11.3-7.2l-6.5 5C9.5 39.6 16.3 44 24 44z"/><path fill="#1976D2" d="M43.6 20H24v8h11.3c-.9 2.4-2.5 4.5-4.5 6l6.2 5.2C41 35.5 44 30.2 44 24c0-1.3-.1-2.7-.4-4z"/></svg>Sign up with Google (@mitaoe.ac.in)</>)}
           </button>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.07)' }} />
-            <span style={{ fontSize: 10, color: '#1E293B', fontWeight: 600, textTransform: 'uppercase' }}>or register with email</span>
-            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.07)' }} />
-          </div>
+          <div className="divider">or register with email</div>
 
-          <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
-            {['student', 'warden'].map(r => (
-              <button key={r} onClick={() => setRole(r)} style={{ flex: 1, padding: '9px', borderRadius: 8, border: `1px solid ${role === r ? '#6C63FF' : 'rgba(255,255,255,0.06)'}`, background: role === r ? 'rgba(108,99,255,0.1)' : 'transparent', color: role === r ? '#F1F5F9' : '#334155', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', textTransform: 'capitalize' }}>{r}</button>
-            ))}
+          <div className="role-toggle">
+            <button type="button" className={`role-btn ${role==='student'?'active':''}`} onClick={()=>setRole('student')}>Student</button>
+            <button type="button" className={`role-btn ${role==='warden'?'active':''}`} onClick={()=>setRole('warden')}>Warden</button>
           </div>
 
           <form onSubmit={handleRegister}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
-              <div>
-                <div style={labelStyle}>Full Name</div>
-                <input style={inputStyle} type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Your Name" required />
-              </div>
-              <div>
-                <div style={labelStyle}>Email</div>
-                <input style={inputStyle} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder={role==='student'?'PRN@mitaoe.ac.in':'email@mitaoe.ac.in'} required />
-              </div>
+            <div style={{ marginBottom: 14 }}>
+              <label className="label">Full Name</label>
+              <input className="input" type="text" placeholder="Aadesh Khande" value={name} onChange={(e) => setName(e.target.value)} required />
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
-              <div>
-                <div style={labelStyle}>Password</div>
-                <input style={inputStyle} type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Min. 6 chars" required />
-              </div>
-              <div>
-                <div style={labelStyle}>Confirm</div>
-                <input style={inputStyle} type="password" value={confirm} onChange={e => setConfirm(e.target.value)} placeholder="Repeat" required />
-              </div>
+            <div style={{ marginBottom: 14 }}>
+              <label className="label">Email</label>
+              <input className="input" type="email" placeholder={role === 'student' ? 'PRN@mitaoe.ac.in' : 'warden@mitaoe.ac.in'} value={email} onChange={(e) => setEmail(e.target.value)} required />
+              {role === 'student' && <p style={{ fontSize: 11, color: 'var(--text-ghost)', fontFamily: 'var(--font-mono)', marginTop: 4 }}>Must use your official @mitaoe.ac.in email.</p>}
             </div>
-
+            <div style={{ marginBottom: 14 }}>
+              <label className="label">Password</label>
+              <input className="input" type="password" placeholder="Min. 6 characters" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            </div>
+            <div style={{ marginBottom: 16 }}>
+              <label className="label">Confirm Password</label>
+              <input className="input" type="password" placeholder="Repeat password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required />
+            </div>
+            
             {role === 'warden' && (
-              <div style={{ background: 'rgba(108,99,255,0.04)', border: '1px solid rgba(108,99,255,0.1)', borderRadius: 10, padding: '12px 14px', marginBottom: 12 }}>
-                <div style={labelStyle}>Admin Code</div>
-                <input style={inputStyle} type="password" value={adminCode} onChange={e => setAdminCode(e.target.value)} placeholder="Enter code" />
+              <div style={{ background:'rgba(124,110,250,0.05)', border:'1px solid rgba(124,110,250,0.15)', borderRadius:'var(--radius-sm)', padding:'14px 16px', marginBottom:16 }}>
+                <label className="label">Admin Code</label>
+                <input className="input" type="password" placeholder="Enter code if a warden exists" value={adminCode} onChange={e=>setAdminCode(e.target.value)} />
+                <p style={{ fontSize:11, color:'var(--text-ghost)', fontFamily:'var(--font-mono)', marginTop:6 }}>Leave blank if you are the first warden.</p>
               </div>
             )}
 
-            <button type="submit" disabled={loading || googleLoading}
-              style={{ width: '100%', padding: 13, borderRadius: 10, background: loading ? 'rgba(108,99,255,0.5)' : '#6C63FF', border: 'none', color: '#fff', fontSize: 14, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', marginTop: 4 }}>
-              {loading ? 'Creating account…' : `Register as ${role}`}
+            <button className="btn btn-primary btn-full" type="submit" disabled={loading}>
+              {loading ? 'Creating account…' : `Register as ${role === 'warden' ? 'Warden' : 'Student'}`}
             </button>
           </form>
 
-          <div style={{ textAlign: 'center', fontSize: 12, color: '#334155', marginTop: 14 }}>
-            Already have an account?{' '}
-            <Link to="/login" style={{ color: '#6C63FF', fontWeight: 600, textDecoration: 'none' }}>Sign in</Link>
-          </div>
+          <p style={{ textAlign: 'center', marginTop: 16, fontSize: 13, color: 'var(--text-secondary)' }}>
+            Already have an account? <Link to="/login" style={{ color: 'var(--violet)', textDecoration: 'none' }}>Sign in</Link>
+          </p>
         </div>
       </div>
     </div>
