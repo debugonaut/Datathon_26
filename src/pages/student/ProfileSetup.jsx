@@ -21,7 +21,7 @@ export default function ProfileSetup() {
     if (prn.trim().length !== 12) { setError('PRN must be exactly 12 digits.'); return; }
     setLoading(true); setError('');
     try {
-      const updates = { name: name.trim(), prn: prn.trim(), branch, year, profileComplete: true };
+      const updates = { name: name.trim(), prn: prn.trim(), branch, year, isProfileComplete: true };
       await updateDoc(doc(db, 'users', user.uid), updates);
       setUserDoc(prev => ({ ...prev, ...updates }));
       navigate('/student/room-register');

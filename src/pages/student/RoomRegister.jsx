@@ -40,6 +40,7 @@ export default function RoomRegister() {
         roomId: roomData.roomId,
         roomNumber: roomData.roomNumber,
         floorNumber: roomData.floorNumber,
+        isRegistered: true,
       });
       setUserDoc(prev => ({ ...prev, ...roomData }));
       navigate('/student/dashboard');
