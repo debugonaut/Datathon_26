@@ -102,15 +102,76 @@ body {
   display: flex;
   flex-direction: column;
   z-index: 50;
-  transition: background 0.25s ease;
+  transition: all 0.25s ease;
 }
+.app-sidebar.minimized {
+  width: 72px;
+}
+.app-sidebar.minimized .sidebar-brand-name,
+.app-sidebar.minimized .sidebar-section-label,
+.app-sidebar.minimized .sidebar-user-name,
+.app-sidebar.minimized .sidebar-user-role,
+.app-sidebar.minimized .item-label {
+  display: none;
+}
+.app-sidebar.minimized .sidebar-brand,
+.app-sidebar.minimized .sidebar-item,
+.app-sidebar.minimized .sidebar-user {
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
+}
+.app-sidebar.minimized .sidebar-avatar {
+  margin: 0;
+}
+
 .app-main {
   margin-left: var(--sidebar-w);
   flex: 1;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  transition: margin-left 0.25s ease;
 }
+.app-main.minimized {
+  margin-left: 72px;
+}
+
+.sidebar-toggle-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border-radius: var(--radius-sm);
+  transition: background 0.15s, color 0.15s;
+  margin-right: 12px;
+}
+.sidebar-toggle-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+@media (max-width: 768px) {
+  .app-sidebar {
+    width: var(--sidebar-w);
+    transform: translateX(-100%);
+  }
+  .app-sidebar.minimized {
+    transform: translateX(0);
+    width: 72px;
+  }
+  .app-main {
+    margin-left: 0;
+  }
+  .app-main.minimized {
+    margin-left: 72px;
+  }
+}
+
 .app-header {
   height: var(--header-h);
   background: var(--bg-card);

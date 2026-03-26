@@ -88,8 +88,8 @@ export default function LoginPage() {
       }} />
 
       {/* Navbar */}
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '24px 32px', zIndex: 10 }}>
-        <div>
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '24px 32px', zIndex: 20 }}>
+        <Link to="/" style={{ textDecoration: 'none' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <svg width="26" height="26" viewBox="0 0 32 32" fill="none">
               <polygon points="16,2 28,9 28,23 16,30 4,23 4,9" stroke="#fff" strokeWidth="1.5" />
@@ -100,7 +100,7 @@ export default function LoginPage() {
           <div style={{ marginTop: 7, display: 'inline-block', fontSize: 9, fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.65)', background: 'rgba(255,255,255,0.12)', padding: '3px 10px', borderRadius: 4 }}>
             PS-15 · Datathon 2026
           </div>
-        </div>
+        </Link>
         <Link to="/" style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.65)', textDecoration: 'none', marginTop: 4 }}>
           ← Back to home
         </Link>

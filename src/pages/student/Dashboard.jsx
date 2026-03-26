@@ -22,6 +22,7 @@ export default function StudentDashboard() {
   const [announcements, setAnnouncements] = useState([]);
   const [recentComplaints, setRecentComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isSidebarMinimized, setIsSidebarMinimized] = useState(false);
 
   const [fullRoomHistory, setFullRoomHistory] = useState([]);
   const [roomSummary, setRoomSummary] = useState(null);
@@ -131,7 +132,7 @@ export default function StudentDashboard() {
   return (
   <div className="app-shell">
     {/* Sidebar */}
-    <aside className="app-sidebar">
+    <aside className={`app-sidebar ${isSidebarMinimized ? 'minimized' : ''}`}>
       <Link to="/" className="sidebar-brand">
         <div className="sidebar-brand-icon">
           <span className="material-icons-round" style={{fontSize:18}}>apartment</span>
@@ -148,14 +149,14 @@ export default function StudentDashboard() {
         ].map(([id,icon,label])=>(
           <div key={id} className={`sidebar-item ${activeTab===id?'active':''}`} onClick={()=>setActiveTab(id)}>
             <span className="material-icons-round">{icon}</span>
-            {label}
+            <span className="item-label">{label}</span>
           </div>
         ))}
 
         <span className="sidebar-section-label">Actions</span>
         <Link to="/complaint/new" className="sidebar-item">
           <span className="material-icons-round">add_circle_outline</span>
-          File Complaint
+          <span className="item-label">File Complaint</span>
         </Link>
       </nav>
 
@@ -173,11 +174,16 @@ export default function StudentDashboard() {
     </aside>
 
     {/* Main */}
-    <div className="app-main">
+    <div className={`app-main ${isSidebarMinimized ? 'minimized' : ''}`}>
       <div className="app-header">
-        <div>
-          <div className="header-title">Room {userDoc?.roomNumber}</div>
-          <div style={{fontSize:12,color:'var(--text-3)',marginTop:1}}>{hierarchyNames.building} · Floor {hierarchyNames.floor}</div>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <button className="sidebar-toggle-btn" onClick={() => setIsSidebarMinimized(!isSidebarMinimized)}>
+            <span className="material-icons-round" style={{fontSize: 20}}>menu</span>
+          </button>
+          <div>
+            <div className="header-title">Room {userDoc?.roomNumber}</div>
+            <div style={{fontSize:12,color:'var(--text-3)',marginTop:1}}>{hierarchyNames.building} · Floor {hierarchyNames.floor}</div>
+          </div>
         </div>
         <div className="header-actions">
           <ThemeToggle />

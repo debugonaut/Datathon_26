@@ -104,7 +104,7 @@ export default function RegisterPage() {
 
       {/* Navbar overlay */}
       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '24px 32px', zIndex: 10 }}>
-        <div>
+        <Link to="/" style={{ textDecoration: 'none' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <svg width="26" height="26" viewBox="0 0 32 32" fill="none">
               <polygon points="16,2 28,9 28,23 16,30 4,23 4,9" stroke="#6C63FF" strokeWidth="1.5" />
@@ -112,7 +112,7 @@ export default function RegisterPage() {
             </svg>
             <span style={{ fontSize: 15, fontWeight: 700, color: '#F1F5F9', letterSpacing: '-0.02em' }}>Fix My Hostel</span>
           </div>
-        </div>
+        </Link>
         <Link to="/" style={{ fontSize: 12, fontWeight: 600, color: '#475569', textDecoration: 'none', marginTop: 4 }}>
           ← Back to home
         </Link>

@@ -24,6 +24,7 @@ export default function WardenDashboard() {
   const [stats, setStats] = useState({ floors: 0, blocks: 0, rooms: 0, buildings: 0 });
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+  const [isSidebarMinimized, setIsSidebarMinimized] = useState(false);
   
   // Complaints State
   const [complaints, setComplaints] = useState([]);
@@ -103,7 +104,7 @@ export default function WardenDashboard() {
   return (
   <div className="app-shell">
     {/* Sidebar */}
-    <aside className="app-sidebar">
+    <aside className={`app-sidebar ${isSidebarMinimized ? 'minimized' : ''}`}>
       <Link to="/" className="sidebar-brand">
         <div className="sidebar-brand-icon">
           <span className="material-icons-round" style={{fontSize:18}}>apartment</span>
@@ -126,7 +127,7 @@ export default function WardenDashboard() {
             onClick={() => setActiveTab(id)}
           >
             <span className="material-icons-round">{icon}</span>
-            {label}
+            <span className="item-label">{label}</span>
           </div>
         ))}
       </nav>
@@ -145,12 +146,17 @@ export default function WardenDashboard() {
     </aside>
 
     {/* Main */}
-    <div className="app-main">
+    <div className={`app-main ${isSidebarMinimized ? 'minimized' : ''}`}>
       {/* Header */}
       <div className="app-header">
-        <div>
-          <div className="header-title">{hostel?.name}</div>
-          <div style={{fontSize:12, color:'var(--text-3)', marginTop:1}}>{hostel?.collegeName}</div>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <button className="sidebar-toggle-btn" onClick={() => setIsSidebarMinimized(!isSidebarMinimized)}>
+            <span className="material-icons-round" style={{fontSize: 20}}>menu</span>
+          </button>
+          <div>
+            <div className="header-title">{hostel?.name}</div>
+            <div style={{fontSize:12, color:'var(--text-3)', marginTop:1}}>{hostel?.collegeName}</div>
+          </div>
         </div>
         <div className="header-actions">
           <ThemeToggle />

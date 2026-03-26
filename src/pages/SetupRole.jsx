@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { doc, setDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useAuth } from '../context/AuthContext';
@@ -80,13 +80,13 @@ export default function SetupRole() {
         borderBottom: '1px solid rgba(255,255,255,0.05)',
         flexShrink: 0,
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, color: '#F1F5F9', letterSpacing: '-0.02em' }}>
+        <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, color: '#F1F5F9', letterSpacing: '-0.02em', textDecoration: 'none' }}>
           <svg width="20" height="20" viewBox="0 0 32 32" fill="none">
             <polygon points="16,2 28,9 28,23 16,30 4,23 4,9" stroke="#6C63FF" strokeWidth="1.5" />
             <path d="M16 9 L16 16 L20 19" stroke="#6C63FF" strokeWidth="1.8" strokeLinecap="round" />
           </svg>
           Fix My Hostel
-        </div>
+        </Link>
         <div style={{
           fontSize: 9, fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase',
           color: '#6C63FF', background: 'rgba(108,99,255,0.1)',
