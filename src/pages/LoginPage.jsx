@@ -70,7 +70,7 @@ export default function LoginPage() {
     }}>
 
       {/* Hero — left 65%, full height, diagonal cuts bottom-right */}
-      <div style={{
+      <div className="mobile-hidden" style={{
         position: 'absolute', top: 0, left: 0,
         width: '65%', height: '100%',
         background: 'linear-gradient(135deg, #5B52E8 0%, #6C63FF 55%, #4F8EF7 100%)',
@@ -78,7 +78,7 @@ export default function LoginPage() {
         zIndex: 0,
       }} />
       {/* Grid overlay on hero */}
-      <div style={{
+      <div className="mobile-hidden" style={{
         position: 'absolute', top: 0, left: 0,
         width: '65%', height: '100%',
         clipPath: 'polygon(0 0, 100% 0, 72% 100%, 0 100%)',
@@ -107,7 +107,7 @@ export default function LoginPage() {
       </div>
 
       {/* Tagline — vertically centered in hero */}
-      <div style={{ position: 'absolute', top: '50%', left: 48, transform: 'translateY(-50%)', zIndex: 2, pointerEvents: 'none' }}>
+      <div className="mobile-hidden" style={{ position: 'absolute', top: '50%', left: 48, transform: 'translateY(-50%)', zIndex: 2, pointerEvents: 'none' }}>
         <div style={{ fontSize: 52, fontWeight: 700, color: '#fff', letterSpacing: '-0.05em', lineHeight: 1.0 }}>
           Welcome<br />back.
         </div>
@@ -117,15 +117,22 @@ export default function LoginPage() {
       </div>
 
       {/* Accent dots */}
-      <div style={{ position: 'absolute', bottom: 28, left: 48, display: 'flex', gap: 10, zIndex: 5 }}>
+      <div className="mobile-hidden" style={{ position: 'absolute', bottom: 28, left: 48, display: 'flex', gap: 10, zIndex: 5 }}>
         {[{ bg: '#6C63FF', shadow: '0 0 8px rgba(108,99,255,0.8)' }, { bg: '#10B981', shadow: 'none' }, { bg: '#F59E0B', shadow: 'none' }, { bg: '#EF4444', shadow: 'none' }].map((d, i) => (
           <div key={i} style={{ width: 9, height: 9, borderRadius: '50%', background: d.bg, boxShadow: d.shadow }} />
         ))}
       </div>
 
       {/* Form card — vertically centered on right side */}
-      <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: 420, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', padding: '0 0 0 40px', zIndex: 10 }}>
-        <div style={{ width: '100%', background: '#131720', borderRadius: 20, padding: '36px 32px 40px', border: '1px solid rgba(255,255,255,0.07)' }}>
+      <div style={{ 
+        flex: 1, 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        zIndex: 10,
+        padding: '80px 20px 40px'
+      }}>
+        <div className="auth-card-responsive" style={{ width: 420, background: '#131720', borderRadius: 20, padding: '36px 32px 40px', border: '1px solid rgba(255,255,255,0.07)' }}>
 
           <div style={{ fontSize: 22, fontWeight: 700, color: '#F1F5F9', letterSpacing: '-0.03em', marginBottom: 4 }}>Sign in</div>
           <div style={{ fontSize: 13, color: '#475569', marginBottom: 24 }}>Sign in to your MITAOE account</div>

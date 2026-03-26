@@ -207,8 +207,8 @@ export default function StudentDashboard() {
 
       <div className="app-content animation-fade-in">
         {activeTab==='overview' && (
-          <div style={{display:'grid',gridTemplateColumns:'1fr 280px',gap:20}}>
-            <div style={{display:'flex',flexDirection:'column',gap:16}}>
+          <div className="grid-2 responsive" style={{ gap: 20 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
               {/* Score */}
               <div className="card" style={{'--accent-color': score>70?'var(--green)':score>40?'var(--amber)':'var(--red)'}}>

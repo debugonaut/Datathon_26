@@ -200,7 +200,7 @@ export default function WardenDashboard() {
         {activeTab==='overview' && (
           <>
             {/* KPI stats */}
-            <div className="stats-grid" style={{gridTemplateColumns:'repeat(5,minmax(0,1fr))'}}>
+            <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }}>
               {[
                 {label:'Total',    value:complaints.length,                                    icon:'inbox',      color:'var(--primary)'},
                 {label:'Open',     value:complaints.filter(c=>c.status==='todo').length,        icon:'radio_button_unchecked', color:'var(--red)'},
@@ -219,7 +219,7 @@ export default function WardenDashboard() {
             </div>
 
             {/* Two column */}
-            <div style={{display:'grid',gridTemplateColumns:'1fr 300px',gap:16,marginBottom:24}}>
+            <div className="grid-2 responsive" style={{ gap: 16, marginBottom: 24 }}>
               <div className="card-flat">
                 <div className="label" style={{marginBottom:12}}>Warden details</div>
                 {[['Name',userDoc?.name],['Email',userDoc?.email],['Hostel',hostel?.name],['College',hostel?.collegeName]].map(([k,v])=>(

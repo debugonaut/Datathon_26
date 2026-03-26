@@ -102,23 +102,27 @@ export default function RegisterPage() {
       }} />
 
       {/* Navbar overlay */}
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '24px 32px', zIndex: 10 }}>
+      <div style={{ 
+        position: 'absolute', top: 0, left: 0, right: 0, 
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between', 
+        padding: '24px 20px', zIndex: 10 
+      }}>
         <Link to="/" style={{ textDecoration: 'none' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <svg width="26" height="26" viewBox="0 0 32 32" fill="none">
-              <polygon points="16,2 28,9 28,23 16,30 4,23 4,9" stroke="#6C63FF" strokeWidth="1.5" />
-              <path d="M16 9 L16 16 L20 19" stroke="#6C63FF" strokeWidth="1.8" strokeLinecap="round" />
+            <svg width="24" height="24" viewBox="0 0 32 32" fill="none">
+              <polygon points="16,2 28,9 28,23 16,30 4,23 4,9" stroke="#6C63FF" strokeWidth="2" />
+              <path d="M16 9 L16 16 L20 19" stroke="#6C63FF" strokeWidth="2.5" strokeLinecap="round" />
             </svg>
-            <span style={{ fontSize: 15, fontWeight: 700, color: '#F1F5F9', letterSpacing: '-0.02em' }}>Fix My Hostel</span>
+            <span style={{ fontSize: 14, fontWeight: 700, color: '#F1F5F9', letterSpacing: '-0.02em' }}>Fix My Hostel</span>
           </div>
         </Link>
-        <Link to="/" style={{ fontSize: 12, fontWeight: 600, color: '#475569', textDecoration: 'none', marginTop: 4 }}>
-          ← Back to home
+        <Link to="/" style={{ fontSize: 11, fontWeight: 600, color: '#475569', textDecoration: 'none' }}>
+          ← Back
         </Link>
       </div>
 
       {/* Centered card */}
-      <div style={{ width: '100%', maxWidth: 460, background: '#131720', borderRadius: 20, padding: '32px 32px 36px', border: '1px solid rgba(255,255,255,0.07)', position: 'relative', zIndex: 1 }}>
+      <div className="auth-card-responsive" style={{ width: '100%', maxWidth: 460, background: '#131720', borderRadius: 20, padding: '32px 32px 36px', border: '1px solid rgba(255,255,255,0.07)', position: 'relative', zIndex: 1, marginTop: 40 }}>
         <div style={{ fontSize: 22, fontWeight: 700, color: '#F1F5F9', letterSpacing: '-0.03em', marginBottom: 4 }}>Create Account</div>
         <div style={{ fontSize: 13, color: '#475569', marginBottom: 20 }}>Join MITAOE Hostel Management</div>
 
@@ -149,7 +153,7 @@ export default function RegisterPage() {
         </div>
 
         <form onSubmit={handleRegister}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+          <div className="grid-2 responsive" style={{ gap: 12, marginBottom: 12 }}>
             <div>
               <div style={labelStyle}>Full Name</div>
               <input style={inputStyle} type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Your Name" required />
@@ -159,7 +163,7 @@ export default function RegisterPage() {
               <input style={inputStyle} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder={role==='student'?'Your Email':'Warden Email'} required />
             </div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+          <div className="grid-2 responsive" style={{ gap: 12, marginBottom: 12 }}>
             <div>
               <div style={labelStyle}>Password</div>
               <input style={inputStyle} type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Min. 6 chars" required />
