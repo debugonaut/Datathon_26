@@ -45,8 +45,7 @@ export default function RegisterPage() {
 
   const validate = () => {
     if (!name.trim()) return 'Please enter your full name.';
-    if (role === 'student' && !email.endsWith('@mitaoe.ac.in'))
-      return 'Students must register with their @mitaoe.ac.in email.';
+    // Removed domain restriction for demo purposes
     if (password.length < 6) return 'Password must be at least 6 characters.';
     if (password !== confirm) return 'Passwords do not match.';
     return null;
@@ -133,7 +132,7 @@ export default function RegisterPage() {
           style={{ width: '100%', padding: '12px 16px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.05)', color: '#E2E8F0', fontSize: 13, fontWeight: 600, cursor: googleLoading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 16, opacity: googleLoading ? 0.7 : 1 }}>
           {googleLoading ? '…' : (<>
             <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20H24v8h11.3C33.6 33.1 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.5 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20c11 0 20-8.9 20-20 0-1.3-.1-2.7-.4-4z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 16 19 13 24 13c3 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.5 29.3 4 24 4 16.3 4 9.7 8.4 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-1.9 13.5-5l-6.2-5.2C29.4 35.5 26.8 36 24 36c-5.2 0-9.6-3-11.3-7.2l-6.5 5C9.5 39.6 16.3 44 24 44z"/><path fill="#1976D2" d="M43.6 20H24v8h11.3c-.9 2.4-2.5 4.5-4.5 6l6.2 5.2C41 35.5 44 30.2 44 24c0-1.3-.1-2.7-.4-4z"/></svg>
-            Sign up with Google (@mitaoe.ac.in)
+            Sign up with Google
           </>)}
         </button>
 
@@ -157,7 +156,7 @@ export default function RegisterPage() {
             </div>
             <div>
               <div style={labelStyle}>Email</div>
-              <input style={inputStyle} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder={role==='student'?'PRN@mitaoe.ac.in':'email@mitaoe.ac.in'} required />
+              <input style={inputStyle} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder={role==='student'?'Your Email':'Warden Email'} required />
             </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>

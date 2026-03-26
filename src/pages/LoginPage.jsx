@@ -45,7 +45,7 @@ export default function LoginPage() {
     try {
       await setPersistence(auth, browserSessionPersistence);
       const provider = new GoogleAuthProvider();
-      provider.setCustomParameters({ hd: 'mitaoe.ac.in' });
+      // provider.setCustomParameters({ hd: 'mitaoe.ac.in' });
       const cred = await signInWithPopup(auth, provider);
       const snap = await getDoc(doc(db, 'users', cred.user.uid));
       if (!snap.exists()) throw new Error('No account found. Please register first.');
@@ -148,7 +148,7 @@ export default function LoginPage() {
                 <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
                 <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
               </svg>
-              Continue with Google (@mitaoe.ac.in)
+              Continue with Google
             </>)}
           </button>
 
@@ -161,7 +161,7 @@ export default function LoginPage() {
           <form onSubmit={handleEmailLogin}>
             <div style={{ marginBottom: 14 }}>
               <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#475569', marginBottom: 6 }}>Email</div>
-              <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="yourname@mitaoe.ac.in" required
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="yourname@example.com" required
                 style={{ width: '100%', padding: '11px 14px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.09)', background: 'rgba(255,255,255,0.05)', color: '#F1F5F9', fontSize: 14, fontFamily: 'inherit', outline: 'none' }} />
             </div>
             <div style={{ marginBottom: 6 }}>

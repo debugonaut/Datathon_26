@@ -10,7 +10,7 @@ import {
 import { doc, setDoc, getDoc, collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { auth, db } from './config';
 
-const ALLOWED_DOMAIN = 'mitaoe.ac.in';
+const ALLOWED_DOMAIN = 'mitaoe.ac.in'; // Kept for hd parameter, but not enforced for demo
 
 export const checkWardenExists = async () => {
   const q = query(collection(db, 'users'), where('role', '==', 'warden'), limit(1));
@@ -27,10 +27,7 @@ export const signInWithGoogle = async () => {
     // Try popup first
     const cred = await signInWithPopup(auth, provider);
     const { user } = cred;
-    if (!user.email.endsWith(`@${ALLOWED_DOMAIN}`)) {
-      await signOut(auth);
-      throw new Error(`Only @${ALLOWED_DOMAIN} accounts are allowed.`);
-    }
+    // Domain restriction removed for demo purposes
     return user;
   } catch (err) {
     // If popup was blocked or failed, fall back to redirect
@@ -51,10 +48,7 @@ export const getGoogleRedirectResult = async () => {
   const result = await getRedirectResult(auth);
   if (!result) return null;
   const { user } = result;
-  if (!user.email.endsWith(`@${ALLOWED_DOMAIN}`)) {
-    await signOut(auth);
-    throw new Error(`Only @${ALLOWED_DOMAIN} accounts are allowed.`);
-  }
+  // Domain restriction removed for demo purposes
   return user;
 };
 

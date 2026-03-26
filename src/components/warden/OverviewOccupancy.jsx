@@ -20,13 +20,18 @@ export default function OverviewOccupancy({ hostelId }) {
     e.stopPropagation();
     setHistoryDrawerRoom(room);
     setHistoryLoading(true);
-    const history = await fetchRoomHistory(room.id);
-    setFullRoomHistory(history);
-    if (history.length > 0) {
-      const summary = await generateRoomSummary(history);
-      setRoomSummary(summary);
+    try {
+      const history = await fetchRoomHistory(room.id);
+      setFullRoomHistory(history);
+      if (history.length > 0) {
+        const summary = await generateRoomSummary(history);
+        setRoomSummary(summary);
+      }
+    } catch (err) {
+      console.error('Failed to load room history:', err);
+    } finally {
+      setHistoryLoading(false);
     }
-    setHistoryLoading(false);
   };
 
   useEffect(() => {
@@ -186,7 +191,7 @@ export default function OverviewOccupancy({ hostelId }) {
                             <div>
                               <div className="text-sm font-bold">{detail?.name || occ.name}</div>
                               <div className="text-xs text-muted">
-                                PRN: {detail?.PRN || 'Loading...'}
+                                PRN: {detail ? (detail.PRN || 'N/A') : 'Loading...'}
                               </div>
                             </div>
                             <button

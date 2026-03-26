@@ -4,6 +4,7 @@ import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import { useAuth } from '../../context/AuthContext';
 import { resolveRoomByCode, joinRoomTransaction } from '../../firebase/firestore';
+import { fetchRoomHistory, generateRoomSummary } from '../../firebase/roomHistory';
 import { Scanner } from '@yudiel/react-qr-scanner';
 
 export default function RoomRegister() {
@@ -14,6 +15,13 @@ export default function RoomRegister() {
   const [loading, setLoading] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
   const [error, setError] = useState('');
+  
+  const [inspectingRoom, setInspectingRoom] = useState(null);
+  const [roomHistory, setRoomHistory] = useState([]);
+  const [roomSummary, setRoomSummary] = useState(null);
+  const [inspectionLoading, setInspectionLoading] = useState(false);
+  const [wardenEmail, setWardenEmail] = useState('');
+  const [showWardenContact, setShowWardenContact] = useState(false);
   const refs = [useRef(),useRef(),useRef(),useRef(),useRef(),useRef()];
 
   const code = chars.join('').toUpperCase();
@@ -63,12 +71,48 @@ export default function RoomRegister() {
         return; 
       }
       
-      await joinRoomTransaction(user.uid, roomData, {
+      // Fetch warden contact info
+      try {
+        const hostelSnap = await getDoc(doc(db, 'hostels', roomData.hostelId));
+        if (hostelSnap.exists()) {
+          const wardenId = hostelSnap.data().wardenId;
+          const wardenSnap = await getDoc(doc(db, 'users', wardenId));
+          if (wardenSnap.exists()) {
+            setWardenEmail(wardenSnap.data().email);
+          }
+        }
+      } catch (e) {
+        console.error("Failed to fetch warden info", e);
+      }
+
+      setInspectionLoading(true);
+      const history = await fetchRoomHistory(roomData.roomId);
+      setRoomHistory(history);
+      if (history.length > 0) {
+        const summary = await generateRoomSummary(history);
+        setRoomSummary(summary);
+      }
+      setInspectionLoading(false);
+      
+      setInspectingRoom(roomData);
+    } catch (err) {
+      setError(err.message);
+      setInspectionLoading(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAcceptRoom = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      await joinRoomTransaction(user.uid, inspectingRoom, {
         name: userDoc.name,
         PRN_hash: userDoc.PRN_hash || user.uid
       });
 
-      setUserDoc(prev => ({ ...prev, ...roomData, isRegistered: true }));
+      setUserDoc(prev => ({ ...prev, ...inspectingRoom, isRegistered: true }));
       navigate('/student/dashboard');
     } catch (err) {
       setError(err.message);
@@ -109,7 +153,77 @@ export default function RoomRegister() {
         <div style={{ width: 120 }} />
       </div>
 
-      {/* Body — 50/50 split */}
+      {/* Body */}
+      {inspectingRoom ? (
+        <div style={{ flex: 1, overflowY: 'auto', padding: '40px 20px' }}>
+          <div style={{ maxWidth: 600, margin: '0 auto', background: '#131720', borderRadius: 24, padding: 36, border: '1px solid rgba(255,255,255,0.07)' }}>
+            <div style={{ fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700, color: '#6C63FF', marginBottom: 8 }}>Final Step</div>
+            <div style={{ fontSize: 26, fontWeight: 700, color: '#F1F5F9', marginBottom: 24 }}>Review Room {inspectingRoom.roomNumber} History</div>
+            
+            {showWardenContact ? (
+              <div style={{ background: 'rgba(239, 68, 68, 0.08)', borderRadius: 16, border: '1px solid rgba(239, 68, 68, 0.2)', padding: 32, marginBottom: 24, textAlign: 'center' }}>
+                <div style={{ fontSize: 18, fontWeight: 700, color: '#EF4444', marginBottom: 12 }}>Room Rejected</div>
+                <div style={{ fontSize: 14, color: '#E2E8F0', lineHeight: 1.6, marginBottom: 24, maxWidth: 400, margin: '0 auto 24px auto' }}>
+                  You may contact your warden for reallocation through this mail or visit them physically.
+                </div>
+                <div style={{ background: '#0A0C12', padding: 16, borderRadius: 12, fontSize: 15, color: '#6C63FF', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 10, marginBottom: 32, border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                  {wardenEmail || 'Warden email unavailable'}
+                </div>
+                <div>
+                  <button onClick={() => { setInspectingRoom(null); setShowWardenContact(false); }} style={{ padding: '12px 24px', background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 10, color: '#F1F5F9', fontSize: 14, fontWeight: 600, cursor: 'pointer', transition: 'border-color 0.2s' }} onMouseOver={e => e.currentTarget.style.borderColor='#6C63FF'} onMouseOut={e => e.currentTarget.style.borderColor='rgba(255,255,255,0.2)'}>
+                    Return to Scanner
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                {roomSummary?.aiSummary && (
+                  <div style={{ padding: 16, background: 'rgba(108,99,255,0.08)', border: '1px solid rgba(108,99,255,0.2)', borderRadius: 12, fontSize: 13, color: '#E2E8F0', lineHeight: 1.6, marginBottom: 24, fontStyle: 'italic' }}>
+                    "{roomSummary.aiSummary}"
+                  </div>
+                )}
+
+                <div style={{ background: '#0A0C12', borderRadius: 16, border: '1px solid rgba(255,255,255,0.04)', padding: 24, marginBottom: 32 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: '#F1F5F9', marginBottom: 16 }}>Complaint Timeline</div>
+                  {roomHistory.length === 0 ? (
+                    <div style={{ color: '#10B981', fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}>
+                       ✓ No past complaints. This room has a clean record.
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      {roomHistory.slice(0, 5).map((c, i) => (
+                        <div key={c.id} style={{ display: 'flex', gap: 12, paddingBottom: i < Math.min(roomHistory.length, 5) - 1 ? 16 : 0, position: 'relative' }}>
+                          {i < Math.min(roomHistory.length, 5) - 1 && <div style={{ position: 'absolute', left: 5, top: 16, width: 2, bottom: 0, background: 'rgba(255,255,255,0.05)' }} />}
+                          <div style={{ width: 12, height: 12, borderRadius: '50%', flexShrink: 0, marginTop: 4, background: c.status === 'resolved' ? '#10B981' : c.priority === 'high' ? '#EF4444' : '#F59E0B' }} />
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: '#F1F5F9' }}>{c.title}</div>
+                            <div style={{ fontSize: 11, color: '#475569', marginTop: 4 }}>
+                              {c.category} • {c.status === 'resolved' ? 'Fixed' : 'Pending'} • Filed {c.createdAt?.toDate?.().toLocaleDateString('en-IN') || 'recently'}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      {roomHistory.length > 5 && <div style={{ fontSize: 11, color: '#475569', marginTop: 12, marginLeft: 24 }}>...and {roomHistory.length - 5} older complaints.</div>}
+                    </div>
+                  )}
+                </div>
+
+                {error && <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 8, padding: '9px 13px', fontSize: 12, color: '#ef4444', marginBottom: 24 }}>{error}</div>}
+
+                <div style={{ display: 'flex', gap: 16 }}>
+                  <button onClick={handleAcceptRoom} disabled={loading} style={{ flex: 1, padding: '14px', background: '#6C63FF', border: 'none', borderRadius: 12, color: '#fff', fontSize: 14, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }}>
+                    {loading ? 'Joining...' : 'Accept Room'}
+                  </button>
+                  <button onClick={() => setShowWardenContact(true)} disabled={loading} style={{ flex: 1, padding: '14px', background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12, color: '#cbd5e1', fontSize: 14, fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', transition: 'background 0.2s' }}>
+                    Reject & Find Warden
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      ) : (
       <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', overflow: 'hidden' }}>
         {/* Left — QR scanner */}
         <div style={{ background: '#0E1015', borderRight: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 0, padding: 36 }}>
@@ -192,8 +306,8 @@ export default function RoomRegister() {
               />
             ))}
           </div>
-          <button onClick={handleSearch} disabled={loading} style={{ width: '100%', padding: 13, borderRadius: 10, background: code.length === 6 ? '#6C63FF' : 'rgba(108,99,255,0.3)', border: 'none', color: '#fff', fontSize: 14, fontWeight: 700, cursor: code.length === 6 && !loading ? 'pointer' : 'not-allowed', fontFamily: 'inherit' }}>
-            {loading ? 'Searching…' : 'Search Room'}
+          <button onClick={handleSearch} disabled={loading || inspectionLoading} style={{ width: '100%', padding: 13, borderRadius: 10, background: code.length === 6 ? '#6C63FF' : 'rgba(108,99,255,0.3)', border: 'none', color: '#fff', fontSize: 14, fontWeight: 700, cursor: code.length === 6 && !loading ? 'pointer' : 'not-allowed', fontFamily: 'inherit' }}>
+            {inspectionLoading || loading ? 'Searching…' : 'Search Room'}
           </button>
           <div style={{ fontSize: 11, color: '#1E293B', marginTop: 12 }}>
             No code?{' '}
@@ -202,6 +316,7 @@ export default function RoomRegister() {
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 }
