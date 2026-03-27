@@ -186,22 +186,19 @@ export default function StudentDashboard() {
 
     {/* Main */}
     <div className={`app-main ${isSidebarMinimized ? 'minimized' : ''}`}>
-      {/* Mobile Header */}
-      <div style={{ height: 16 }} />
-      <div style={{ display: 'none', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px 16px', borderBottom: '1px solid var(--border)' }} className="mobile-header">
-         <button className="sidebar-toggle-btn" onClick={() => setIsSidebarMinimized(!isSidebarMinimized)}>
-            <span className="material-icons-round">menu</span>
-         </button>
-         <div style={{ fontWeight: 600 }}>Room {userDoc?.roomNumber}</div>
-      </div>
-
-      <div style={{background:'var(--bg-card)',borderBottom:'1px solid var(--border)',padding:'0 24px'}}>
-        <div className="tabs">
-          {[['overview','Overview'],['complaints','My Complaints'],['stats','Analytics']].map(([id,label])=>(
-            <div key={id} className={`tab ${activeTab===id?'active':''}`} onClick={()=>setActiveTab(id)}>{label}</div>
-          ))}
+      <div className="app-header">
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <button className="sidebar-toggle-btn" onClick={() => setIsSidebarMinimized(!isSidebarMinimized)}>
+            <span className="material-icons-round" style={{fontSize: 20}}>menu</span>
+          </button>
+          <div>
+            <div className="header-title">Room {userDoc?.roomNumber}</div>
+            <div style={{fontSize:12,color:'var(--text-3)',marginTop:1}}>{hierarchyNames.building} · Floor {hierarchyNames.floor}</div>
+          </div>
         </div>
       </div>
+
+      <div style={{ height: 16 }} /> {/* Spacer */}
 
       <div className="app-content animation-fade-in">
         {activeTab==='overview' && (

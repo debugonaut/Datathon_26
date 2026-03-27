@@ -783,23 +783,21 @@ option { background: var(--bg-card); }
 /* ── Print ──────────────────────────────────────────────────── */
 @media print { .hide-on-print { display: none !important; } .app-sidebar { display: none; } .app-main { margin-left: 0; } }
 
-/* Navigation Consolidation */
 .app-header {
-  display: none !important;
-}
-
-.mobile-header {
-  display: none;
+  height: var(--header-h);
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
 @media (max-width: 768px) {
-  .mobile-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: var(--bg-card);
-    border-bottom: 1px solid var(--border);
-    padding: 12px 16px;
-    z-index: 100;
+  .app-header {
+    padding: 0 16px;
   }
 }

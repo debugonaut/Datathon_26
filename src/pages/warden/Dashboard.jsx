@@ -161,25 +161,20 @@ export default function WardenDashboard() {
 
     {/* Main */}
     <div className={`app-main ${isSidebarMinimized ? 'minimized' : ''}`}>
-      {/* Mobile Toggle & Search Replacer */}
-      <div style={{ height: 16 }} /> {/* Spacer */}
-      
-      {/* Search / Context Bar */}
-      <div style={{ display: 'none', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px 16px', borderBottom: '1px solid var(--border)' }} className="mobile-header">
-         <button className="sidebar-toggle-btn" onClick={() => setIsSidebarMinimized(!isSidebarMinimized)}>
-            <span className="material-icons-round">menu</span>
-         </button>
-         <div style={{ fontWeight: 600 }}>{hostel?.name}</div>
-      </div>
-
-      {/* Tabs */}
-      <div style={{background:'var(--bg-card)', borderBottom:'1px solid var(--border)', padding:'0 24px'}}>
-        <div className="tabs">
-          {[['overview','Overview'],['complaints','Complaints'],['occupancy','Occupancy'],['analytics','Analytics'],['3dview','3D Visualizer'],['qrcodes','QR Codes'],['announcements','Announcements']].map(([id,label])=>(
-            <div key={id} className={`tab ${activeTab===id?'active':''}`} onClick={()=>setActiveTab(id)}>{label}</div>
-          ))}
+      {/* Header */}
+      <div className="app-header">
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <button className="sidebar-toggle-btn" onClick={() => setIsSidebarMinimized(!isSidebarMinimized)}>
+            <span className="material-icons-round" style={{fontSize: 20}}>menu</span>
+          </button>
+          <div>
+            <div className="header-title">{hostel?.name}</div>
+            <div style={{fontSize:12, color:'var(--text-3)', marginTop:1}}>{hostel?.collegeName}</div>
+          </div>
         </div>
       </div>
+
+      <div style={{ height: 16 }} /> {/* Spacer */}
 
       {/* Content */}
       <div className="app-content">
