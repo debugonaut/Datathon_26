@@ -96,76 +96,125 @@ export default function SetupRole() {
         </div>
       </div>
 
-      {/* Full-bleed tiles */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', flex: 1 }}>
-        {tiles.map(({ r, wm, label, desc, feats, iconBg, iconColor, iconPath }) => (
-          <button
-            key={r}
-            onClick={() => setRole(r)}
-            style={{
-              padding: '24px 28px',
-              display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-              cursor: 'pointer', border: 'none', fontFamily: 'inherit', textAlign: 'left',
-              position: 'relative', overflow: 'hidden', transition: 'background 0.2s',
-              background: role === r ? 'rgba(108,99,255,0.07)' : '#060810',
-              borderRight: r === 'student' ? '1px solid rgba(255,255,255,0.05)' : 'none',
-            }}
-          >
-            {/* Watermark */}
-            <div style={{
-              position: 'absolute', fontSize: 90, fontWeight: 700, lineHeight: 1,
-              bottom: -8, right: -6, letterSpacing: '-0.05em', pointerEvents: 'none',
-              opacity: role === r ? 0.07 : 0.025,
-              color: role === r ? '#6C63FF' : '#fff',
-            }}>
-              {wm}
-            </div>
-
-            {/* Top content */}
-            <div style={{ position: 'relative', zIndex: 1 }}>
-              {/* Selection dot */}
+      {/* Centered Role Selection */}
+      <div style={{
+        flex: 1,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '20px',
+        background: 'radial-gradient(circle at center, rgba(108,99,255,0.03) 0%, transparent 70%)',
+      }}>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+          gap: '24px',
+          width: '100%',
+          maxWidth: '1000px',
+        }}>
+          {tiles.map(({ r, wm, label, desc, feats, iconBg, iconColor, iconPath }) => (
+            <button
+              key={r}
+              onClick={() => setRole(r)}
+              style={{
+                padding: '36px 32px',
+                minHeight: '420px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                textAlign: 'left',
+                position: 'relative',
+                overflow: 'hidden',
+                transition: 'all 0.3s ease',
+                background: 'rgba(15, 23, 42, 0.4)',
+                backdropFilter: 'blur(10px)',
+                borderRadius: '24px',
+                border: role === r 
+                  ? '2px solid #6C63FF' 
+                  : '1px solid rgba(255,255,255,0.05)',
+                boxShadow: role === r 
+                  ? '0 0 30px rgba(108,99,255,0.15)' 
+                  : 'none',
+              }}
+            >
+              {/* Watermark */}
               <div style={{
-                width: 9, height: 9, borderRadius: '50%', marginBottom: 16,
-                border: `2px solid ${role === r ? '#6C63FF' : '#1E293B'}`,
-                background: role === r ? '#6C63FF' : 'transparent',
-                transition: 'all 0.2s',
-              }} />
-
-              {/* Icon */}
-              <div style={{
-                width: 40, height: 40, borderRadius: 11,
-                background: iconBg,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                marginBottom: 12,
+                position: 'absolute', fontSize: 130, fontWeight: 700, lineHeight: 1,
+                bottom: -20, right: -15, letterSpacing: '-0.05em', pointerEvents: 'none',
+                opacity: role === r ? 0.08 : 0.03,
+                color: role === r ? '#6C63FF' : '#fff',
+                transition: 'all 0.3s ease',
               }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="1.8">
-                  {iconPath}
-                </svg>
+                {wm}
               </div>
 
-              <div style={{ fontSize: 20, fontWeight: 700, color: '#F1F5F9', letterSpacing: '-0.04em', marginBottom: 6 }}>
-                {label}
-              </div>
-              <div style={{ fontSize: 11, color: '#334155', lineHeight: 1.6, maxWidth: 220 }}>
-                {desc}
-              </div>
-            </div>
-
-            {/* Feature list */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, position: 'relative', zIndex: 1 }}>
-              {feats.map(f => (
-                <div key={f} style={{ fontSize: 11, color: '#475569', display: 'flex', alignItems: 'center', gap: 7 }}>
+              {/* Top content */}
+              <div style={{ position: 'relative', zIndex: 1 }}>
+                {/* Selection indicator */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  marginBottom: 24
+                }}>
                   <div style={{
-                    width: 4, height: 4, borderRadius: '50%', flexShrink: 0,
-                    background: role === r ? '#6C63FF' : '#334155',
-                    transition: 'background 0.2s',
-                  }} />
-                  {f}
+                    width: 20, height: 20, borderRadius: '50%',
+                    border: `2px solid ${role === r ? '#6C63FF' : 'rgba(255,255,255,0.1)'}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'all 0.2s',
+                    background: role === r ? 'rgba(108,99,255,0.1)' : 'transparent',
+                  }}>
+                    {role === r && <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#6C63FF' }} />}
+                  </div>
+                  <span style={{ 
+                    fontSize: 10, 
+                    fontWeight: 700, 
+                    color: role === r ? '#6C63FF' : '#475569',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.1em'
+                  }}>
+                    {role === r ? 'Selected Role' : 'Select Account'}
+                  </span>
                 </div>
-              ))}
-            </div>
-          </button>
-        ))}
+
+                {/* Icon */}
+                <div style={{
+                  width: 52, height: 52, borderRadius: 16,
+                  background: iconBg,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  marginBottom: 20,
+                  transform: role === r ? 'scale(1.1)' : 'scale(1)',
+                  transition: 'transform 0.3s ease',
+                }}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth="1.8">
+                    {iconPath}
+                  </svg>
+                </div>
+
+                <div style={{ fontSize: 28, fontWeight: 700, color: '#F1F5F9', letterSpacing: '-0.04em', marginBottom: 12 }}>
+                  {label}
+                </div>
+                <div style={{ fontSize: 13, color: '#64748B', lineHeight: 1.6, maxWidth: 280 }}>
+                  {desc}
+                </div>
+              </div>
+
+              {/* Feature list */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, position: 'relative', zIndex: 1 }}>
+                {feats.map(f => (
+                  <div key={f} style={{ fontSize: 12, color: '#94A3B8', display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={role === r ? '#6C63FF' : '#334155'} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                    {f}
+                  </div>
+                ))}
+              </div>
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Footer */}

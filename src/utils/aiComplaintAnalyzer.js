@@ -1,84 +1,93 @@
 export const analyzeComplaint = async ({ imageBase64, transcript, typedText }) => {
-  const inputs = [];
-  if (imageBase64) {
-    inputs.push({
-      type: 'image',
-      source: { type: 'base64', media_type: 'image/jpeg', data: imageBase64 }
-    });
-  }
   const textInputs = [
     transcript && `Voice transcript: "${transcript}"`,
     typedText && `Typed description: "${typedText}"`
   ].filter(Boolean).join('\n');
-  if (textInputs) {
-    inputs.push({
-      type: 'text',
-      text: `You are an expert maintenance analyst for a university hostel. 
-Analyze the following student complaint (which may be in English, Hindi, Marathi, or Hinglish/transliterated form).
 
-${textInputs}
+  if (!textInputs && !imageBase64) return null;
 
-CRITICAL INSTRUCTIONS:
-1. Respond ONLY in raw JSON with no markdown, no backticks, no explanation.
-2. The "description" field MUST be a professional, formal English translation of the input. Avoid "Hinglish". Convert into standard technical English (e.g., "fan nahi chal raha" -> "The ceiling fan is non-functional").
-3. The "title" should be a concise 4-8 word summary in English.
-4. "detectedLanguage" should identify the input language (e.g., "Hindi", "Hinglish", "English", "Marathi").
+  // 1. Local Fallback (Safety Net)
+  const getLocalFallback = () => {
+    const text = (transcript || typedText || '').toLowerCase();
+    return {
+      category: text.includes('fan') || text.includes('light') || text.includes('switch') || text.includes('board') ? 'Electrical' :
+                text.includes('water') || text.includes('tap') || text.includes('leak') || text.includes('sink') ? 'Plumbing' :
+                text.includes('clean') || text.includes('dirt') || text.includes('garbage') ? 'Cleaning' : 'Other',
+      priority: text.includes('urgent') || text.includes('now') || text.includes('emergency') || text.includes('current') ? 'high' : 'medium',
+      title: (transcript || typedText || 'New Complaint').substring(0, 30) + (transcript?.length > 30 ? '...' : ''),
+      description: transcript || typedText || 'Reported via Voice.',
+      detectedLanguage: 'Local Intelligence',
+      confidence: 0.5
+    };
+  };
 
-JSON FORMAT:
-{
-  "category": "Plumbing|Electrical|Cleaning|Furniture|Other",
-  "priority": "low|medium|high",
-  "title": "Concise English title",
-  "description": "Professional English description",
-  "detectedLanguage": "string",
-  "confidence": 0.0-1.0
-}
-
-Priority rules:
-- high: total power failure, flooding/major leaks, security/fire risks, health hazards.
-- medium: broken fixtures, appliance malfunction, water supply issues.
-- low: cosmetic issues, minor cleanliness, furniture wear.`
-    });
-  }
-
-  if (inputs.length === 0) return null;
-
-  const key = import.meta.env.VITE_ANTHROPIC_API_KEY;
-  if (!key || key === 'your_key_here') {
-    console.warn('Anthropic API key is missing or set to placeholder.');
-    return null;
-  }
-
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
-
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      signal: controller.signal,
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': import.meta.env.VITE_ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20240620', 
-        max_tokens: 256,
-        messages: [{ role: 'user', content: inputs }]
-      })
-    });
-    
-    clearTimeout(timeoutId);
-    const data = await response.json();
-    const text = data.content?.[0]?.text || '';
-    return JSON.parse(text.replace(/```json|```/g, '').trim());
-  } catch (err) {
-    if (err.name === 'AbortError') {
-      console.warn('AI Analysis timed out');
-    } else {
-      console.error('AI Analysis Error:', err);
+  // 2. Try Claude (Anthropic)
+  const anthropicKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
+  if (anthropicKey && anthropicKey.length > 30 && !anthropicKey.includes('your_key')) {
+    try {
+      console.log('🤖 Attempting Claude analysis...');
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': anthropicKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-3-5-sonnet-20241022',
+          max_tokens: 512,
+          messages: [{
+            role: 'user',
+            content: [
+              ...(imageBase64 ? [{ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: imageBase64 } }] : []),
+              { type: 'text', text: `Hostel Maintenance. Return JSON. Input: ${textInputs}\nJSON format: {category, priority, title, description(formal English), detectedLanguage}` }
+            ]
+          }]
+        })
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const text = data.content?.[0]?.text || '';
+        const clean = text.replace(/```json|```/g, '').trim();
+        return JSON.parse(clean);
+      }
+      console.warn('⚠️ Claude failed (likely credits or connection).');
+    } catch (err) {
+      console.warn('⚠️ Claude service error.');
     }
-    return null;
   }
+
+  // 3. Try Gemini (Google)
+  const geminiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  if (geminiKey && geminiKey.length > 20 && !geminiKey.includes('your_key')) {
+    try {
+      console.log('💎 Attempting Gemini fallback...');
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${geminiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { text: `Hostel Maintenance Analysis. Return JSON. Input: ${textInputs}` },
+              ...(imageBase64 ? [{ inlineData: { mimeType: 'image/jpeg', data: imageBase64 } }] : [])
+            ]
+          }]
+        })
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        const clean = text.replace(/```json|```/g, '').trim();
+        return JSON.parse(clean);
+      }
+      console.warn('⚠️ Gemini failed (likely key/region issue).');
+    } catch (err) {
+      console.warn('⚠️ Gemini service error.');
+    }
+  }
+
+  // 4. Final Fallback
+  console.warn('🚀 All AI providers failed. Using Local Intelligence.');
+  return getLocalFallback();
 };

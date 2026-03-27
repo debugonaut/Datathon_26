@@ -207,10 +207,16 @@ export default function StudentDashboard() {
       <div style={{ height: 16 }} /> {/* Spacer */}
 
       <div className="app-content animation-fade-in">
-        <Link to="/complaint/new" className="btn btn-primary" style={{ width:'100%', marginBottom:20, display:'flex', padding:'14px', borderRadius:16, boxShadow:'0 10px 20px rgba(108,99,255,0.2)' }}>
-          <span className="material-icons-round" style={{ fontSize:20 }}>add_circle</span>
-          File a New Complaint
-        </Link>
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:20 }}>
+          <Link to="/complaint/new" className="btn btn-primary" style={{ display:'flex', padding:'14px', borderRadius:16, boxShadow:'0 10px 20px rgba(108,99,255,0.2)' }}>
+            <span className="material-icons-round" style={{ fontSize:20 }}>add_circle</span>
+            New Ticket
+          </Link>
+          <Link to="/complaint/new?voice=true" className="btn" style={{ display:'flex', padding:'14px', borderRadius:16, background:'linear-gradient(135deg, #FF4B2B 0%, #FF416C 100%)', color:'#fff', border:'none', boxShadow:'0 10px 20px rgba(255,65,108,0.2)' }}>
+            <span className="material-icons-round" style={{ fontSize:20 }}>mic</span>
+            Voice File
+          </Link>
+        </div>
 
         {activeTab==='overview' && (
           <div className="grid-2 responsive" style={{ gap: 20 }}>

@@ -15,7 +15,6 @@ const LANGUAGES = [
   { label: 'मराठी', code: 'mr-IN', whisperLang: 'marathi' },
 ];
 
-const hasNativeSpeech = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
 
 // ── MyMemory free translation ──────────────────────────────────────────────
 // Legacy translation removed, now handled by AI.
@@ -27,6 +26,12 @@ export default function NewComplaint() {
   useEffect(() => {
     if (!userDoc?.roomId) {
       navigate('/student/room-register', { replace: true });
+      return;
+    }
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('voice') === 'true') {
+      setStep(2); // Jump to details
+      setTimeout(() => handleMicClick(), 500); // Trigger mic
     }
   }, [userDoc, navigate]);
 
@@ -60,37 +65,44 @@ export default function NewComplaint() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState(null);
 
-  const isAiDisabled = !import.meta.env.VITE_ANTHROPIC_API_KEY || import.meta.env.VITE_ANTHROPIC_API_KEY === 'your_key_here';
+  const isAiDisabled = !import.meta.env.VITE_GEMINI_API_KEY || 
+                       import.meta.env.VITE_GEMINI_API_KEY.trim() === 'your_key_here' || 
+                       import.meta.env.VITE_GEMINI_API_KEY.length < 20;
 
 
 
 
-  const triggerAIAnalysis = async ({ imageBase64, transcript, typed }) => {
-    if (!imageBase64 && !transcript && !typed) return;
-    setIsAnalyzing(true);
-    try {
-      const suggestion = await analyzeComplaint({ imageBase64, transcript, typedText: typed });
-      if (suggestion) {
-        setAiSuggestion(suggestion);
-        if (suggestion.category) {
-          const catMatch = CATEGORIES.find(c => c.toLowerCase() === suggestion.category.toLowerCase());
-          if (catMatch) setCategory(catMatch);
-          else setCategory(suggestion.category);
+    const triggerAIAnalysis = async ({ imageBase64, transcript, typed }) => {
+      if (!imageBase64 && !transcript && !typed) return;
+      console.log('🚀 Triggering AI Analysis with:', { transcript, hasImage: !!imageBase64, typed });
+      setIsAnalyzing(true);
+      try {
+        const suggestion = await analyzeComplaint({ imageBase64, transcript, typedText: typed });
+        console.log('🤖 AI Suggestion received:', suggestion);
+        if (suggestion) {
+          setAiSuggestion(suggestion);
+          if (suggestion.category) {
+            const catMatch = CATEGORIES.find(c => c.toLowerCase() === suggestion.category.toLowerCase());
+            if (catMatch) setCategory(catMatch);
+            else setCategory(suggestion.category);
+          }
+          if (suggestion.priority) setPriority(suggestion.priority.toLowerCase());
+          if (suggestion.title) setTitle(suggestion.title);
+          if (suggestion.description) {
+            setDescription(suggestion.description);
+            setDescriptionTranslated(suggestion.description);
+          }
+        } else {
+          console.warn('⚠️ AI returned null or empty suggestion.');
+          alert('AI Analysis failed to generate a suggestion. Please check your internet connection and API key.');
         }
-        if (suggestion.priority) setPriority(suggestion.priority.toLowerCase());
-        if (suggestion.title) setTitle(suggestion.title);
-        if (suggestion.description) {
-          setDescription(suggestion.description);
-          setDescriptionTranslated(suggestion.description);
-        }
-
+      } catch (err) {
+        console.error('❌ AI analysis failed:', err);
+        alert(`AI Feature Error: ${err.message || 'Unknown error occurred during analysis.'}`);
+      } finally {
+        setIsAnalyzing(false);
       }
-    } catch (err) {
-      console.error('AI analysis failed:', err);
-    } finally {
-      setIsAnalyzing(false);
-    }
-  };
+    };
 
   // ── Unified mic handler ────────────────────────────────────────────────────
   const handleMicClick = async () => {
@@ -99,27 +111,35 @@ export default function NewComplaint() {
       return;
     }
 
-    if (hasNativeSpeech) {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
       try {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         const recognition = new SpeechRecognition();
         recognition.lang = selectedLang?.code || 'en-IN';
         recognition.continuous = false;
         recognition.interimResults = false;
         
+        recognition.onstart = () => {
+          setIsRecording(true);
+          console.log('Speech recognition started');
+        };
+
+        // Ensure we can stop manually
+        stopRecorderRef.current = () => {
+          recognition.stop();
+          setIsRecording(false);
+        };
+
         recognition.onresult = async (e) => {
           const spoken = e.results[0][0].transcript;
-          const langCode = (selectedLang?.code || 'en-IN').split('-')[0];
+          console.log('Speech result:', spoken);
           
+          setIsRecording(false);
           setDescriptionOriginal(spoken);
           setDetectedLanguage('Analyzing…');
-          setIsRecording(false);
+          
           try {
-            // Trigger UI state
             setIsTranslating(true);
-            setDetectedLanguage('Analyzing…');
-            
-            // Centralized AI Trigger
             await triggerAIAnalysis({ transcript: spoken });
           } finally {
             setIsTranslating(false);
@@ -128,54 +148,62 @@ export default function NewComplaint() {
         
         recognition.onerror = (e) => {
           console.error('Speech recognition error:', e.error);
-          alert(`Microphone error: ${e.error}. Please check browser permissions.`);
           setIsRecording(false);
+          if (e.error === 'not-allowed') {
+            alert('Microphone access denied. Please enable microphone permissions in your browser settings.');
+          } else {
+            console.warn('Falling back to MediaRecorder due to recognition error');
+            startMediaRecorderFallback();
+          }
         };
         
         recognition.onend = () => setIsRecording(false);
         recognition.start();
-        setIsRecording(true);
       } catch (err) {
-        console.error('Speech recognition failed:', err);
-        alert('Voice recognition failed to start. Please check microphone permissions.');
+        console.error('Speech recognition failed to initialize:', err);
+        startMediaRecorderFallback();
       }
     } else {
-      // Tier 2: Firefox MediaRecorder fallback
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        const mediaRecorder = new MediaRecorder(stream);
-        const audioChunks = [];
-        
-        mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-        
-        mediaRecorder.onstop = () => {
-          stream.getTracks().forEach(t => t.stop());
-          const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-          setVoiceBlob(audioBlob);
-          setIsRecording(false);
-          
-          const file = new File([audioBlob], `voice_${Date.now()}.webm`, { type: 'audio/webm' });
-          setFiles(prev => [...prev, file]);
-        };
-        
-        mediaRecorder.start();
-        setIsRecording(true);
-        
-        recordingTimerRef.current = setTimeout(() => {
-          if (mediaRecorder.state === 'recording') mediaRecorder.stop();
-        }, 60000);
-        
-        stopRecorderRef.current = () => {
-          clearTimeout(recordingTimerRef.current);
-          if (mediaRecorder.state === 'recording') mediaRecorder.stop();
-        };
-      } catch (err) {
-        console.error('MediaRecorder failed:', err);
-        alert('Microphone access denied. Please allow microphone access in your browser settings.');
-        setIsRecording(false);
-      }
+      startMediaRecorderFallback();
     }
   };
+
+  const startMediaRecorderFallback = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      const audioChunks = [];
+      
+      mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+      
+      mediaRecorder.onstop = () => {
+        stream.getTracks().forEach(t => t.stop());
+        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        setIsRecording(false);
+        
+        alert("Live AI transcription isn't supported in this browser. We've attached your recording as a file.");
+        const file = new File([audioBlob], `voice_input_${Date.now()}.webm`, { type: 'audio/webm' });
+        setFiles(prev => [...prev, file]);
+      };
+      
+      mediaRecorder.start();
+      setIsRecording(true);
+      
+      recordingTimerRef.current = setTimeout(() => {
+        if (mediaRecorder.state === 'recording') mediaRecorder.stop();
+      }, 60000);
+      
+      stopRecorderRef.current = () => {
+        clearTimeout(recordingTimerRef.current);
+        if (mediaRecorder.state === 'recording') mediaRecorder.stop();
+      };
+    } catch (err) {
+      console.error('MediaRecorder failed:', err);
+      alert('Microphone access denied. Please allow microphone access in your browser settings.');
+      setIsRecording(false);
+    }
+  };
+
 
   // ── File handling ──────────────────────────────────────────────────────────
   const handleFileChange = async (e) => {
@@ -512,30 +540,53 @@ export default function NewComplaint() {
                 <div>
                   <label style={{ display:'block', fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', color:'var(--text-2)', marginBottom:8 }}>Description</label>
 
-                  <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:10, flexWrap:'wrap' }}>
-                    <button type="button" onClick={handleMicClick} disabled={isTranscribing} style={{
-                      display:'flex', alignItems:'center', gap:7, padding:'7px 13px',
-                      borderRadius:7, border: isRecording ? '1px solid var(--red)' : '1px solid var(--border-strong)',
-                      background:'transparent', fontSize:12.5, fontFamily:'var(--font)',
-                      color: isRecording ? 'var(--red)' : 'var(--text-2)', cursor:'pointer', transition:'all 0.15s',
-                    }}>
-                      {isRecording
-                        ? <div className="voice-wave">
-                            <span/><span/><span/><span/><span/>
-                          </div>
-                        : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="1" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0014 0"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-                      }
-                      {isTranscribing ? 'Transcribing…' : isTranslating ? 'Translating…' : isRecording ? 'Recording…' : 'Use voice'}
-                    </button>
-                    {LANGUAGES.map(lang => (
-                      <button key={lang.label} type="button" onClick={() => setSelectedLang(lang)} style={{
-                        padding:'4px 10px', fontSize:12, borderRadius:20,
-                        border: selectedLang.label === lang.label ? '1px solid var(--primary)' : '1px solid var(--border)',
-                        background: selectedLang.label === lang.label ? 'var(--primary-soft)' : 'transparent',
-                        color: selectedLang.label === lang.label ? 'var(--primary)' : 'var(--text-2)',
-                        cursor:'pointer', transition:'all 0.15s', fontFamily:'var(--font)',
-                      }}>{lang.label}</button>
-                    ))}
+                  <div style={{ 
+                    padding: description ? '12px' : '24px 16px',
+                    borderRadius: 16,
+                    background: description ? 'transparent' : 'var(--primary-soft)',
+                    border: description ? 'none' : '1px dashed var(--primary)',
+                    marginBottom: 16,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: 12,
+                    textAlign: 'center'
+                  }}>
+                    {!description && (
+                      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--primary)' }}>
+                        ✨ Use AI Voice to auto-fill details
+                      </div>
+                    )}
+                    <div style={{ display:'flex', alignItems:'center', gap:8, width: '100%', justifyContent: 'center' }}>
+                      <button type="button" onClick={handleMicClick} disabled={isTranscribing} style={{
+                        display:'flex', alignItems:'center', gap:10, padding: description ? '7px 13px' : '12px 24px',
+                        borderRadius: 12, border: isRecording ? '2px solid var(--red)' : '1px solid var(--border-strong)',
+                        background: isRecording ? 'rgba(239,68,68,0.1)' : 'var(--bg-card)', fontSize: description ? '12.5px' : '15px', fontWeight: 600, fontFamily:'var(--font)',
+                        color: isRecording ? 'var(--red)' : 'var(--text-2)', cursor:'pointer', transition:'all 0.2s',
+                        boxShadow: isRecording ? '0 0 20px rgba(239,68,68,0.3)' : 'var(--shadow-sm)'
+                      }}>
+                        {isRecording
+                          ? <div className="voice-wave" style={{ transform: 'scale(1.2)' }}>
+                              <span/><span/><span/><span/><span/>
+                            </div>
+                          : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="9" y="1" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0014 0"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                        }
+                        {isTranscribing ? 'Transcribing…' : isTranslating ? 'Analyzing Ticket…' : isRecording ? 'Speak now…' : 'Tap to Speak'}
+                      </button>
+                    </div>
+                    {!description && (
+                      <div style={{ display:'flex', gap:6, flexWrap:'wrap', justifyContent:'center' }}>
+                        {LANGUAGES.slice(1).map(lang => (
+                          <button key={lang.label} type="button" onClick={() => setSelectedLang(lang)} style={{
+                            padding:'4px 10px', fontSize:11, borderRadius:20,
+                            border: selectedLang.label === lang.label ? '1px solid var(--primary)' : '1px solid var(--border)',
+                            background: selectedLang.label === lang.label ? 'var(--primary-soft)' : 'transparent',
+                            color: selectedLang.label === lang.label ? 'var(--primary)' : 'var(--text-3)',
+                            cursor:'pointer', transition:'all 0.15s', fontFamily:'var(--font)',
+                          }}>{lang.label}</button>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   {descriptionOriginal && descriptionTranslated && descriptionOriginal !== descriptionTranslated && (
