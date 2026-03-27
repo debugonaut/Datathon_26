@@ -94,17 +94,33 @@ export default function StudentDashboard() {
     }));
   };
 
-  if (!user || loading) return (
-    <div className="page">
-      <Navbar />
-      <div className="loading-screen"><div className="spinner" /></div>
-    </div>
-  );
-
-  if (!userDoc) return (
-    <div className="page">
-      <Navbar />
-      <div className="loading-screen"><div className="spinner" /></div>
+  if (!user || loading || !userDoc) return (
+    <div className="app-shell">
+      <div className="app-sidebar">
+        <div className="sidebar-brand"><div className="skeleton" style={{width:160, height:24}}/></div>
+        <div style={{padding:20, display:'flex', flexDirection:'column', gap:10}}>
+          {[1,2,3,4].map(i => <div key={i} className="skeleton" style={{height:38, borderRadius:8}}/>)}
+        </div>
+      </div>
+      <div className="app-main">
+        <div className="app-header">
+          <div className="skeleton" style={{width:120, height:24}}/>
+          <div className="skeleton" style={{width:120, height:32, borderRadius:20}}/>
+        </div>
+        <div className="app-content">
+          <div className="grid-2 responsive" style={{gap:20}}>
+            <div style={{display:'flex', flexDirection:'column', gap:16}}>
+              <div className="skeleton" style={{height:140, borderRadius:16}}/>
+              <div className="skeleton" style={{height:200, borderRadius:16}}/>
+              <div className="skeleton" style={{height:200, borderRadius:16}}/>
+            </div>
+            <div style={{display:'flex', flexDirection:'column', gap:16}}>
+              <div className="skeleton" style={{height:240, borderRadius:16}}/>
+              <div className="skeleton" style={{height:60, borderRadius:16}}/>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 

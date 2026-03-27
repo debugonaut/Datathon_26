@@ -264,6 +264,18 @@ export const createComplaint = async (data) => {
   return complaintRef.id;
 };
 
+export const getFloorComplaints = async (hostelId, floorId, category) => {
+  const q = query(
+    collection(db, 'complaints'),
+    where('hostelId', '==', hostelId),
+    where('floorId', '==', floorId),
+    where('category', '==', category),
+    where('status', 'in', ['todo', 'in_progress'])
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+};
+
 export const deleteComplaint = async (complaintId) => {
   const complaintRef = doc(db, 'complaints', complaintId);
   await updateDoc(complaintRef, { 

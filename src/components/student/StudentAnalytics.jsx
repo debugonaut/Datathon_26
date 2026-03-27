@@ -40,6 +40,92 @@ function chipStyle(val, type = 'status') {
   return                           { background:'rgba(16,185,129,0.12)',  color:'var(--green)' };
 }
 
+const StatusStepper = ({ status, acknowledgedAt }) => {
+  const steps = [
+    { id: 'todo', label: 'Filed' },
+    { id: 'assigned', label: 'Assigned' },
+    { id: 'in_progress', label: 'In Repair' },
+    { id: 'resolved', label: 'Resolved' }
+  ];
+
+  let activeIndex = 0;
+  if (status === 'resolved') activeIndex = 3;
+  else if (status === 'in_progress') activeIndex = 2;
+  else if (acknowledgedAt) activeIndex = 1;
+
+  return (
+    <div style={{ padding: '12px 0 20px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', position: 'relative', height: 4 }}>
+        <div style={{ position: 'absolute', inset: 0, background: 'var(--border)', borderRadius: 2 }} />
+        <div style={{ position: 'absolute', left: 0, height: '100%', background: 'var(--primary)', borderRadius: 2, transition: 'width 0.5s ease', width: `${(activeIndex / 3) * 100}%` }} />
+        
+        {steps.map((step, i) => (
+          <div key={step.id} style={{
+            position: 'absolute',
+            left: `${(i / 3) * 100}%`,
+            transform: 'translateX(-50%)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 6
+          }}>
+            <div style={{
+              width: 10, height: 10, borderRadius: '50%',
+              background: i <= activeIndex ? 'var(--primary)' : 'var(--bg-card)',
+              border: `2px solid ${i <= activeIndex ? 'var(--primary)' : 'var(--border-strong)'}`,
+              transition: 'all 0.3s',
+              zIndex: 2
+            }} />
+            <span style={{
+              fontSize: 9, 
+              fontWeight: 700, 
+              textTransform: 'uppercase', 
+              color: i <= activeIndex ? 'var(--text)' : 'var(--text-ghost)',
+              whiteSpace: 'nowrap'
+            }}>{step.label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const EscalationTimer = ({ createdAt, priority, status }) => {
+  const [timeLeft, setTimeLeft] = useState('');
+
+  useEffect(() => {
+    if (status === 'resolved' || priority !== 'high') return;
+    
+    const tick = () => {
+      const start = createdAt?.toDate?.() || new Date();
+      const limit = 24 * 3600000; // 24h escalation
+      const diff = limit - (Date.now() - start.getTime());
+      
+      if (diff <= 0) {
+        setTimeLeft('Escalated to Chief Warden');
+        return;
+      }
+      
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      setTimeLeft(`Escalating in ${h}h ${m}m`);
+    };
+
+    tick();
+    const interval = setInterval(tick, 60000);
+    return () => clearInterval(interval);
+  }, [createdAt, priority, status]);
+
+  if (priority !== 'high' || status === 'resolved') return null;
+
+  return (
+    <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--red)', display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
+      <span className="material-icons-round" style={{ fontSize: 12 }}>error_outline</span>
+      {timeLeft}
+    </div>
+  );
+};
+
 function myAvg(c) {
   const r = c.filter(x => x.resolvedAt?.toDate && x.createdAt?.toDate);
   if (!r.length) return null;
@@ -131,6 +217,21 @@ export default function StudentAnalytics({ roomScore, view = 'complaints' }) {
     const matchesPriority = filterPriority === 'all' || c.priority === filterPriority;
     return matchesSearch && matchesStatus && matchesCategory && matchesPriority;
   });
+
+  if (loading) {
+    return (
+      <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(5, 1fr)', gap:12 }}>
+          {[1,2,3,4,5].map(i => <div key={i} className="skeleton" style={{ height:70, borderRadius:14 }} />)}
+        </div>
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 200px', gap:16 }}>
+          <div className="skeleton" style={{ height:200, borderRadius:14 }} />
+          <div className="skeleton" style={{ height:200, borderRadius:14 }} />
+          <div className="skeleton" style={{ height:200, borderRadius:14 }} />
+        </div>
+      </div>
+    );
+  }
 
   if (view === 'analytics') {
     // Student KPIs
@@ -321,8 +422,12 @@ export default function StudentAnalytics({ roomScore, view = 'complaints' }) {
       </div>
 
       {Object.keys(grouped).length === 0 && (
-        <div style={{ textAlign:'center', padding:'60px 0', color:'var(--text-3)', fontSize:14 }}>
-          No complaints found.
+        <div style={{ textAlign:'center', padding:'80px 20px', background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:24, marginTop:10 }}>
+          <div style={{ fontSize:48, marginBottom:16, opacity:0.3 }}>📋</div>
+          <div style={{ fontSize:16, fontWeight:700, color:'var(--text)', marginBottom:6 }}>No complaints found</div>
+          <p style={{ fontSize:13, color:'var(--text-3)', maxWidth:280, margin:'0 auto', lineHeight:1.5 }}>
+            Everything looks good! If you have an issue, tap the "File Complaint" button in the sidebar.
+          </p>
         </div>
       )}
 
@@ -395,9 +500,12 @@ export default function StudentAnalytics({ roomScore, view = 'complaints' }) {
 
                     <div style={{ fontSize:15, fontWeight:700, color:'var(--text)', marginBottom:8, lineHeight:1.3 }}>{c.title}</div>
                     
-                    <div style={{ background:'var(--bg-input)', borderRadius:12, padding:'10px 14px', marginBottom:14, fontSize:13, color:'var(--text-2)', lineHeight:1.6, border:'1px solid var(--border)' }}>
+                    <div style={{ background:'var(--bg-input)', borderRadius:12, padding:'10px 14px', marginBottom:6, fontSize:13, color:'var(--text-2)', lineHeight:1.6, border:'1px solid var(--border)' }}>
                       {c.descriptionTranslated || c.description}
                     </div>
+
+                    <StatusStepper status={c.status} acknowledgedAt={c.acknowledgedAt} />
+                    <EscalationTimer createdAt={c.createdAt} priority={c.priority} status={c.status} />
 
                     <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:10 }}>
                       <div style={{ display:'flex', alignItems:'center', gap:12 }}>

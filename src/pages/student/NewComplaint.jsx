@@ -2,40 +2,23 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 import { useAuth } from '../../context/AuthContext';
-import { createComplaint } from '../../firebase/firestore';
+import { createComplaint, getFloorComplaints } from '../../firebase/firestore';
 import { analyzeComplaint } from '../../utils/aiComplaintAnalyzer';
 
 const CATEGORIES = ['Plumbing', 'Electrical', 'Cleaning', 'Furniture', 'Other'];
 const PRIORITIES = ['low', 'medium', 'high'];
 
 const LANGUAGES = [
-  { label: 'Auto', code: null, whisperLang: null },
+  { label: 'Auto (Highly Recommended)', code: null, whisperLang: null },
   { label: 'English', code: 'en-IN', whisperLang: 'english' },
-  { label: 'हिंदी', code: 'hi-IN', whisperLang: 'hindi' },
+  { label: 'हिंदी / Hinglish', code: 'hi-IN', whisperLang: 'hindi' },
   { label: 'मराठी', code: 'mr-IN', whisperLang: 'marathi' },
-  { label: 'ગુજરાતી', code: 'gu-IN', whisperLang: 'gujarati' },
 ];
 
 const hasNativeSpeech = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
 
 // ── MyMemory free translation ──────────────────────────────────────────────
-const translateToEnglish = async (text, sourceLangCode) => {
-  if (!sourceLangCode || sourceLangCode === 'en') return text;
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
-
-    const res = await fetch(
-      `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${sourceLangCode}|en`,
-      { signal: controller.signal }
-    );
-    clearTimeout(timeoutId);
-    const data = await res.json();
-    return data.responseData?.translatedText || text;
-  } catch {
-    return text;
-  }
-};
+// Legacy translation removed, now handled by AI.
 
 export default function NewComplaint() {
   const { user, userDoc } = useAuth();
@@ -77,6 +60,15 @@ export default function NewComplaint() {
   // ── AI Auto-fill state ───────────────────────────────────────────────────
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState(null);
+  const [floorDuplicates, setFloorDuplicates] = useState([]);
+
+  useEffect(() => {
+    if (category && userDoc?.floorId) {
+      getFloorComplaints(userDoc.hostelId, userDoc.floorId, category)
+        .then(setFloorDuplicates)
+        .catch(console.error);
+    }
+  }, [category, userDoc]);
 
   const triggerAIAnalysis = async ({ imageBase64, transcript, typed }) => {
     if (!imageBase64 && !transcript && !typed) return;
@@ -121,23 +113,32 @@ export default function NewComplaint() {
           const langCode = (selectedLang?.code || 'en-IN').split('-')[0];
           
           setDescriptionOriginal(spoken);
-          setDetectedLanguage(selectedLang?.whisperLang || 'english');
+          setDetectedLanguage('Analyzing…');
           setIsRecording(false);
+          setIsTranslating(true);
           
-          let translatedText = spoken;
-          if (langCode !== 'en') {
-            setIsTranslating(true);
-            translatedText = await translateToEnglish(spoken, langCode);
-            setDescriptionTranslated(translatedText);
-            setDescription(translatedText);
+          try {
+            // Trigger AI Analysis directly on speech result
+            const suggestion = await analyzeComplaint({ transcript: spoken });
+            if (suggestion) {
+              setAiSuggestion(suggestion);
+              if (suggestion.description) {
+                setDescription(suggestion.description);
+                setDescriptionTranslated(suggestion.description);
+              }
+              if (suggestion.detectedLanguage) {
+                setDetectedLanguage(suggestion.detectedLanguage);
+              }
+              if (suggestion.category) {
+                const catMatch = CATEGORIES.find(c => c.toLowerCase() === suggestion.category.toLowerCase());
+                if (catMatch) setCategory(catMatch);
+              }
+              if (suggestion.priority) setPriority(suggestion.priority.toLowerCase());
+              if (suggestion.title) setTitle(suggestion.title);
+            }
+          } finally {
             setIsTranslating(false);
-          } else {
-            setDescriptionTranslated(spoken);
-            setDescription(spoken);
           }
-          
-          // Trigger AI Analysis on voice completion
-          triggerAIAnalysis({ transcript: translatedText });
         };
         
         recognition.onerror = (e) => {
@@ -444,6 +445,22 @@ export default function NewComplaint() {
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 14px', borderRadius:8, marginBottom:16, background:'var(--primary-soft)', border:'1px solid var(--primary-border)', fontSize:12.5, color:'var(--text-2)' }}>
                 <span>AI suggested: <strong style={{ color:'var(--primary)', fontWeight:600 }}>{aiSuggestion.title}</strong></span>
                 <button type="button" onClick={() => setAiSuggestion(null)} style={{ background:'none', border:'none', color:'var(--text-3)', cursor:'pointer', fontSize:16, lineHeight:1, padding:0 }}>×</button>
+              </div>
+            )}
+
+            {/* Social Awareness Alert */}
+            {step === 1 && floorDuplicates.length > 0 && (
+              <div style={{ padding:'12px 14px', borderRadius:10, marginBottom:20, background:'rgba(245,158,11,0.08)', border:'1px solid rgba(245,158,11,0.25)', display:'flex', gap:10, alignItems:'flex-start' }}>
+                <div style={{ color:'var(--amber)', marginTop:2 }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                </div>
+                <div>
+                  <div style={{ fontSize:13, fontWeight:700, color:'var(--amber)', marginBottom:2 }}>Floor awareness</div>
+                  <div style={{ fontSize:12, color:'var(--text-2)', lineHeight:1.4 }}>
+                    {floorDuplicates.length} student{floorDuplicates.length > 1 ? 's' : ''} on your floor have already reported <strong>{category}</strong> issues. 
+                    The Warden is currently working on it.
+                  </div>
+                </div>
               </div>
             )}
 

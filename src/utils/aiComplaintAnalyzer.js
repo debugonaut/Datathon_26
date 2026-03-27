@@ -13,7 +13,31 @@ export const analyzeComplaint = async ({ imageBase64, transcript, typedText }) =
   if (textInputs) {
     inputs.push({
       type: 'text',
-      text: `You are analyzing a hostel room maintenance complaint.\n${textInputs}\nRespond ONLY in raw JSON with no markdown, no backticks, no explanation:\n{\n  "category": "Plumbing|Electrical|Cleaning|Furniture|Other",\n  "priority": "low|medium|high",\n  "title": "max 8 words, specific and clear",\n  "description": "1-2 sentences, clean and professional",\n  "confidence": 0.0-1.0\n}\nPriority rules:\n- high: no electricity, flooding, security risk, health hazard\n- medium: broken fixtures, leaks, non-functional appliances\n- low: cosmetic issues, minor inconveniences`
+      text: `You are an expert maintenance analyst for a university hostel. 
+Analyze the following student complaint (which may be in English, Hindi, Marathi, or Hinglish/transliterated form).
+
+${textInputs}
+
+CRITICAL INSTRUCTIONS:
+1. Respond ONLY in raw JSON with no markdown, no backticks, no explanation.
+2. The "description" field MUST be a professional, formal English translation of the input. Avoid "Hinglish". Convert into standard technical English (e.g., "fan nahi chal raha" -> "The ceiling fan is non-functional").
+3. The "title" should be a concise 4-8 word summary in English.
+4. "detectedLanguage" should identify the input language (e.g., "Hindi", "Hinglish", "English", "Marathi").
+
+JSON FORMAT:
+{
+  "category": "Plumbing|Electrical|Cleaning|Furniture|Other",
+  "priority": "low|medium|high",
+  "title": "Concise English title",
+  "description": "Professional English description",
+  "detectedLanguage": "string",
+  "confidence": 0.0-1.0
+}
+
+Priority rules:
+- high: total power failure, flooding/major leaks, security/fire risks, health hazards.
+- medium: broken fixtures, appliance malfunction, water supply issues.
+- low: cosmetic issues, minor cleanliness, furniture wear.`
     });
   }
 

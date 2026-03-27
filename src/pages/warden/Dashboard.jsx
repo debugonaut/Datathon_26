@@ -86,9 +86,28 @@ export default function WardenDashboard() {
   });
 
   if (loading) return (
-    <div className="page">
-      <Navbar />
-      <div className="loading-screen"><div className="spinner" /></div>
+    <div className="app-shell">
+      <div className="app-sidebar">
+        <div className="sidebar-brand"><div className="skeleton" style={{width:160, height:24}}/></div>
+        <div style={{padding:20, display:'flex', flexDirection:'column', gap:10}}>
+          {[1,2,3,4,5,6].map(i => <div key={i} className="skeleton" style={{height:38, borderRadius:8}}/>)}
+        </div>
+      </div>
+      <div className="app-main">
+        <div className="app-header">
+          <div className="skeleton" style={{width:180, height:24}}/>
+          <div className="skeleton" style={{width:120, height:32, borderRadius:20}}/>
+        </div>
+        <div className="app-content">
+          <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, marginBottom:20 }}>
+            {[1,2,3,4,5].map(i => <div key={i} className="skeleton" style={{height:100, borderRadius:16}}/>)}
+          </div>
+          <div className="grid-2 responsive" style={{gap:16}}>
+            <div className="skeleton" style={{height:200, borderRadius:16}}/>
+            <div className="skeleton" style={{height:200, borderRadius:16}}/>
+          </div>
+        </div>
+      </div>
     </div>
   );
 

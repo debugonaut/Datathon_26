@@ -801,3 +801,21 @@ option { background: var(--bg-card); }
     padding: 0 16px;
   }
 }
+/* ── Skeleton Loaders ────────────────────────────────────────── */
+@keyframes skeleton-pulse {
+  0% { opacity: 0.45; }
+  50% { opacity: 0.8; }
+  100% { opacity: 0.45; }
+}
+.skeleton {
+  background: var(--bg-input);
+  border-radius: var(--radius-sm);
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+  display: block;
+  overflow: hidden;
+  position: relative;
+}
+.skeleton-circle { border-radius: 50%; }
+.skeleton-text { height: 12px; margin-bottom: 8px; }
+.skeleton-title { height: 20px; margin-bottom: 12px; }
+.skeleton-card { height: 160px; margin-bottom: 16px; }
