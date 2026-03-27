@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { registerUser, signInWithGoogle, getUserDoc, checkWardenExists } from '../firebase/auth';
+import { registerUser, signInWithGoogle, getUserDoc } from '../firebase/auth';
 import { useAuth } from '../context/AuthContext';
 
 export default function RegisterPage() {
@@ -12,7 +12,6 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
-  const [adminCode, setAdminCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -58,14 +57,6 @@ export default function RegisterPage() {
     setError('');
     setLoading(true);
     try {
-      if (role === 'warden') {
-        const wardenExists = await checkWardenExists();
-        if (wardenExists && adminCode !== 'MITAOE_WARDEN_2026') {
-          setError('Invalid Admin Code. A warden already exists for this system.');
-          setLoading(false);
-          return;
-        }
-      }
       await registerUser(email, password, name, role);
       if (role === 'warden') navigate('/warden/setup', { replace: true });
       else navigate('/student/join', { replace: true });
@@ -174,12 +165,6 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          {role === 'warden' && (
-            <div style={{ background: 'rgba(108,99,255,0.04)', border: '1px solid rgba(108,99,255,0.1)', borderRadius: 10, padding: '12px 14px', marginBottom: 12 }}>
-              <div style={labelStyle}>Admin Code</div>
-              <input style={inputStyle} type="password" value={adminCode} onChange={e => setAdminCode(e.target.value)} placeholder="Enter code" />
-            </div>
-          )}
 
           <button type="submit" disabled={loading || googleLoading}
             style={{ width: '100%', padding: 13, borderRadius: 10, background: loading ? 'rgba(108,99,255,0.5)' : '#6C63FF', border: 'none', color: '#fff', fontSize: 14, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', marginTop: 4 }}>
