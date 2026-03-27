@@ -40,91 +40,7 @@ function chipStyle(val, type = 'status') {
   return                           { background:'rgba(16,185,129,0.12)',  color:'var(--green)' };
 }
 
-const StatusStepper = ({ status, acknowledgedAt }) => {
-  const steps = [
-    { id: 'todo', label: 'Filed' },
-    { id: 'assigned', label: 'Assigned' },
-    { id: 'in_progress', label: 'In Repair' },
-    { id: 'resolved', label: 'Resolved' }
-  ];
 
-  let activeIndex = 0;
-  if (status === 'resolved') activeIndex = 3;
-  else if (status === 'in_progress') activeIndex = 2;
-  else if (acknowledgedAt) activeIndex = 1;
-
-  return (
-    <div style={{ padding: '12px 0 20px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', position: 'relative', height: 4 }}>
-        <div style={{ position: 'absolute', inset: 0, background: 'var(--border)', borderRadius: 2 }} />
-        <div style={{ position: 'absolute', left: 0, height: '100%', background: 'var(--primary)', borderRadius: 2, transition: 'width 0.5s ease', width: `${(activeIndex / 3) * 100}%` }} />
-        
-        {steps.map((step, i) => (
-          <div key={step.id} style={{
-            position: 'absolute',
-            left: `${(i / 3) * 100}%`,
-            transform: 'translateX(-50%)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: 6
-          }}>
-            <div style={{
-              width: 10, height: 10, borderRadius: '50%',
-              background: i <= activeIndex ? 'var(--primary)' : 'var(--bg-card)',
-              border: `2px solid ${i <= activeIndex ? 'var(--primary)' : 'var(--border-strong)'}`,
-              transition: 'all 0.3s',
-              zIndex: 2
-            }} />
-            <span style={{
-              fontSize: 9, 
-              fontWeight: 700, 
-              textTransform: 'uppercase', 
-              color: i <= activeIndex ? 'var(--text)' : 'var(--text-ghost)',
-              whiteSpace: 'nowrap'
-            }}>{step.label}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-const EscalationTimer = ({ createdAt, priority, status }) => {
-  const [timeLeft, setTimeLeft] = useState('');
-
-  useEffect(() => {
-    if (status === 'resolved' || priority !== 'high') return;
-    
-    const tick = () => {
-      const start = createdAt?.toDate?.() || new Date();
-      const limit = 24 * 3600000; // 24h escalation
-      const diff = limit - (Date.now() - start.getTime());
-      
-      if (diff <= 0) {
-        setTimeLeft('Escalated to Chief Warden');
-        return;
-      }
-      
-      const h = Math.floor(diff / 3600000);
-      const m = Math.floor((diff % 3600000) / 60000);
-      setTimeLeft(`Escalating in ${h}h ${m}m`);
-    };
-
-    tick();
-    const interval = setInterval(tick, 60000);
-    return () => clearInterval(interval);
-  }, [createdAt, priority, status]);
-
-  if (priority !== 'high' || status === 'resolved') return null;
-
-  return (
-    <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--red)', display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
-      <span className="material-icons-round" style={{ fontSize: 12 }}>error_outline</span>
-      {timeLeft}
-    </div>
-  );
-};
 
 function myAvg(c) {
   const r = c.filter(x => x.resolvedAt?.toDate && x.createdAt?.toDate);
@@ -504,8 +420,7 @@ export default function StudentAnalytics({ roomScore, view = 'complaints' }) {
                       {c.descriptionTranslated || c.description}
                     </div>
 
-                    <StatusStepper status={c.status} acknowledgedAt={c.acknowledgedAt} />
-                    <EscalationTimer createdAt={c.createdAt} priority={c.priority} status={c.status} />
+
 
                     <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:10 }}>
                       <div style={{ display:'flex', alignItems:'center', gap:12 }}>

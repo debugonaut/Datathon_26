@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 import { useAuth } from '../../context/AuthContext';
-import { createComplaint, getFloorComplaints } from '../../firebase/firestore';
+import { createComplaint } from '../../firebase/firestore';
 import { analyzeComplaint } from '../../utils/aiComplaintAnalyzer';
 
 const CATEGORIES = ['Plumbing', 'Electrical', 'Cleaning', 'Furniture', 'Other'];
@@ -59,18 +59,11 @@ export default function NewComplaint() {
 
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState(null);
-  const [floorDuplicates, setFloorDuplicates] = useState([]);
 
   const isAiDisabled = !import.meta.env.VITE_ANTHROPIC_API_KEY || import.meta.env.VITE_ANTHROPIC_API_KEY === 'your_key_here';
 
 
-  useEffect(() => {
-    if (category && userDoc?.floorId) {
-      getFloorComplaints(userDoc.hostelId, userDoc.floorId, category)
-        .then(setFloorDuplicates)
-        .catch(console.error);
-    }
-  }, [category, userDoc]);
+
 
   const triggerAIAnalysis = async ({ imageBase64, transcript, typed }) => {
     if (!imageBase64 && !transcript && !typed) return;
@@ -86,7 +79,11 @@ export default function NewComplaint() {
         }
         if (suggestion.priority) setPriority(suggestion.priority.toLowerCase());
         if (suggestion.title) setTitle(suggestion.title);
-        if (suggestion.description && !description) setDescription(suggestion.description);
+        if (suggestion.description) {
+          setDescription(suggestion.description);
+          setDescriptionTranslated(suggestion.description);
+        }
+
       }
     } catch (err) {
       console.error('AI analysis failed:', err);
@@ -436,21 +433,7 @@ export default function NewComplaint() {
               </div>
             )}
 
-            {/* Social Awareness Alert */}
-            {step === 1 && floorDuplicates.length > 0 && (
-              <div style={{ padding:'12px 14px', borderRadius:10, marginBottom:20, background:'rgba(245,158,11,0.08)', border:'1px solid rgba(245,158,11,0.25)', display:'flex', gap:10, alignItems:'flex-start' }}>
-                <div style={{ color:'var(--amber)', marginTop:2 }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                </div>
-                <div>
-                  <div style={{ fontSize:13, fontWeight:700, color:'var(--amber)', marginBottom:2 }}>Floor awareness</div>
-                  <div style={{ fontSize:12, color:'var(--text-2)', lineHeight:1.4 }}>
-                    {floorDuplicates.length} student{floorDuplicates.length > 1 ? 's' : ''} on your floor have already reported <strong>{category}</strong> issues. 
-                    The Warden is currently working on it.
-                  </div>
-                </div>
-              </div>
-            )}
+
 
             {error && (
               <div style={{ padding:'10px 14px', borderRadius:8, marginBottom:16, background:'var(--red-soft)', border:'1px solid rgba(239,68,68,0.25)', fontSize:12.5, color:'var(--red)' }}>
@@ -537,7 +520,9 @@ export default function NewComplaint() {
                       color: isRecording ? 'var(--red)' : 'var(--text-2)', cursor:'pointer', transition:'all 0.15s',
                     }}>
                       {isRecording
-                        ? <span style={{ width:8, height:8, borderRadius:'50%', background:'var(--red)', display:'inline-block', animation:'pulse 1s infinite' }} />
+                        ? <div className="voice-wave">
+                            <span/><span/><span/><span/><span/>
+                          </div>
                         : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="1" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0014 0"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
                       }
                       {isTranscribing ? 'Transcribing…' : isTranslating ? 'Translating…' : isRecording ? 'Recording…' : 'Use voice'}

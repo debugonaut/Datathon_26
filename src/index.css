@@ -819,3 +819,28 @@ option { background: var(--bg-card); }
 .skeleton-text { height: 12px; margin-bottom: 8px; }
 .skeleton-title { height: 20px; margin-bottom: 12px; }
 .skeleton-card { height: 160px; margin-bottom: 16px; }
+
+/* ── Voice Wave Animation ────────────────────────── */
+@keyframes voice-wave-grow {
+  0% { transform: scaleY(0.4); }
+  50% { transform: scaleY(1); }
+  100% { transform: scaleY(0.4); }
+}
+.voice-wave {
+  display: flex;
+  align-items: center;
+  gap: 2.5px;
+  height: 14px;
+}
+.voice-wave span {
+  width: 2.5px;
+  height: 100%;
+  background: var(--red);
+  border-radius: 4px;
+  animation: voice-wave-grow 0.6s ease-in-out infinite;
+}
+.voice-wave span:nth-child(2) { animation-delay: 0.1s; height: 140%; }
+.voice-wave span:nth-child(3) { animation-delay: 0.2s; height: 180%; }
+.voice-wave span:nth-child(4) { animation-delay: 0.15s; height: 110%; }
+.voice-wave span:nth-child(5) { animation-delay: 0.3s; height: 160%; }
+
