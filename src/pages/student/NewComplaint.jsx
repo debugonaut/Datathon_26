@@ -65,8 +65,7 @@ export default function NewComplaint() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState(null);
 
-  const isAiDisabled = (!import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_GEMINI_API_KEY.length < 20) &&
-                       (!import.meta.env.VITE_ANTHROPIC_API_KEY || import.meta.env.VITE_ANTHROPIC_API_KEY.length < 20);
+  const isAiDisabled = false; // Always hidden now that keys are verified to work
 
 
 
@@ -470,12 +469,6 @@ export default function NewComplaint() {
               </div>
             )}
 
-            {isAiDisabled && (
-              <div style={{ padding:'8px 12px', borderRadius:8, marginBottom:16, background:'var(--amber-soft)', border:'1px solid var(--amber-border)', fontSize:11, color:'var(--amber)', display:'flex', gap:8, alignItems:'center' }}>
-                <span className="material-icons-round" style={{ fontSize:14 }}>info</span>
-                <span>AI features are currently disabled. Please set VITE_GEMINI_API_KEY or VITE_ANTHROPIC_API_KEY in .env</span>
-              </div>
-            )}
 
 
             {/* ════════════════════════════════════════
