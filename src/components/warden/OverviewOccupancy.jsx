@@ -155,11 +155,21 @@ export default function OverviewOccupancy({ hostelId }) {
                   <div className="font-bold">Room {room.roomNumber}</div>
                   <div className="text-secondary text-xs">{room.buildingName} · Fl {room.floorNumber}</div>
                 </div>
-                <div className="badge" style={{
-                  background: current >= max ? 'rgba(240,101,101,0.2)' : 'rgba(34,211,160,0.2)',
-                  color: current >= max ? '#F06565' : '#22D3A0'
-                }}>
-                  {current}/{max}
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <button 
+                    onClick={(e) => openHistoryDrawer(e, room)}
+                    style={{ background: 'none', border: 'none', color: 'var(--text-ghost)', cursor: 'pointer', display: 'flex', alignItems: 'center', transition: 'color 0.2s' }}
+                    title="View history"
+                    className="hover-primary"
+                  >
+                    <span className="material-icons-round" style={{ fontSize: 18 }}>history</span>
+                  </button>
+                  <div className="badge" style={{
+                    background: current >= max ? 'rgba(240,101,101,0.2)' : 'rgba(34,211,160,0.2)',
+                    color: current >= max ? '#F06565' : '#22D3A0'
+                  }}>
+                    {current}/{max}
+                  </div>
                 </div>
               </div>
 

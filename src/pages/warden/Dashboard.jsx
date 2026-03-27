@@ -94,8 +94,9 @@ export default function WardenDashboard() {
 
   const TABS = [
     { id: 'overview', label: 'Overview' },
-    { id: 'analytics', label: 'Analytics' },
     { id: 'complaints', label: 'Complaints' },
+    { id: 'occupancy', label: 'Occupancy' },
+    { id: 'analytics', label: 'Analytics' },
     { id: 'qrcodes', label: 'QR Codes' },
     { id: 'announcements', label: 'Announcements' },
     { id: '3dview', label: '3D Visualizer' },
@@ -117,6 +118,7 @@ export default function WardenDashboard() {
         {[
           ['overview',      'dashboard',      'Overview'],
           ['complaints',    'task_alt',       'Complaints'],
+          ['occupancy',     'people_alt',     'Occupancy'],
           ['analytics',     'bar_chart',      'Analytics'],
           ['3dview',        'view_in_ar',     '3D Visualizer'],
           ['qrcodes',       'qr_code_2',      'QR Codes'],
@@ -173,7 +175,7 @@ export default function WardenDashboard() {
       {/* Tabs */}
       <div style={{background:'var(--bg-card)', borderBottom:'1px solid var(--border)', padding:'0 24px'}}>
         <div className="tabs">
-          {[['overview','Overview'],['complaints','Complaints'],['analytics','Analytics'],['3dview','3D Visualizer'],['qrcodes','QR Codes'],['announcements','Announcements']].map(([id,label])=>(
+          {[['overview','Overview'],['complaints','Complaints'],['occupancy','Occupancy'],['analytics','Analytics'],['3dview','3D Visualizer'],['qrcodes','QR Codes'],['announcements','Announcements']].map(([id,label])=>(
             <div key={id} className={`tab ${activeTab===id?'active':''}`} onClick={()=>setActiveTab(id)}>{label}</div>
           ))}
         </div>
@@ -216,9 +218,7 @@ export default function WardenDashboard() {
                   <div className="stat-value">{s.value}</div>
                 </div>
               ))}
-            </div>
-
-            {/* Two column */}
+            </div>            {/* Two column */}
             <div className="grid-2 responsive" style={{ gap: 16, marginBottom: 24 }}>
               <div className="card-flat">
                 <div className="label" style={{marginBottom:12}}>Warden details</div>
@@ -230,27 +230,36 @@ export default function WardenDashboard() {
                 ))}
               </div>
               <div className="card-flat">
-                <div className="label" style={{marginBottom:12}}>Complaint summary</div>
-                {[
-                  ['Open',complaints.filter(c=>c.status==='todo').length,'var(--red)'],
-                  ['In Progress',complaints.filter(c=>c.status==='in_progress').length,'var(--amber)'],
-                  ['Resolved',complaints.filter(c=>c.status==='resolved').length,'var(--green)'],
-                ].map(([k,v,color])=>(
-                  <div key={k} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'10px 0',borderBottom:'1px solid var(--border)'}}>
-                    <span style={{fontSize:13.5,color:'var(--text-2)'}}>{k}</span>
-                    <span style={{fontFamily:'var(--font-mono)',fontSize:22,fontWeight:500,color,lineHeight:1}}>{v}</span>
-                  </div>
-                ))}
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}}>
+                  <div className="label">Recent Complaints</div>
+                  <Link to="#" onClick={()=>setActiveTab('complaints')} style={{fontSize:12,color:'var(--primary)',textDecoration:'none',fontWeight:600}}>View all</Link>
+                </div>
+                <div style={{display:'flex',flexDirection:'column',gap:8}}>
+                  {complaints.filter(c=>c.status!=='resolved').slice(0,3).length === 0 ? (
+                    <div style={{fontSize:13,color:'var(--text-3)',textAlign:'center',padding:'20px 0'}}>No active complaints</div>
+                  ) : (
+                    complaints.filter(c=>c.status!=='resolved').slice(0,3).map(c=>(
+                      <div key={c.id} style={{display:'flex',alignItems:'center',gap:12,padding:'10px',background:'var(--bg-hover)',borderRadius:'var(--radius-sm)',border:'1px solid var(--border)'}}>
+                        <div style={{width:8,height:8,borderRadius:'50%',background:c.priority==='high'?'var(--red)':c.priority==='medium'?'var(--amber)':'var(--green)'}} />
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{fontSize:13,fontWeight:600,color:'var(--text)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{c.title}</div>
+                          <div style={{fontSize:11,color:'var(--text-3)'}}>Room {c.roomNumber} • {c.category}</div>
+                        </div>
+                        <span className="material-icons-round" style={{fontSize:16,color:'var(--text-ghost)'}}>chevron_right</span>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
             </div>
-
-            <OverviewOccupancy hostelId={hostel.id} />
           </>
         )}
 
+        {activeTab==='occupancy' && <OverviewOccupancy hostelId={hostel.id} />}
+
         {activeTab==='announcements' && <WardenAnnouncements hostelId={hostel.id} />}
         {activeTab==='analytics' && <WardenAnalytics hostelId={hostel.id} />}
-        {activeTab==='3dview' && <Hostel3DView hostelId={hostel.id} />}
+        {activeTab==='3dview' && <Hostel3DView hostelId={hostel.id} complaints={complaints} />}
         {activeTab==='qrcodes' && <WardenQRDirectory hostelId={hostel.id} />}
 
         {activeTab==='complaints' && (
