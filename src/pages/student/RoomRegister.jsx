@@ -144,9 +144,28 @@ export default function RoomRegister() {
                       <button onClick={() => setCameraActive(false)} style={{ position: 'absolute', top: 12, right: 12, background: 'rgba(0,0,0,0.5)', border: 'none', color: '#fff', padding: '4px 8px', borderRadius: 4, cursor: 'pointer', fontSize: 11 }}>Close</button>
                     </div>
                   ) : (
-                    <button onClick={() => setCameraActive(true)} style={{ width: '100%', background: '#6C63FF', color: '#fff', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                      <span className="material-icons-round" style={{ fontSize: 18 }}>videocam</span>
-                      Open Camera
+                    <button 
+                      onClick={() => setCameraActive(true)} 
+                      style={{ 
+                        width: 64, height: 64, 
+                        background: 'transparent', 
+                        color: '#fff', 
+                        border: '2px solid rgba(255,255,255,0.8)', 
+                        borderRadius: 20, 
+                        cursor: 'pointer', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center', 
+                        margin: '0 auto',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.borderColor = '#fff'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.8)'; }}
+                    >
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                        <circle cx="12" cy="13" r="4"/>
+                      </svg>
                     </button>
                   )}
                 </div>

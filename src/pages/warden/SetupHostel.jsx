@@ -251,7 +251,15 @@ export default function SetupHostel() {
                     {bld.floors.map(fl => {
                       const roomCount = parseRoomRange(fl.roomRange).length;
                       return (
-                        <div key={fl.id} style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: roomCount > 0 ? 'var(--green-soft)' : 'var(--bg-input)', color: roomCount > 0 ? 'var(--green)' : 'var(--text-3)', border: '1px solid' }}>
+                        <div key={fl.id} style={{ 
+                          fontSize: 10, 
+                          padding: '2px 6px', 
+                          borderRadius: 4, 
+                          background: roomCount > 0 ? 'var(--green-soft)' : 'var(--bg-input)', 
+                          color: roomCount > 0 ? 'var(--green)' : 'var(--text)', 
+                          border: '1px solid var(--border)',
+                          fontWeight: 500
+                        }}>
                           Fl {fl.floorNumber}: {roomCount}
                         </div>
                       )
@@ -510,7 +518,7 @@ export default function SetupHostel() {
                                 <div key={fl.id} style={{ display: 'grid', gridTemplateColumns: '80px 1fr 40px', gap: 12, alignItems: 'center' }}>
                                   <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-2)' }}>Floor {fl.floorNumber}</span>
                                   <input 
-                                    style={{ padding: '8px 12px', background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }}
+                                    style={{ padding: '8px 12px', background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12, color: 'var(--text)' }}
                                     placeholder="101-110" 
                                     value={fl.roomRange}
                                     onChange={(e) => updateFloorRoomRange(b.id, bld.id, fl.id, e.target.value)}

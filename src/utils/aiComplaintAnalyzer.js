@@ -21,7 +21,7 @@ export const analyzeComplaint = async ({ imageBase64, transcript, typedText }) =
     };
   };
 
-  // 2. Try Claude (Anthropic)
+  // 2. Try Claude (Anthropic) - Primary
   const anthropicKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
   if (anthropicKey && anthropicKey.length > 30 && !anthropicKey.includes('your_key')) {
     try {
@@ -41,7 +41,7 @@ export const analyzeComplaint = async ({ imageBase64, transcript, typedText }) =
             role: 'user',
             content: [
               ...(imageBase64 ? [{ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: imageBase64 } }] : []),
-              { type: 'text', text: `Hostel Maintenance. Return JSON. Input: ${textInputs}\nJSON format: {category, priority, title, description(formal English), detectedLanguage}` }
+              { type: 'text', text: `Hostel Maintenance Analysis. Return JSON ONLY. Input: ${textInputs}\nAllowed Categories: Plumbing, Electrical, Cleaning, Furniture, Other.\nAllowed Priorities: low, medium, high.\nJSON format: {category, priority, title, description(formal English), detectedLanguage}` }
             ]
           }]
         })
@@ -54,11 +54,11 @@ export const analyzeComplaint = async ({ imageBase64, transcript, typedText }) =
       }
       console.warn('⚠️ Claude failed (likely credits or connection).');
     } catch (err) {
-      console.warn('⚠️ Claude service error.');
+      console.warn('⚠️ Claude service error:', err);
     }
   }
 
-  // 3. Try Gemini (Google)
+  // 3. Try Gemini (Google) - Fallback
   const geminiKey = import.meta.env.VITE_GEMINI_API_KEY;
   if (geminiKey && geminiKey.length > 20 && !geminiKey.includes('your_key')) {
     try {
@@ -69,7 +69,7 @@ export const analyzeComplaint = async ({ imageBase64, transcript, typedText }) =
         body: JSON.stringify({
           contents: [{
             parts: [
-              { text: `Hostel Maintenance Analysis. Return JSON. Input: ${textInputs}` },
+              { text: `Hostel Maintenance Analysis. Return JSON ONLY. Input: ${textInputs}\nAllowed Categories: Plumbing, Electrical, Cleaning, Furniture, Other.\nAllowed Priorities: low, medium, high.\nJSON format: {category, priority, title, description(formal English), detectedLanguage}` },
               ...(imageBase64 ? [{ inlineData: { mimeType: 'image/jpeg', data: imageBase64 } }] : [])
             ]
           }]
@@ -83,7 +83,7 @@ export const analyzeComplaint = async ({ imageBase64, transcript, typedText }) =
       }
       console.warn('⚠️ Gemini failed (likely key/region issue).');
     } catch (err) {
-      console.warn('⚠️ Gemini service error.');
+      console.warn('⚠️ Gemini service error:', err);
     }
   }
 

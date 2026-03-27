@@ -127,15 +127,43 @@ function ComplaintCardShell({ complaint }) {
           )}
         </div>
         {complaint.mediaUrls?.length > 0 && (
-          <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
-            {complaint.mediaUrls.map((url, idx) => {
-              const type = complaint.mediaTypes?.[idx] || 'document';
-              return (
-                <a key={idx} href={url} target="_blank" rel="noreferrer" style={{ fontSize:11.5, padding:'3px 9px', borderRadius:6, background:'var(--primary-soft)', color:'var(--primary)', border:'1px solid var(--primary-border)', textDecoration:'none', fontFamily:'var(--font-mono)', fontWeight:500 }}>
-                  {type === 'image' ? 'IMG' : type === 'video' ? 'VID' : type === 'audio' ? 'AUD' : 'FILE'}
-                </a>
-              );
-            })}
+          <div style={{ marginTop: 4 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-3)', marginBottom: 8, letterSpacing: '0.05em' }}>Attachments ({complaint.mediaUrls.length})</div>
+            <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+              {complaint.mediaUrls.map((url, idx) => {
+                const type = complaint.mediaTypes?.[idx] || 'document';
+                const isImg = type === 'image';
+                return (
+                  <a key={idx} href={url} target="_blank" rel="noreferrer" 
+                    style={{ 
+                      display: 'block',
+                      width: isImg ? 80 : 64, 
+                      height: 64, 
+                      borderRadius: 10, 
+                      overflow: 'hidden',
+                      border: '1px solid var(--border-strong)',
+                      background: 'var(--bg-input)',
+                      position: 'relative',
+                      transition: 'all 0.2s ease',
+                      flexShrink: 0
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--primary)'; e.currentTarget.style.transform = 'scale(1.05)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-strong)'; e.currentTarget.style.transform = 'none'; }}
+                  >
+                    {isImg ? (
+                      <img src={url} alt="Attachment" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                        <span className="material-icons-round" style={{ fontSize: 20, color: 'var(--text-3)' }}>
+                          {type === 'video' ? 'videocam' : type === 'audio' ? 'audiotrack' : 'description'}
+                        </span>
+                        <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-3)' }}>{type.toUpperCase().slice(0,3)}</span>
+                      </div>
+                    )}
+                  </a>
+                );
+              })}
+            </div>
           </div>
         )}
         <div style={{ display:'grid', gridTemplateColumns:'repeat(4,minmax(0,1fr))', gap:7 }}>

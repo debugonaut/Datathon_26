@@ -65,9 +65,8 @@ export default function NewComplaint() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState(null);
 
-  const isAiDisabled = !import.meta.env.VITE_GEMINI_API_KEY || 
-                       import.meta.env.VITE_GEMINI_API_KEY.trim() === 'your_key_here' || 
-                       import.meta.env.VITE_GEMINI_API_KEY.length < 20;
+  const isAiDisabled = (!import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_GEMINI_API_KEY.length < 20) &&
+                       (!import.meta.env.VITE_ANTHROPIC_API_KEY || import.meta.env.VITE_ANTHROPIC_API_KEY.length < 20);
 
 
 
@@ -81,13 +80,15 @@ export default function NewComplaint() {
         console.log('🤖 AI Suggestion received:', suggestion);
         if (suggestion) {
           setAiSuggestion(suggestion);
-          if (suggestion.category) {
+          // Only override category if it's currently empty or set to 'Other'
+          if (suggestion.category && (!category || category === 'Other')) {
             const catMatch = CATEGORIES.find(c => c.toLowerCase() === suggestion.category.toLowerCase());
             if (catMatch) setCategory(catMatch);
             else setCategory(suggestion.category);
           }
           if (suggestion.priority) setPriority(suggestion.priority.toLowerCase());
           if (suggestion.title) setTitle(suggestion.title);
+          if (suggestion.detectedLanguage) setDetectedLanguage(suggestion.detectedLanguage);
           if (suggestion.description) {
             setDescription(suggestion.description);
             setDescriptionTranslated(suggestion.description);
@@ -472,7 +473,7 @@ export default function NewComplaint() {
             {isAiDisabled && (
               <div style={{ padding:'8px 12px', borderRadius:8, marginBottom:16, background:'var(--amber-soft)', border:'1px solid var(--amber-border)', fontSize:11, color:'var(--amber)', display:'flex', gap:8, alignItems:'center' }}>
                 <span className="material-icons-round" style={{ fontSize:14 }}>info</span>
-                <span>AI features are currently disabled. Please set VITE_ANTHROPIC_API_KEY in .env</span>
+                <span>AI features are currently disabled. Please set VITE_GEMINI_API_KEY or VITE_ANTHROPIC_API_KEY in .env</span>
               </div>
             )}
 
