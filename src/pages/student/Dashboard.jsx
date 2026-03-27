@@ -207,6 +207,11 @@ export default function StudentDashboard() {
       <div style={{ height: 16 }} /> {/* Spacer */}
 
       <div className="app-content animation-fade-in">
+        <Link to="/complaint/new" className="btn btn-primary" style={{ width:'100%', marginBottom:20, display:'flex', padding:'14px', borderRadius:16, boxShadow:'0 10px 20px rgba(108,99,255,0.2)' }}>
+          <span className="material-icons-round" style={{ fontSize:20 }}>add_circle</span>
+          File a New Complaint
+        </Link>
+
         {activeTab==='overview' && (
           <div className="grid-2 responsive" style={{ gap: 20 }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>

@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { getSLAStatus } from '../../utils/sla';
 
 function timeAgo(date) {
@@ -50,8 +51,13 @@ export default function MiniTimeline({ complaints, onSeeAll }) {
       </div>
 
       {items.length === 0 && (
-        <div style={{ padding:'24px 16px', textAlign:'center', fontSize:13, color:'var(--text-3)' }}>
-          No complaints yet
+        <div style={{ padding:'32px 16px', textAlign:'center' }}>
+          <div style={{ fontSize:32, marginBottom:12, opacity:0.3 }}>📋</div>
+          <div style={{ fontSize:13, color:'var(--text-3)', marginBottom:16 }}>No complaints yet</div>
+          <Link to="/complaint/new" className="btn btn-primary btn-sm" style={{ display:'inline-flex', padding:'8px 16px' }}>
+            <span className="material-icons-round" style={{ fontSize:16 }}>add</span>
+            File your first complaint
+          </Link>
         </div>
       )}
 
