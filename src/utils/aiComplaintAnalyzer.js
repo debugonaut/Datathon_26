@@ -43,6 +43,12 @@ Priority rules:
 
   if (inputs.length === 0) return null;
 
+  const key = import.meta.env.VITE_ANTHROPIC_API_KEY;
+  if (!key || key === 'your_key_here') {
+    console.warn('Anthropic API key is missing or set to placeholder.');
+    return null;
+  }
+
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
@@ -54,10 +60,10 @@ Priority rules:
         'Content-Type': 'application/json',
         'x-api-key': import.meta.env.VITE_ANTHROPIC_API_KEY,
         'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-client-side-api-key-allowed': 'true'
+        'anthropic-dangerous-direct-browser-access': 'true'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514', 
+        model: 'claude-3-5-sonnet-20240620', 
         max_tokens: 256,
         messages: [{ role: 'user', content: inputs }]
       })

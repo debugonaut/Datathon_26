@@ -57,10 +57,12 @@ export default function NewComplaint() {
   const stopRecorderRef = useRef(null);
   const recordingTimerRef = useRef(null);
 
-  // ── AI Auto-fill state ───────────────────────────────────────────────────
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState(null);
   const [floorDuplicates, setFloorDuplicates] = useState([]);
+
+  const isAiDisabled = !import.meta.env.VITE_ANTHROPIC_API_KEY || import.meta.env.VITE_ANTHROPIC_API_KEY === 'your_key_here';
+
 
   useEffect(() => {
     if (category && userDoc?.floorId) {
@@ -115,27 +117,13 @@ export default function NewComplaint() {
           setDescriptionOriginal(spoken);
           setDetectedLanguage('Analyzing…');
           setIsRecording(false);
-          setIsTranslating(true);
-          
           try {
-            // Trigger AI Analysis directly on speech result
-            const suggestion = await analyzeComplaint({ transcript: spoken });
-            if (suggestion) {
-              setAiSuggestion(suggestion);
-              if (suggestion.description) {
-                setDescription(suggestion.description);
-                setDescriptionTranslated(suggestion.description);
-              }
-              if (suggestion.detectedLanguage) {
-                setDetectedLanguage(suggestion.detectedLanguage);
-              }
-              if (suggestion.category) {
-                const catMatch = CATEGORIES.find(c => c.toLowerCase() === suggestion.category.toLowerCase());
-                if (catMatch) setCategory(catMatch);
-              }
-              if (suggestion.priority) setPriority(suggestion.priority.toLowerCase());
-              if (suggestion.title) setTitle(suggestion.title);
-            }
+            // Trigger UI state
+            setIsTranslating(true);
+            setDetectedLanguage('Analyzing…');
+            
+            // Centralized AI Trigger
+            await triggerAIAnalysis({ transcript: spoken });
           } finally {
             setIsTranslating(false);
           }
@@ -469,6 +457,14 @@ export default function NewComplaint() {
                 {error}
               </div>
             )}
+
+            {isAiDisabled && (
+              <div style={{ padding:'8px 12px', borderRadius:8, marginBottom:16, background:'var(--amber-soft)', border:'1px solid var(--amber-border)', fontSize:11, color:'var(--amber)', display:'flex', gap:8, alignItems:'center' }}>
+                <span className="material-icons-round" style={{ fontSize:14 }}>info</span>
+                <span>AI features are currently disabled. Please set VITE_ANTHROPIC_API_KEY in .env</span>
+              </div>
+            )}
+
 
             {/* ════════════════════════════════════════
                 STEP 1 — CATEGORY
