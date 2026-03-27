@@ -238,92 +238,111 @@ export default function OverviewOccupancy({ hostelId }) {
 
       {historyDrawerRoom && (
         <div style={{
-          position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.5)',
-          display: 'flex', justifyContent: 'flex-end'
+          position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.7)',
+          display: 'flex', justifyContent: 'flex-end', backdropFilter: 'blur(4px)'
         }} onClick={() => setHistoryDrawerRoom(null)}>
           <div style={{
-            width: '400px', maxWidth: '100%', background: 'var(--bg-base)',
-            height: '100%', padding: '1.5rem', overflowY: 'auto',
-            transform: 'translateX(0)', transition: 'transform 0.3s',
-            boxShadow: '-4px 0 15px rgba(0,0,0,0.3)'
+            width: '450px', maxWidth: '100%', background: '#0f172a',
+            height: '100%', padding: '2rem', overflowY: 'auto',
+            boxShadow: '-10px 0 30px rgba(0,0,0,0.5)', position: 'relative',
+            borderLeft: '1px solid rgba(255,255,255,0.05)'
           }} onClick={e => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-              <h2 style={{ margin: 0 }}>Room {historyDrawerRoom.roomNumber} History</h2>
-              <button onClick={() => setHistoryDrawerRoom(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '1.5rem', cursor: 'pointer' }}>&times;</button>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
+              <div>
+                <h2 style={{ margin: 0, fontSize: '24px', fontWeight: 700, color: '#F1F5F9' }}>Room {historyDrawerRoom.roomNumber}</h2>
+                <div style={{ fontSize: '13px', color: '#475569', marginTop: 4 }}>Complaint History & Resolution</div>
+              </div>
+              <button 
+                onClick={() => setHistoryDrawerRoom(null)} 
+                style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: '#F1F5F9', width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+              >
+                <span className="material-icons-round" style={{ fontSize: 20 }}>close</span>
+              </button>
             </div>
 
             {historyLoading ? (
-              <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>Loading history...</div>
+              <div style={{ textAlign: 'center', padding: '3rem', color: '#475569' }}>
+                <div className="spinner" style={{ margin: '0 auto 16px' }} />
+                Loading history...
+              </div>
             ) : (
-              <>
+              <div className="animation-fade-in">
                 {fullRoomHistory.length === 0 ? (
-                  <div style={{ color: '#22D3A0', textAlign: 'center', padding: '2rem' }}>
-                    ✓ No complaints on record. This room has a clean history.
+                  <div style={{ background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.1)', borderRadius: 16, padding: '2rem', textAlign: 'center', color: '#10B981' }}>
+                    <span className="material-icons-round" style={{ fontSize: 40, marginBottom: 12 }}>verified</span>
+                    <div style={{ fontWeight: 600 }}>Clean Record</div>
+                    <div style={{ fontSize: '12px', marginTop: 4, opacity: 0.8 }}>No complaints on record for this room.</div>
                   </div>
                 ) : (
                   <>
                     {roomSummary?.aiSummary && (
                       <div style={{
-                        fontSize: '0.85rem', color: 'var(--text-muted)',
-                        fontStyle: 'italic', marginBottom: '1rem',
-                        padding: '12px', borderRadius: '8px',
-                        background: 'rgba(79,163,247,0.08)',
-                        border: '1px solid rgba(79,163,247,0.2)'
+                        fontSize: '13px', color: '#E2E8F0',
+                        fontStyle: 'italic', marginBottom: '1.5rem',
+                        padding: '16px', borderRadius: '12px',
+                        background: 'rgba(108,99,255,0.05)',
+                        border: '1px solid rgba(108,99,255,0.15)',
+                        lineHeight: 1.6
                       }}>
                         "{roomSummary.aiSummary}"
                       </div>
                     )}
 
-                    <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '2rem' }}>
                       {[
-                        { label: 'Total complaints', value: roomSummary?.total },
-                        { label: 'Resolved', value: roomSummary?.resolved },
-                        { label: 'Top issue', value: roomSummary?.topCategory },
-                        { label: 'Avg fix time', value: roomSummary?.avgResolutionHours ? `${roomSummary.avgResolutionHours}h` : 'N/A' },
-                      ].map(({ label, value }) => (
+                        { label: 'Total Tickets', value: roomSummary?.total, color: '#F1F5F9' },
+                        { label: 'Resolved', value: roomSummary?.resolved, color: '#10B981' },
+                        { label: 'Top Category', value: roomSummary?.topCategory, color: '#6C63FF' },
+                        { label: 'Avg Fix Time', value: roomSummary?.avgResolutionHours ? `${roomSummary.avgResolutionHours}h` : 'N/A', color: '#F59E0B' },
+                      ].map(({ label, value, color }) => (
                         <div key={label} style={{
-                          background: 'rgba(255,255,255,0.04)', borderRadius: '8px', padding: '8px 12px',
-                          flex: '1', minWidth: '80px'
+                          background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)',
+                          borderRadius: '12px', padding: '12px'
                         }}>
-                          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '4px' }}>{label}</div>
-                          <div style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)' }}>{value}</div>
+                          <div style={{ fontSize: '10px', color: '#475569', marginBottom: '4px', textTransform: 'uppercase', fontWeight: 700 }}>{label}</div>
+                          <div style={{ fontSize: '16px', fontWeight: 700, color }}>{value}</div>
                         </div>
                       ))}
                     </div>
 
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>
-                      Full Complaint Timeline
+                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: 8 }}>
+                      Timeline
+                      <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.05)' }} />
                     </div>
 
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
                       {fullRoomHistory.map((c, i) => (
-                        <div key={c.id} style={{ display: 'flex', gap: '12px', paddingBottom: i < fullRoomHistory.length - 1 ? '16px' : '0', position: 'relative' }}>
+                        <div key={c.id} style={{ display: 'flex', gap: '16px', position: 'relative' }}>
                           {i < fullRoomHistory.length - 1 && (
-                            <div style={{ position: 'absolute', left: '7px', top: '18px', width: '2px', bottom: 0, background: 'var(--border)' }} />
+                            <div style={{ position: 'absolute', left: '7px', top: '24px', width: '2px', bottom: '-20px', background: 'rgba(255,255,255,0.05)' }} />
                           )}
                           <div style={{
-                            width: '16px', height: '16px', borderRadius: '50%', flexShrink: 0, marginTop: '2px',
-                            background: c.status === 'resolved' ? '#22D3A0' : c.priority === 'high' ? '#F06565' : '#F5A623'
+                            width: '16px', height: '16px', borderRadius: '50%', flexShrink: 0, marginTop: '4px',
+                            background: c.status === 'resolved' ? '#10B981' : c.priority === 'high' ? '#EF4444' : '#F59E0B',
+                            boxShadow: `0 0 10px ${c.status === 'resolved' ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}`,
+                            zIndex: 1
                           }} />
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)' }}>{c.title}</div>
-                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-                              {c.category} • {c.priority} priority<br/>
-                              Filed by: {c.studentName || c.studentUid} on {c.createdAt?.toDate?.().toLocaleDateString('en-IN')}<br/>
-                              {c.status === 'resolved' && c.resolvedAt && (
-                                <span style={{ color: '#22D3A0' }}>Fixed in {Math.round((c.resolvedAt.toDate() - c.createdAt.toDate()) / 3600000)}h</span>
-                              )}
+                          <div style={{ flex: 1, background: 'rgba(255,255,255,0.02)', borderRadius: 12, padding: 12, border: '1px solid rgba(255,255,255,0.03)' }}>
+                            <div style={{ fontSize: '14px', fontWeight: 600, color: '#F1F5F9' }}>{c.title}</div>
+                            <div style={{ fontSize: '12px', color: '#475569', marginTop: 4 }}>
+                              {c.category} • {c.priority} priority • {c.createdAt?.toDate?.().toLocaleDateString('en-IN')}
                             </div>
-                            <div style={{ marginTop: '6px', fontSize: '0.8rem', color: 'var(--text-primary)' }}>
+                            <div style={{ marginTop: 8, fontSize: '13px', color: '#E2E8F0', lineHeight: 1.5 }}>
                               {c.descriptionTranslated || c.description}
                             </div>
+                            {c.status === 'resolved' && c.resolvedAt && (
+                              <div style={{ marginTop: 8, fontSize: '11px', color: '#10B981', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                <span className="material-icons-round" style={{ fontSize: 14 }}>task_alt</span>
+                                Resolved in {Math.round((c.resolvedAt.toDate() - c.createdAt.toDate()) / 3600000)}h
+                              </div>
+                            )}
                           </div>
                         </div>
                       ))}
                     </div>
                   </>
                 )}
-              </>
+              </div>
             )}
           </div>
         </div>

@@ -134,10 +134,13 @@ export default function StudentDashboard() {
     {/* Sidebar */}
     <aside className={`app-sidebar ${isSidebarMinimized ? 'minimized' : ''}`}>
       <Link to="/" className="sidebar-brand">
-        <div className="sidebar-brand-icon">
-          <span className="material-icons-round" style={{fontSize:18}}>apartment</span>
+        <div className="sidebar-brand-icon" style={{background:'var(--primary-soft)', color:'var(--primary)'}}>
+          <span className="material-icons-round" style={{fontSize:20}}>apartment</span>
         </div>
-        <span className="sidebar-brand-name">Fix My Hostel</span>
+        <div style={{display:'flex', flexDirection:'column', gap:2}}>
+          <span className="sidebar-brand-name" style={{fontSize:15, fontWeight:700}}>Room {userDoc?.roomNumber}</span>
+          <span style={{fontSize:10, color:'var(--text-ghost)', textTransform:'uppercase', letterSpacing:'0.05em', fontWeight:600}}>{hierarchyNames.building} · Fl {hierarchyNames.floor}</span>
+        </div>
       </Link>
 
       <nav className="sidebar-nav">
@@ -161,40 +164,35 @@ export default function StudentDashboard() {
       </nav>
 
       <div className="sidebar-footer">
-        <div className="sidebar-user">
-          <div className="sidebar-avatar">
+        <div className="sidebar-user" style={{marginBottom:12, padding:'12px', background:'var(--bg-hover)', borderRadius:'var(--radius-md)'}}>
+          <div className="sidebar-avatar" style={{width:36, height:36, fontSize:13}}>
             {userDoc?.name?.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}
           </div>
-          <div>
-            <div className="sidebar-user-name">{userDoc?.name}</div>
-            <div className="sidebar-user-role">Room {userDoc?.roomNumber}</div>
+          <div style={{flex:1, minWidth:0}}>
+            <div className="sidebar-user-name" style={{fontSize:13}}>{userDoc?.name}</div>
+            <div className="sidebar-user-role" style={{fontSize:11}}>Student</div>
           </div>
+        </div>
+
+        <div style={{display:'flex', alignItems:'center', gap:8, padding:'0 4px'}}>
+          <ThemeToggle />
+          <div style={{flex:1}} />
+          <button className="btn btn-ghost btn-sm" style={{padding:'6px 10px'}} onClick={async()=>{await logoutUser();navigate('/');}}>
+            <span className="material-icons-round" style={{fontSize:18, color:'var(--red)'}}>logout</span>
+          </button>
         </div>
       </div>
     </aside>
 
     {/* Main */}
     <div className={`app-main ${isSidebarMinimized ? 'minimized' : ''}`}>
-      <div className="app-header">
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-          <button className="sidebar-toggle-btn" onClick={() => setIsSidebarMinimized(!isSidebarMinimized)}>
-            <span className="material-icons-round" style={{fontSize: 20}}>menu</span>
-          </button>
-          <div>
-            <div className="header-title">Room {userDoc?.roomNumber}</div>
-            <div style={{fontSize:12,color:'var(--text-3)',marginTop:1}}>{hierarchyNames.building} · Floor {hierarchyNames.floor}</div>
-          </div>
-        </div>
-        <div className="header-actions">
-          <ThemeToggle />
-          <Link to="/complaint/new" className="btn btn-primary btn-sm">
-            <span className="material-icons-round" style={{fontSize:15}}>add</span>
-            File Complaint
-          </Link>
-          <button className="btn btn-ghost btn-sm" onClick={async()=>{await logoutUser();navigate('/');}}>
-            <span className="material-icons-round" style={{fontSize:16}}>logout</span>
-          </button>
-        </div>
+      {/* Mobile Header */}
+      <div style={{ height: 16 }} />
+      <div style={{ display: 'none', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px 16px', borderBottom: '1px solid var(--border)' }} className="mobile-header">
+         <button className="sidebar-toggle-btn" onClick={() => setIsSidebarMinimized(!isSidebarMinimized)}>
+            <span className="material-icons-round">menu</span>
+         </button>
+         <div style={{ fontWeight: 600 }}>Room {userDoc?.roomNumber}</div>
       </div>
 
       <div style={{background:'var(--bg-card)',borderBottom:'1px solid var(--border)',padding:'0 24px'}}>
