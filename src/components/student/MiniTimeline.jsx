@@ -52,7 +52,14 @@ export default function MiniTimeline({ complaints, onSeeAll }) {
 
       {items.length === 0 && (
         <div style={{ padding:'32px 16px', textAlign:'center' }}>
-          <div style={{ fontSize:32, marginBottom:12, opacity:0.3 }}>📋</div>
+          <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'center' }}>
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.4 }}>
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+              <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+              <path d="M9 12h6"></path>
+              <path d="M9 16h6"></path>
+            </svg>
+          </div>
           <div style={{ fontSize:13, color:'var(--text-3)', marginBottom:16 }}>No complaints yet</div>
           <Link to="/complaint/new" className="btn btn-primary btn-sm" style={{ display:'inline-flex', padding:'8px 16px' }}>
             <span className="material-icons-round" style={{ fontSize:16 }}>add</span>

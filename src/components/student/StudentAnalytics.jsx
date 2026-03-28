@@ -339,7 +339,14 @@ export default function StudentAnalytics({ roomScore, view = 'complaints' }) {
 
       {Object.keys(grouped).length === 0 && (
         <div style={{ textAlign:'center', padding:'80px 20px', background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:24, marginTop:10 }}>
-          <div style={{ fontSize:48, marginBottom:16, opacity:0.3 }}>📋</div>
+          <div style={{ marginBottom: 20, display: 'flex', justifyContent: 'center' }}>
+            <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.4 }}>
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+              <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+              <path d="M9 12h6"></path>
+              <path d="M9 16h6"></path>
+            </svg>
+          </div>
           <div style={{ fontSize:16, fontWeight:700, color:'var(--text)', marginBottom:6 }}>No complaints found</div>
           <p style={{ fontSize:13, color:'var(--text-3)', maxWidth:280, margin:'0 auto', lineHeight:1.5 }}>
             Everything looks good! If you have an issue, tap the "File Complaint" button in the sidebar.
