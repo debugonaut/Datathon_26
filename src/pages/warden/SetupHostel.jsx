@@ -229,7 +229,9 @@ export default function SetupHostel() {
       
       {blocks.length === 0 && (
         <div style={{ textAlign: 'center', padding: '32px 0', border: '1px dashed var(--border)', borderRadius: 12 }}>
-          <div style={{ fontSize: 24, marginBottom: 8 }}>🗺️</div>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" strokeWidth="1.5"><path d="M12 2v20M2 12h20M12 2l4 4M12 2l-4 4M12 22l4-4M12 22l-4-4M2 12l4 4M2 12l4-4M22 12l-4 4M22 12l-4-4"/></svg>
+          </div>
           <p style={{ fontSize: 12, color: 'var(--text-3)', margin: 0 }}>No blocks added yet.</p>
         </div>
       )}
@@ -238,13 +240,15 @@ export default function SetupHostel() {
         {blocks.map(b => (
           <div key={b.id} style={{ borderLeft: '2px solid var(--primary-border)', paddingLeft: 16, paddingBottom: 4 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>❖ {b.name}</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2.5" style={{ flexShrink: 0 }}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{b.name}</span>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {b.buildings.map(bld => (
                 <div key={bld.id} style={{ background: 'var(--bg-surface)', padding: '10px 14px', borderRadius: 10, border: '1px solid var(--border)' }}>
                   <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-2)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                    🏢 {bld.name}
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M3 21h18M3 7v1l-2 2v2l2 2v1l-2 2v2l2 2V7zm18 0v1l2 2v2l-2 2v1l2 2v2l-2 2V7zM7 7v14M12 7v14M17 7v14"/></svg>
+                    {bld.name}
                     <span style={{ fontSize: 10, fontWeight: 400, color: 'var(--text-3)' }}>({bld.totalFloors} floors)</span>
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 8 }}>
@@ -384,7 +388,9 @@ export default function SetupHostel() {
                         cursor: 'pointer', transition: 'all 0.2s', textAlign: 'center'
                       }}
                     >
-                      <div style={{ fontSize: 40, marginBottom: 16 }}>⚡</div>
+                      <div style={{ height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+                        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2 L3 14 L12 14 L11 22 L21 10 L12 10 L13 2Z"/></svg>
+                      </div>
                       <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>Quick Setup</div>
                       <div style={{ fontSize: 12, color: 'var(--text-3)', lineHeight: 1.5 }}>Perfect for standard buildings with uniform room numbering.</div>
                     </div>
@@ -398,7 +404,9 @@ export default function SetupHostel() {
                         cursor: 'pointer', transition: 'all 0.2s', textAlign: 'center'
                       }}
                     >
-                      <div style={{ fontSize: 40, marginBottom: 16 }}>🏛️</div>
+                      <div style={{ height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+                        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18M3 7v14M21 7v14M2 3h20M7 7v14M12 7v14M17 7v14"/></svg>
+                      </div>
                       <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>Advanced Setup</div>
                       <div style={{ fontSize: 12, color: 'var(--text-3)', lineHeight: 1.5 }}>For complex complexes with multiple wings and custom blocks.</div>
                     </div>
@@ -455,7 +463,10 @@ export default function SetupHostel() {
                               onClick={() => setActiveBlockId(activeBlockId === b.id ? null : b.id)}
                               style={{ padding: '14px 20px', background: 'var(--bg-surface)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
                             >
-                              <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>❖ {b.name}</span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                                <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>{b.name}</span>
+                              </div>
                               <span style={{ fontSize: 11, color: 'var(--primary)', fontWeight: 600 }}>{activeBlockId === b.id ? 'Close' : '+ Add Building'}</span>
                             </div>
                             
@@ -470,7 +481,10 @@ export default function SetupHostel() {
                             <div style={{ padding: '0 20px 14px' }}>
                               {b.buildings.map(bld => (
                                 <div key={bld.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderTop: '1px solid var(--border)' }}>
-                                  <span style={{ fontSize: 13, color: 'var(--text-2)' }}>🏢 {bld.name}</span>
+                                  <div style={{ fontSize: 13, color: 'var(--text-2)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M3 21h18M3 7v14M21 7v14M2 3h20M7 7v14M12 7v14M17 7v14"/></svg>
+                                    {bld.name}
+                                  </div>
                                   <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{bld.totalFloors} floors</span>
                                 </div>
                               ))}
@@ -509,10 +523,16 @@ export default function SetupHostel() {
                   <div style={{ maxHeight: 400, overflowY: 'auto', paddingRight: 8, display: 'flex', flexDirection: 'column', gap: 20 }}>
                     {blocks.map(b => (
                       <div key={b.id} style={{ background: 'var(--bg-surface)', padding: 20, borderRadius: 16, border: '1px solid var(--border)' }}>
-                        <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 }}>❖ {b.name}</div>
+                        <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                          {b.name}
+                        </div>
                         {b.buildings.map(bld => (
                           <div key={bld.id} style={{ borderTop: '1px solid var(--border)', paddingTop: 12, marginTop: 12 }}>
-                            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>🏢 {bld.name}</div>
+                            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M3 21h18M3 7v14M21 7v14M2 3h20M7 7v14M12 7v14M17 7v14"/></svg>
+                              {bld.name}
+                            </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                               {bld.floors.map(fl => (
                                 <div key={fl.id} style={{ display: 'grid', gridTemplateColumns: '80px 1fr 40px', gap: 12, alignItems: 'center' }}>
