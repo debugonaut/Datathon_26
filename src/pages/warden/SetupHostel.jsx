@@ -6,6 +6,34 @@ import { db } from '../../firebase/config';
 import { useAuth } from '../../context/AuthContext';
 import Navbar from '../../components/Navbar';
 
+const NumberInput = ({ label, value, onChange, min = 1, max = 999 }) => (
+  <div style={{ flex: 1 }}>
+    {label && <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-2)', marginBottom: 8 }}>{label}</label>}
+    <div style={{ display: 'flex', alignItems: 'center', background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 10, padding: 4 }}>
+      <button 
+        type="button"
+        onClick={() => onChange(Math.max(min, value - 1))}
+        style={{ width: 28, height: 28, borderRadius: 6, background: 'var(--primary-soft)', border: 'none', color: 'var(--primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
+      <input 
+        type="number" 
+        value={value} 
+        onChange={e => onChange(parseInt(e.target.value) || min)}
+        style={{ flex: 1, background: 'transparent', border: 'none', textAlign: 'center', fontSize: 13, color: 'var(--text)', fontWeight: 700, outline: 'none', width: 40 }}
+      />
+      <button 
+        type="button"
+        onClick={() => onChange(Math.min(max, value + 1))}
+        style={{ width: 28, height: 28, borderRadius: 6, background: 'var(--primary-soft)', border: 'none', color: 'var(--primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
+    </div>
+  </div>
+);
+
 export default function SetupHostel() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -415,24 +443,12 @@ export default function SetupHostel() {
                   {setupMode === 'quick' && (
                     <div className="animation-fade-in" style={{ background: 'var(--bg-surface)', padding: 24, borderRadius: 16, border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 20 }}>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                        <div>
-                          <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-2)', marginBottom: 8 }}>Total Floors</label>
-                          <input type="number" min="1" style={{ width: '100%', padding: 10, background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)' }} value={qsFloors} onChange={e => setQsFloors(parseInt(e.target.value) || 1)} />
-                        </div>
-                        <div>
-                          <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-2)', marginBottom: 8 }}>Rooms / Floor</label>
-                          <input type="number" min="1" style={{ width: '100%', padding: 10, background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)' }} value={qsRoomsPerFloor} onChange={e => setQsRoomsPerFloor(parseInt(e.target.value) || 1)} />
-                        </div>
+                        <NumberInput label="Total Floors" value={qsFloors} onChange={setQsFloors} />
+                        <NumberInput label="Rooms / Floor" value={qsRoomsPerFloor} onChange={setQsRoomsPerFloor} />
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                        <div>
-                          <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-2)', marginBottom: 8 }}>Starting Room #</label>
-                          <input type="number" min="1" style={{ width: '100%', padding: 10, background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)' }} value={qsStartingRoom} onChange={e => setQsStartingRoom(parseInt(e.target.value) || 101)} />
-                        </div>
-                        <div>
-                          <label style={{ display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-2)', marginBottom: 8 }}>Max Occupants</label>
-                          <input type="number" min="1" max="6" style={{ width: '100%', padding: 10, background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)' }} value={maxOccupants} onChange={e => setMaxOccupants(parseInt(e.target.value) || 2)} />
-                        </div>
+                        <NumberInput label="Starting Room #" value={qsStartingRoom} onChange={setQsStartingRoom} min={1} max={9999} />
+                        <NumberInput label="Max Occupants" value={maxOccupants} onChange={setMaxOccupants} min={1} max={10} />
                       </div>
                       <button 
                         style={{ width: '100%', padding: 12, borderRadius: 10, background: 'var(--primary)', color: '#fff', border: 'none', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
@@ -471,10 +487,10 @@ export default function SetupHostel() {
                             </div>
                             
                             {activeBlockId === b.id && (
-                              <div style={{ padding: 20, borderTop: '1px solid var(--border)', background: 'var(--bg-card)', display: 'flex', gap: 8 }}>
-                                <input style={{ flex: 2, padding: 10, background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 8 }} placeholder="Building Name" value={newBldName} onChange={e => setNewBldName(e.target.value)} />
-                                <input style={{ flex: 1, padding: 10, background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 8 }} type="number" placeholder="Floors" value={newBldFloors} onChange={e => setNewBldFloors(parseInt(e.target.value) || 1)} />
-                                <button style={{ width: 40, borderRadius: 8, background: 'var(--primary)', border: 'none', color: '#fff' }} onClick={(e) => handleCreateBuilding(e, b.id)}>+</button>
+                              <div style={{ padding: 20, borderTop: '1px solid var(--border)', background: 'var(--bg-card)', display: 'grid', gridTemplateColumns: '1.5fr 1fr 40px', gap: 12 }}>
+                                <input style={{ height: 38, padding: 10, background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--text)', fontSize: 13 }} placeholder="Building Name" value={newBldName} onChange={e => setNewBldName(e.target.value)} />
+                                <NumberInput value={newBldFloors} onChange={setNewBldFloors} />
+                                <button style={{ height: 38, width: 38, borderRadius: 10, background: 'var(--primary)', border: 'none', color: '#fff', fontSize: 20, fontWeight: 700, cursor: 'pointer' }} onClick={(e) => handleCreateBuilding(e, b.id)}>+</button>
                               </div>
                             )}
 
