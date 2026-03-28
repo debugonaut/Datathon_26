@@ -168,19 +168,27 @@ async function run() {
   const hoursAgo = (h) => Timestamp.fromDate(new Date(now - h * 3600000));
 
   const complaints = [
-    // Room 204
+    // Room 204 (Demo Student's Room)
     { hostelId, blockId, buildingId, floorId: 'demo-floor-2', roomId: room204Id, studentUid, studentName: 'Demo Student', roomNumber: '204', reopenCount: 0, status: 'todo', priority: 'high', category: 'Electrical', title: 'Main switch board sparking', description: 'When I use the top socket, there are visible sparks and a burnt smell.', createdAt: hoursAgo(1) },
     { hostelId, blockId, buildingId, floorId: 'demo-floor-2', roomId: room204Id, studentUid, studentName: 'Demo Student', roomNumber: '204', reopenCount: 0, status: 'in_progress', priority: 'medium', category: 'Plumbing', title: 'Sink drain clogged', description: 'Water is draining very slowly in the bathroom sink.', createdAt: hoursAgo(24) },
     { hostelId, blockId, buildingId, floorId: 'demo-floor-2', roomId: room204Id, studentUid, studentName: 'Demo Student', roomNumber: '204', reopenCount: 0, status: 'resolved', priority: 'low', category: 'Furniture', title: 'Loose door handle', description: 'The handle on the balcony door feels like it might fall off.', createdAt: hoursAgo(48), resolvedAt: hoursAgo(20) },
 
-    // Other Rooms
-    { hostelId, blockId, buildingId, floorId: 'demo-floor-1', roomId: 'demo-room-101', studentUid: 'student-101', studentName: 'Rahul Kumar', roomNumber: '101', reopenCount: 0, status: 'todo', priority: 'medium', category: 'Cleaning', title: 'Common area dusty', description: 'The corridor outside room 101 hasn\'t been cleaned since 3 days.', createdAt: hoursAgo(5) },
+    // Cluster: Floor 1 Plumbing (3 issues in same building/floor/category)
+    { hostelId, blockId, buildingId, floorId: 'demo-floor-1', roomId: 'demo-room-101', studentUid: 'student-101', studentName: 'Rahul Kumar', roomNumber: '101', reopenCount: 0, status: 'todo', priority: 'medium', category: 'Plumbing', title: 'Tap leaking heavily', description: 'The bathroom tap doesn\'t close fully, constant dripping.', createdAt: hoursAgo(4) },
+    { hostelId, blockId, buildingId, floorId: 'demo-floor-1', roomId: 'demo-room-102', studentUid: 'student-102', studentName: 'Aman Verma', roomNumber: '102', reopenCount: 0, status: 'todo', priority: 'high', category: 'Plumbing', title: 'Flush not working', description: 'The flush tank is empty and won\'t refill.', createdAt: hoursAgo(10) },
+    { hostelId, blockId, buildingId, floorId: 'demo-floor-1', roomId: 'demo-room-105', studentUid: 'student-105', studentName: 'Vivek Singh', roomNumber: '105', reopenCount: 0, status: 'todo', priority: 'high', category: 'Plumbing', title: 'Main pipe leakage in washroom', description: 'Water is seeping through the walls, seems like a pipe burst.', createdAt: hoursAgo(30) }, // Also an SLA Breach (High > 24h)
+
+    // Other Rooms & SLA / ETA Examples
     { hostelId, blockId, buildingId, floorId: 'demo-floor-3', roomId: 'demo-room-305', studentUid: 'student-305', studentName: 'Aditya Shah', roomNumber: '305', reopenCount: 0, status: 'in_progress', priority: 'high', category: 'Electrical', title: 'Fan regulator broken', description: 'Fan is running only at full speed, regulator knob is jammed.', createdAt: hoursAgo(12) },
     { hostelId, blockId, buildingId, floorId: 'demo-floor-4', roomId: 'demo-room-402', studentUid: 'student-402', studentName: 'Sameer Sen', roomNumber: '402', reopenCount: 0, status: 'todo', priority: 'high', category: 'Water', title: 'No water in geyser', description: 'The geyser isn\'t filling or heating water. Urgent for morning.', createdAt: hoursAgo(3) },
     
-    // SLA / ETA Examples
     { hostelId, blockId, buildingId, floorId: 'demo-floor-2', roomId: 'demo-room-202', studentUid: 'student-202', studentName: 'Karan Mehra', roomNumber: '202', reopenCount: 0, status: 'todo', priority: 'medium', category: 'Furniture', title: 'Broken cupboard lock', description: 'I cannot lock my cupboard anymore.', createdAt: hoursAgo(8), acknowledgedByWarden: true, estimatedResolutionAt: new Date(now + 24*3600000).toISOString().slice(0, 16) },
-    { hostelId, blockId, buildingId, floorId: 'demo-floor-1', roomId: 'demo-room-105', studentUid: 'student-105', studentName: 'Vivek Singh', roomNumber: '105', reopenCount: 0, status: 'todo', priority: 'high', category: 'Plumbing', title: 'Washroom flush broken', description: 'The flush is continuously running and wasting water.', createdAt: hoursAgo(30) }, // Over 24h old high priority
+    
+    // Wifi / Network Issues
+    { hostelId, blockId, buildingId, floorId: 'demo-floor-3', roomId: 'demo-room-301', studentUid: 'student-301', studentName: 'Sohan Rao', roomNumber: '301', reopenCount: 0, status: 'todo', priority: 'medium', category: 'WiFi', title: 'Extremely slow internet', description: 'WiFi is connected but speed is less than 1mbps. Cannot attend online lectures.', createdAt: hoursAgo(6) },
+    
+    // Pest Control
+    { hostelId, blockId, buildingId, floorId: 'demo-floor-4', roomId: 'demo-room-406', studentUid: 'student-406', studentName: 'Tushar Das', roomNumber: '406', reopenCount: 0, status: 'todo', priority: 'low', category: 'Pest Control', title: 'Ant infestation', description: 'Large number of ants coming from the window sill.', createdAt: hoursAgo(18) },
   ];
 
   for (let c of complaints) {
