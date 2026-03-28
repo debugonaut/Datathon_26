@@ -3,9 +3,10 @@ import { useNavigate, Link } from 'react-router-dom';
 import { doc, setDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { useAuth } from '../context/AuthContext';
+import { getRedirectPath } from '../utils/navigation';
 
 export default function SetupRole() {
-  const { user, setUserDoc } = useAuth();
+  const { user, userDoc, setUserDoc } = useAuth();
   const [role, setRole] = useState('student');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -87,12 +88,20 @@ export default function SetupRole() {
           </svg>
           Fix My Hostel
         </Link>
-        <div style={{
-          fontSize: 9, fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase',
-          color: '#6C63FF', background: 'rgba(108,99,255,0.1)',
-          border: '1px solid rgba(108,99,255,0.2)', padding: '3px 9px', borderRadius: 4,
-        }}>
-          PS-15 · Datathon 2026
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {userDoc?.role && (
+            <Link to={getRedirectPath(userDoc)} style={{ height: 30, padding: '0 12px', borderRadius: 7, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#94A3B8', fontSize: 11, fontFamily: 'inherit', fontWeight: 600, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+              Back to Dashboard
+            </Link>
+          )}
+          <div style={{
+            fontSize: 9, fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase',
+            color: '#6C63FF', background: 'rgba(108,99,255,0.1)',
+            border: '1px solid rgba(108,99,255,0.2)', padding: '3px 9px', borderRadius: 4,
+          }}>
+            PS-15 · Datathon 2026
+          </div>
         </div>
       </div>
 

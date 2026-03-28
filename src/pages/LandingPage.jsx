@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { signInWithEmailAndPassword, setPersistence, browserSessionPersistence } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
+import { getRedirectPath } from '../utils/navigation';
 
 function useTypewriter(words, { typeSpeed = 85, deleteSpeed = 50, pauseAfter = 1900, pauseBefore = 350 } = {}) {
   const [displayed, setDisplayed] = useState('');
@@ -107,7 +108,7 @@ function launchConfetti(canvas, originX, originY) {
 }
 
 export default function LandingPage() {
-  const { user } = useAuth();
+  const { user, userDoc } = useAuth();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [searched, setSearched] = useState(false);
@@ -235,12 +236,21 @@ export default function LandingPage() {
           <span style={{ fontSize: 10, letterSpacing: '0.08em', color: '#6C63FF', background: 'rgba(108,99,255,0.1)', border: '1px solid rgba(108,99,255,0.25)', padding: '4px 10px', borderRadius: 5, fontWeight: 700, textTransform: 'uppercase' }}>
             PS-15 · Datathon 2026
           </span>
-          <Link to="/login" style={{ height: 34, padding: '0 14px', borderRadius: 8, background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: '#94A3B8', fontSize: 12, fontFamily: 'inherit', fontWeight: 600, textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
-            Login
-          </Link>
-          <Link to="/register" style={{ height: 34, padding: '0 14px', borderRadius: 8, background: '#6C63FF', border: 'none', color: '#fff', fontSize: 12, fontFamily: 'inherit', fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
-            Register
-          </Link>
+           {user ? (
+            <Link to={getRedirectPath(userDoc)} style={{ height: 34, padding: '0 16px', borderRadius: 8, background: '#6C63FF', border: 'none', color: '#fff', fontSize: 12, fontFamily: 'inherit', fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+              Go to Dashboard
+            </Link>
+          ) : (
+            <>
+              <Link to="/login" style={{ height: 34, padding: '0 14px', borderRadius: 8, background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: '#94A3B8', fontSize: 12, fontFamily: 'inherit', fontWeight: 600, textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
+                Login
+              </Link>
+              <Link to="/register" style={{ height: 34, padding: '0 14px', borderRadius: 8, background: '#6C63FF', border: 'none', color: '#fff', fontSize: 12, fontFamily: 'inherit', fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
+                Register
+              </Link>
+            </>
+          )}
         </div>
       </nav>
 

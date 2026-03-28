@@ -59,20 +59,13 @@ const StudentGuard = ({ children, requireProfile, requireRegistered }) => {
 
   return children;
 };
+import { getRedirectPath } from './utils/navigation';
 
-// ── Root redirect ─────────────────────────────────────────────────────────────
+// ── Root redirect (Now always LandingPage) ───────────────────────────────────
 const RoleRedirect = () => {
-  const { user, userDoc, loading } = useAuth();
+  const { loading } = useAuth();
   if (loading) return <div className="loading-screen"><div className="spinner" /><p className="text-secondary mt-2">Verifying your access...</p></div>;
-  if (!user) return <LandingPage />;
-  if (!userDoc?.role) return <Navigate to="/setup-role" replace />;
-  if (userDoc.role === 'warden') {
-    return <Navigate to={userDoc.hostelId ? '/warden/dashboard' : '/warden/setup'} replace />;
-  }
-  // Student routing
-  if (!userDoc.isProfileComplete) return <Navigate to="/student/profile-setup" replace />;
-  if (!userDoc.isRegistered) return <Navigate to="/student/room-register" replace />;
-  return <Navigate to="/student/dashboard" replace />;
+  return <LandingPage />;
 };
 
 const AppRoutes = () => (
